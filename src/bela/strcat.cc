@@ -36,7 +36,7 @@ AlphaNum::AlphaNum(Dec dec) {
     *--writer = '0' + (value % 10);
     value /= 10;
   }
-  *--writer = '0' + value;
+  *--writer = static_cast<wchar_t>('0' + value);
   if (neg)
     *--writer = '-';
 

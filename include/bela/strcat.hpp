@@ -18,6 +18,9 @@ template <size_t max_size> struct AlphaNumBuffer {
 };
 
 } // namespace strings_internal
+inline std::wstring_view NullSafeStringView(const wchar_t *str) {
+  return (str == nullptr) ? std::wstring_view() : std::wstring_view(str);
+}
 // Enum that specifies the number of significant digits to return in a `Hex` or
 // `Dec` conversion and fill character to use. A `kZeroPad2` value, for example,
 // would produce hexadecimal strings such as "0a","0f" and a 'kSpacePad5' value
@@ -183,8 +186,9 @@ public:
       const strings_internal::AlphaNumBuffer<size> &buf)
       : piece_(&buf.data[0], buf.size) {}
 
-  AlphaNum(const wchar_t *c_str) : piece_(c_str) {} // NOLINT(runtime/explicit)
-  AlphaNum(std::wstring_view pc) : piece_(pc) {}    // NOLINT(runtime/explicit)
+  AlphaNum(const wchar_t *c_str)
+      : piece_(c_str == nullptr ? L"" : c_str) {} // NOLINT(runtime/explicit)
+  AlphaNum(std::wstring_view pc) : piece_(pc) {}  // NOLINT(runtime/explicit)
 
   template <typename Allocator>
   AlphaNum( // NOLINT(runtime/explicit)

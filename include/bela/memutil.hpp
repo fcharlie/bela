@@ -5,14 +5,10 @@
 #include <cstring>
 #include <cstdlib>
 #include <cwctype>
-#include <wchar.h>
+#include <cwchar>
 
 namespace bela {
 namespace strings_internal {
-template <typename T>
-inline T *memcat(T *dest, size_t destlen, const T *src, size_t srclen) {
-  return reinterpret_cast<T *>(memcpy(dest + destlen, src, srclen));
-}
 
 template <typename T> inline void memcopy(T *dest, const T *src, size_t n) {
   memcpy(dest, src, sizeof(T) * n);

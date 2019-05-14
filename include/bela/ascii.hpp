@@ -1,6 +1,7 @@
 //////////
-#ifndef ABSLW_ASCII_HPP
-#define ABSLW_ASCII_HPP
+#ifndef BELA_ASCII_HPP
+#define BELA_ASCII_HPP
+#pragma once
 #include <cctype>
 #include <cstring>
 #include <string>
@@ -11,7 +12,7 @@
 // errors about it? Since the intrinsic wchar_t is a 16-bit unsigned integer in
 // Visual C++, it is binary-compatible with unsigned short,
 
-namespace base {
+namespace bela {
 namespace ascii_internal {
 
 template <typename T, size_t N> bool ArrayChr(T (&a)[N], T c) {
@@ -64,7 +65,7 @@ inline bool ascii_isspace(wchar_t c) {
 //
 // Determines whether the given character is a punctuation character.
 inline bool ascii_ispunct(wchar_t c) {
-  return (c < 0xFF && ascii_internal::kPropertyBits[c] & 0x10 != 0);
+  return (c < 0xFF && (ascii_internal::kPropertyBits[c] & 0x10) != 0);
 }
 
 // ascii_isblank()
@@ -188,6 +189,6 @@ inline void StripAsciiWhitespace(std::wstring *str) {
 
 // Removes leading, trailing, and consecutive internal whitespace.
 void RemoveExtraAsciiWhitespace(std::wstring *);
-} // namespace base
+} // namespace bela
 
 #endif

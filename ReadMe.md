@@ -1,1 +1,3 @@
-# Absl like wchar_t
+# Bela Utilities
+
+A C++17 tool library that provides a better experience on the Windows 10 operating system.

@@ -1,10 +1,11 @@
 /// ArgvBuilder
-#ifndef ABSLW_ARGV_BUILDER_HPP
-#define ABSLW_ARGV_BUILDER_HPP
+#ifndef BELA_ARGV_BUILDER_HPP
+#define BELA_ARGV_BUILDER_HPP
+#pragma once
 #include <string>
 #include <string_view>
 
-namespace base {
+namespace bela {
 class argvbuilder {
 public:
   argvbuilder() = default;
@@ -88,6 +89,6 @@ inline std::wstring argvbuilder::escape(std::wstring_view ac) {
   return buf;
 }
 
-} // namespace priv
+} // namespace bela
 
 #endif

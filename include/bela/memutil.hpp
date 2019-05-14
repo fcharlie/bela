@@ -1,11 +1,13 @@
 ///////
-#ifndef ABSLW_MEMUTIL_HPP
-#define ABSLW_MEMUTIL_HPP
+#ifndef BELA_MEMUTIL_HPP
+#define BELA_MEMUTIL_HPP
+#pragma once
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
+#include <wchar.h>
 
-namespace base {
+namespace bela {
 namespace strings_internal {
 template <typename T>
 inline T *memcat(T *dest, size_t destlen, const T *src, size_t srclen) {
@@ -82,6 +84,6 @@ const wchar_t *memmatch(const wchar_t *phaystack, size_t haylen,
                         const wchar_t *pneedle, size_t neelen);
 } // namespace strings_internal
 
-} // namespace base
+} // namespace bela
 
 #endif

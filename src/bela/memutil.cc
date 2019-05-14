@@ -1,7 +1,7 @@
 ////
-#include "memutil.hpp"
+#include <bela/memutil.hpp>
 
-namespace base {
+namespace bela {
 
 namespace strings_internal {
 
@@ -97,4 +97,4 @@ const wchar_t *memmatch(const wchar_t *phaystack, size_t haylen,
 }
 
 } // namespace strings_internal
-} // namespace base
+} // namespace bela

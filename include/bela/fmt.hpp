@@ -1,6 +1,6 @@
 /////
-#ifndef PLANCK_FMT_HPP
-#define PLANCK_FMT_HPP
+#ifndef BELA_FMT_HPP
+#define BELA_FMT_HPP
 #include <cstdint>
 #include <cstdlib>
 #include <cstddef>
@@ -16,7 +16,7 @@ typedef long __ssize_t;
 #endif
 #endif
 
-namespace base {
+namespace bela {
 using ssize_t = __ssize_t;
 namespace format_internal {
 enum class ArgType {
@@ -73,16 +73,8 @@ struct FormatArg {
     integer.width = sizeof(char);
   }
   FormatArg(float f) : at(ArgType::FLOAT) {
-    floating.ld = f;
+    floating.d = f;
     floating.width = sizeof(float);
-  }
-  FormatArg(double d) : at(ArgType::FLOAT) {
-    floating.ld = d;
-    floating.width = (unsigned char)sizeof(double);
-  }
-  FormatArg(long double ld) : at(ArgType::FLOAT) {
-    floating.ld = ld;
-    floating.width = (unsigned char)sizeof(long double);
   }
   // A C-style text string. and string_view
   FormatArg(const wchar_t *str) : at(ArgType::STRING) {
@@ -92,7 +84,8 @@ struct FormatArg {
   template <typename Allocator>
   FormatArg( // NOLINT(runtime/explicit)
       const std::basic_string<wchar_t, std::char_traits<wchar_t>, Allocator>
-          &str) {
+          &str)
+      : at(ArgType::STRING) {
     strings.data = str.data();
     strings.len = str.size();
   }
@@ -109,8 +102,14 @@ struct FormatArg {
     switch (at) {
     case ArgType::POINTER:
       return reinterpret_cast<uintptr_t>(ptr);
-    case ArgType::FLOAT:
-      return static_cast<uint64_t>(floating.ld);
+    case ArgType::FLOAT: {
+      union {
+        double d;
+        uint64_t i;
+      } x;
+      x.d = floating.d;
+      return x.i;
+    }
     default:
       break;
     }
@@ -142,7 +141,7 @@ struct FormatArg {
       unsigned char width;
     } integer;
     struct {
-      long double ld;
+      double d;
       unsigned char width;
     } floating;
     struct {
@@ -193,6 +192,6 @@ inline ssize_t StrFormat(wchar_t (&buf)[N], const wchar_t *fmt) {
   return StrFormat(buf, N, fmt);
 }
 
-} // namespace base
+} // namespace bela
 
 #endif

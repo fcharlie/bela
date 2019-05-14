@@ -1,8 +1,8 @@
 ///////
 #include <string>
-#include "ascii.hpp"
+#include <bela/ascii.hpp>
 
-namespace base {
+namespace bela {
 namespace ascii_internal {
 // clang-format off
 // Array of bitfields holding character information. Each bit value corresponds
@@ -149,4 +149,4 @@ void RemoveExtraAsciiWhitespace(std::wstring *str) {
   str->erase(output_it - &(*str)[0]);
 }
 
-} // namespace base
+} // namespace bela

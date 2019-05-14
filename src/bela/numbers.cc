@@ -7,10 +7,12 @@
 #include <limits>
 #include <memory>
 #include <utility>
-#include "ascii.hpp"
-#include "numbers.hpp"
-#include "memutil.hpp"
-#include "match.hpp"
+#include <cassert>
+#include <cmath>
+#include <bela/ascii.hpp>
+#include <bela/numbers.hpp>
+#include <bela/memutil.hpp>
+#include <bela/match.hpp>
 
 // Clang on Windows has __builtin_clzll; otherwise we need to use the
 // windows intrinsic functions.
@@ -24,7 +26,7 @@
 #pragma intrinsic(_BitScanForward)
 #endif
 
-namespace base {
+namespace bela {
 inline int CountLeadingZeros64Slow(uint64_t n) {
   int zeroes = 60;
   if (n >> 32)
@@ -875,4 +877,4 @@ bool safe_strtou64_base(std::wstring_view text, uint64_t *value, int base) {
 }
 } // namespace numbers_internal
 
-} // namespace base
+} // namespace bela

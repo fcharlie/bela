@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <string_view>
 
-namespace base {
+namespace bela {
 namespace numbers_internal {
 // safe_strto?() functions for implementing SimpleAtoi()
 bool safe_strto32_base(std::wstring_view text, int32_t *value, int base);
@@ -64,7 +64,7 @@ wchar_t *FastIntToBuffer(int_type i, wchar_t *buffer) {
 // Implementation of SimpleAtoi, generalized to support arbitrary base (used
 // with base different from 10 elsewhere in Abseil implementation).
 template <typename int_type>
-bool safe_strtoi_base(std::wstring_view s, int_type *out, int b) {
+bool safe_strtoi_base(std::wstring_view s, int_type *out, int base) {
   static_assert(sizeof(*out) == 4 || sizeof(*out) == 8,
                 "SimpleAtoi works only with 32-bit or 64-bit integers.");
   static_assert(!std::is_floating_point<int_type>::value,
@@ -86,11 +86,11 @@ bool safe_strtoi_base(std::wstring_view s, int_type *out, int b) {
   } else {                        // Unsigned
     if (sizeof(*out) == 64 / 8) { // 64-bit
       uint64_t val;
-      parsed = numbers_internal::safe_strtou64_base(s, &val, b);
+      parsed = numbers_internal::safe_strtou64_base(s, &val, base);
       *out = static_cast<int_type>(val);
     } else { // 32-bit
       uint32_t val;
-      parsed = numbers_internal::safe_strtou32_base(s, &val, b);
+      parsed = numbers_internal::safe_strtou32_base(s, &val, base);
       *out = static_cast<int_type>(val);
     }
   }
@@ -99,13 +99,13 @@ bool safe_strtoi_base(std::wstring_view s, int_type *out, int b) {
 
 } // namespace numbers_internal
 
-template <typename I> bool SimpleAtoi(std::wstring_view str, I *out) {
+template <typename I> bool SimpleAtoi(std::wstring_view s, I *out) {
   return numbers_internal::safe_strtoi_base(s, out, 10);
 }
 // bool SimpleAtof(std::wstring_view str, float *out);
 // bool SimpleAtod(std::wstring_view str, double *out);
 bool SimpleAtob(std::wstring_view str, bool *out);
 
-} // namespace base
+} // namespace bela
 
 #endif

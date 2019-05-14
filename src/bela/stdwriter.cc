@@ -1,25 +1,9 @@
 ///////////
-#include "stdwriter.hpp"
-#include <SDKDDKVer.h>
-#ifndef _WINDOWS_
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN //
-#endif
-#include <windows.h>
-#endif
+#include <bela/base.hpp>
+#include <bela/stdwriter.hpp>
 
-namespace base {
-// ToNarrow UTF-16 to UTF-8
-static inline std::string ToNarrow(std::wstring_view uw) {
-  auto l = WideCharToMultiByte(CP_UTF8, 0, uw.data(), (int)uw.size(), nullptr,
-                               0, nullptr, nullptr);
-  std::string ustr;
-  ustr.resize(l + 1);
-  auto N = WideCharToMultiByte(CP_UTF8, 0, uw.data(), (int)uw.size(),
-                               ustr.data(), l + 1, nullptr, nullptr);
-  ustr.resize(N);
-  return ustr;
-}
+namespace bela {
+
 enum class ConsoleMode {
   File, //
   TTY,
@@ -158,4 +142,4 @@ is NULL
 ssize_t StdWrite(FILE *out, std::wstring_view msg) {
   return Adapter::instance().StdWrite(out, msg);
 }
-} // namespace base
+} // namespace bela

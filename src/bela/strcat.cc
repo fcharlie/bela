@@ -1,9 +1,9 @@
 ///
 #include <cassert>
-#include "memutil.hpp"
-#include "strcat.hpp"
+#include <bela/memutil.hpp>
+#include <bela/strcat.hpp>
 
-namespace base {
+namespace bela {
 AlphaNum::AlphaNum(Hex hex) {
   wchar_t *const end = &digits_[numbers_internal::kFastToBufferSize];
   wchar_t *writer = end;
@@ -212,4 +212,4 @@ void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b,
   assert(out == begin + dest->size());
 }
 
-} // namespace base
+} // namespace bela

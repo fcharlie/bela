@@ -1,6 +1,6 @@
 // charconv for wchar_t. base Visual Studio 2019 C++ charconv. Thanks STL
-#ifndef CLANGBUILDER_CHARCONV_HPP
-#define CLANGBUILDER_CHARCONV_HPP
+#ifndef BELA_CHARCONV_HPP
+#define BELA_CHARCONV_HPP
 #include <cfloat>
 #include <cstring>
 #include <cstdint>
@@ -9,11 +9,13 @@
 #include <type_traits>
 #include <cassert>
 #include <algorithm>
+#include <climits>
+#include <limits>
 #ifdef _M_X64
 #include <intrin0.h> // for _umul128() and __shiftright128()
 #endif               // _M_X64
 
-namespace base {
+namespace bela {
 
 template <typename T> void ArrayCopy(void *dst, const T *src, size_t n) {
   memcpy(dst, src, n * sizeof(T));
@@ -5427,6 +5429,6 @@ inline to_chars_result to_chars(wchar_t *const _First, wchar_t *const _Last,
       _First, _Last, static_cast<double>(_Value), _Fmt, _Precision);
 }
 
-} // namespace base
+} // namespace bela
 
 #endif

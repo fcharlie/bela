@@ -4,16 +4,16 @@
 #include <functional>
 #include <vector>
 //
-#include "abslw/strings/strcat.hpp"
+#include "strcat.hpp"
 
-namespace av {
+namespace bela {
 enum ParseError {
   SkipParse = -1,
   None = 0,
   ErrorNormal = 1 //
 };
 // not like base::error_code
-struct error_code {
+struct ParseErrorCode {
   std::wstring message;
   int ec{0};
   explicit operator bool() const noexcept { return ec != None; }
@@ -23,8 +23,8 @@ struct error_code {
   }
   template <typename... Args> void Assign(int val, Args... args) {
     ec = val;
-    message = base::strings_internal::CatPieces(
-        {static_cast<const base::AlphaNum &>(args).Piece()...});
+    message = strings_internal::CatPieces(
+        {static_cast<const AlphaNum &>(args).Piece()...});
   }
 };
 enum HasArgs {
@@ -52,7 +52,7 @@ public:
     options_.push_back({name, a, val});
     return *this;
   }
-  bool Execute(const invoke_t &v, error_code &ec);
+  bool Execute(const invoke_t &v, ParseErrorCode &ec);
   const StringArray &UnresolvedArgs() const { return uargs; }
 
 private:
@@ -62,15 +62,16 @@ private:
   bool subcmdmode_{false};
   StringArray uargs;
   std::vector<option> options_;
-  bool parse_internal(std::wstring_view a, const invoke_t &v, error_code &ec);
+  bool parse_internal(std::wstring_view a, const invoke_t &v,
+                      ParseErrorCode &ec);
   bool parse_internal_long(std::wstring_view a, const invoke_t &v,
-                           error_code &ec);
+                           ParseErrorCode &ec);
   bool parse_internal_short(std::wstring_view a, const invoke_t &v,
-                            error_code &ec);
+                            ParseErrorCode &ec);
 };
 
 // ---------> parse internal
-inline bool ParseArgv::Execute(const invoke_t &v, error_code &ec) {
+inline bool ParseArgv::Execute(const invoke_t &v, ParseErrorCode &ec) {
   if (argc_ == 0 || argv_ == nullptr) {
     ec.Assign(L"the command line array is empty.");
     return false;
@@ -97,7 +98,8 @@ inline bool ParseArgv::Execute(const invoke_t &v, error_code &ec) {
 }
 
 inline bool ParseArgv::parse_internal_short(std::wstring_view a,
-                                            const invoke_t &v, error_code &ec) {
+                                            const invoke_t &v,
+                                            ParseErrorCode &ec) {
   int ch = -1;
   HasArgs ha = optional_argument;
   const wchar_t *oa = nullptr;
@@ -146,7 +148,8 @@ inline bool ParseArgv::parse_internal_short(std::wstring_view a,
 
 // Parse long option
 inline bool ParseArgv::parse_internal_long(std::wstring_view a,
-                                           const invoke_t &v, error_code &ec) {
+                                           const invoke_t &v,
+                                           ParseErrorCode &ec) {
   // --xxx=XXX
   // --xxx XXX
   // --xxx; bool
@@ -193,7 +196,7 @@ inline bool ParseArgv::parse_internal_long(std::wstring_view a,
 }
 
 inline bool ParseArgv::parse_internal(std::wstring_view a, const invoke_t &v,
-                                      error_code &ec) {
+                                      ParseErrorCode &ec) {
   if (a.size() == 1) {
     ec.Assign(L"unexpected argument '-'");
     return false;
@@ -204,6 +207,6 @@ inline bool ParseArgv::parse_internal(std::wstring_view a, const invoke_t &v,
   return parse_internal_short(a.substr(1), v, ec);
 }
 
-} // namespace av
+} // namespace bela
 
 #endif

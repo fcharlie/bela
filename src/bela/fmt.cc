@@ -2,9 +2,10 @@
 #include <cstring>
 #include <wchar.h>
 #include <algorithm>
-#include "fmt.hpp"
+#include <cmath>
+#include <bela/fmt.hpp>
 
-namespace base {
+namespace bela {
 namespace format_internal {
 constexpr const size_t npos = static_cast<size_t>(-1);
 size_t memsearch(const wchar_t *begin, const wchar_t *end, int ch) {
@@ -119,6 +120,43 @@ public:
   void Append(const wchar_t *str, size_t len) { t.append(str, len); }
   void Out(wchar_t ch) { t.push_back(ch); }
   bool Overflow();
+  void Floating(double d, uint32_t width, uint32_t frac_width, bool zero) {
+    if (std::signbit(d)) {
+      Out('-');
+      d = -d;
+    }
+    if (std::isnan(d)) {
+      Append(L"nan", 3);
+      return;
+    }
+    if (std::isinf(d)) {
+      Append(L"inf", 3);
+      return;
+    }
+    wchar_t digits[kFastToBufferSize + 1];
+    const auto dend = digits + kFastToBufferSize;
+    auto ui64 = static_cast<int64_t>(d);
+    uint64_t frac = 0;
+    uint32_t scale = 0;
+    if (frac_width > 0) {
+      scale = 1;
+      for (int n = frac_width; n != 0; n--) {
+        scale *= 10;
+      }
+      frac = (uint64_t)(std::round((d - (double)ui64) * scale));
+      if (frac == scale) {
+        ui64++;
+        frac = 0;
+      }
+    }
+    auto p = AlphaNumber(ui64, digits, width, 10, zero ? '0' : ' ');
+    Append(p, dend - p);
+    if (frac_width != 0) {
+      Out('.');
+      p = AlphaNumber(frac, digits, frac_width, 10, zero ? '0' : ' ');
+      Append(p, dend - p);
+    }
+  }
 
 private:
   T &t;
@@ -144,7 +182,7 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
   bool zero;
   uint32_t width;
   uint32_t frac_width;
-  while (it < end && !w.Overflow()) {
+  while (it < end) {
     ///  Fast search %,
     auto pos = memsearch(it, end, '%');
     if (pos == npos) {
@@ -167,9 +205,6 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
     }
     switch (*it) {
-    case '%':
-      w.Out('%');
-      break;
     case 'b':
       if (ca >= max_args) {
         return false;
@@ -261,31 +296,7 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
         return false;
       }
       if (args[ca].at == ArgType::FLOAT) {
-        if (args[ca].floating.ld < 0) {
-          w.Out('-');
-        }
-        auto f = args[ca].floating.ld;
-        auto ui64 = static_cast<int64_t>(f);
-        uint64_t frac = 0;
-        uint32_t scale = 0;
-        if (frac_width > 0) {
-          scale = 1;
-          for (int n = frac_width; n != 0; n--) {
-            scale *= 10;
-          }
-          frac = (uint64_t)((f - (double)ui64) * scale + 0.5);
-          if (frac == scale) {
-            ui64++;
-            frac = 0;
-          }
-        }
-        auto p = AlphaNumber(ui64, digits, width, 10, zero ? '0' : ' ');
-        w.Append(p, dend - p);
-        if (frac_width != 0) {
-          w.Out('.');
-          p = AlphaNumber(frac, digits, frac_width, 10, zero ? '0' : ' ');
-          w.Append(p, dend - p);
-        }
+        w.Floating(args[ca].floating.d, width, frac_width, zero);
       }
       ca++;
       break;
@@ -294,8 +305,12 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
         return false;
       }
       if (args[ca].at == ArgType::FLOAT) {
-        auto val = static_cast<uint64_t>(args[ca].floating.ld);
-        auto p = AlphaNumber(val, digits, width, 16, zero ? '0' : ' ', true);
+        union {
+          double d;
+          uint64_t i;
+        } x;
+        x.d = args[ca].floating.d;
+        auto p = AlphaNumber(x.i, digits, width, 16, zero ? '0' : ' ', true);
         w.Append(p, dend - p);
       }
       ca++;
@@ -311,6 +326,10 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
         w.Append(p, dend - p); // 0xffff00000;
       }
       ca++;
+      break;
+    default:
+      // % and other
+      w.Out(*it);
       break;
     }
     it++;
@@ -328,9 +347,9 @@ std::wstring StrFormatInternal(const wchar_t *fmt, const FormatArg *args,
   return s;
 }
 
-ssize_t StrFormatInternal(wchar_t *buf, size_t buflen, const wchar_t *fmt,
+ssize_t StrFormatInternal(wchar_t *buf, size_t N, const wchar_t *fmt,
                           const FormatArg *args, size_t max_args) {
-  buffer buffer_(buf, buflen);
+  buffer buffer_(buf, N);
   BufferWriter bw(buffer_);
   if (!StrFormatInternal(bw, fmt, args, max_args)) {
     return -1;
@@ -343,7 +362,7 @@ ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt) {
   format_internal::buffer buffer_(buf, N);
   std::wstring s;
   const wchar_t *src = fmt;
-  for (; *src; ++src) {
+  for (; *src != 0; ++src) {
     buffer_.push_back(*src);
     if (src[0] == '%' && src[1] == '%') {
       ++src;
@@ -355,7 +374,7 @@ ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt) {
 std::wstring StrFormat(const wchar_t *fmt) {
   std::wstring s;
   const wchar_t *src = fmt;
-  for (; *src; ++src) {
+  for (; *src != 0; ++src) {
     s.push_back(*src);
     if (src[0] == '%' && src[1] == '%') {
       ++src;
@@ -363,5 +382,4 @@ std::wstring StrFormat(const wchar_t *fmt) {
   }
   return s;
 }
-
-} // namespace base
+} // namespace bela

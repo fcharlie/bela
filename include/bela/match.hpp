@@ -4,7 +4,7 @@
 #include <cstring>
 #include <string_view>
 
-namespace base {
+namespace bela {
 
 inline bool memequal(const wchar_t *l, const wchar_t *r, size_t n) {
   return memcmp(l, r, sizeof(wchar_t) * n);
@@ -25,6 +25,6 @@ bool EqualsIgnoreCase(std::wstring_view piece1, std::wstring_view piece2);
 bool StartsWithIgnoreCase(std::wstring_view text, std::wstring_view prefix);
 bool EndsWithIgnoreCase(std::wstring_view text, std::wstring_view suffix);
 
-} // namespace base
+} // namespace bela
 
 #endif

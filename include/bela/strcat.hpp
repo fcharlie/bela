@@ -1,6 +1,6 @@
 ///
-#ifndef ASBLW_STRCAT_HPP
-#define ASBLW_STRCAT_HPP
+#ifndef BELA_STRCAT_HPP
+#define BELA_STRCAT_HPP
 
 #include <array>
 #include <cstdint>
@@ -10,7 +10,7 @@
 #include <vector>
 #include "numbers.hpp"
 
-namespace base {
+namespace bela {
 namespace strings_internal {
 template <size_t max_size> struct AlphaNumBuffer {
   std::array<wchar_t, max_size> data;
@@ -78,40 +78,40 @@ struct Hex {
 
   template <typename Int>
   explicit Hex(
-      Int v, PadSpec spec = base::kNoPad,
+      Int v, PadSpec spec = bela::kNoPad,
       typename std::enable_if<sizeof(Int) == 1 &&
                               !std::is_pointer<Int>::value>::type * = nullptr)
       : Hex(spec, static_cast<uint8_t>(v)) {}
   template <typename Int>
   explicit Hex(
-      Int v, PadSpec spec = base::kNoPad,
+      Int v, PadSpec spec = bela::kNoPad,
       typename std::enable_if<sizeof(Int) == 2 &&
                               !std::is_pointer<Int>::value>::type * = nullptr)
       : Hex(spec, static_cast<uint16_t>(v)) {}
   template <typename Int>
   explicit Hex(
-      Int v, PadSpec spec = base::kNoPad,
+      Int v, PadSpec spec = bela::kNoPad,
       typename std::enable_if<sizeof(Int) == 4 &&
                               !std::is_pointer<Int>::value>::type * = nullptr)
       : Hex(spec, static_cast<uint32_t>(v)) {}
   template <typename Int>
   explicit Hex(
-      Int v, PadSpec spec = base::kNoPad,
+      Int v, PadSpec spec = bela::kNoPad,
       typename std::enable_if<sizeof(Int) == 8 &&
                               !std::is_pointer<Int>::value>::type * = nullptr)
       : Hex(spec, static_cast<uint64_t>(v)) {}
   template <typename Pointee>
-  explicit Hex(Pointee *v, PadSpec spec = base::kNoPad)
+  explicit Hex(Pointee *v, PadSpec spec = bela::kNoPad)
       : Hex(spec, reinterpret_cast<uintptr_t>(v)) {}
 
 private:
   Hex(PadSpec spec, uint64_t v)
       : value(v),
-        width(spec == base::kNoPad
+        width(spec == bela::kNoPad
                   ? 1
-                  : spec >= base::kSpacePad2 ? spec - base::kSpacePad2 + 2
-                                             : spec - base::kZeroPad2 + 2),
-        fill(spec >= base::kSpacePad2 ? L' ' : L'0') {}
+                  : spec >= bela::kSpacePad2 ? spec - bela::kSpacePad2 + 2
+                                             : spec - bela::kZeroPad2 + 2),
+        fill(spec >= bela::kSpacePad2 ? L' ' : L'0') {}
 };
 
 // -----------------------------------------------------------------------------
@@ -128,15 +128,15 @@ struct Dec {
   bool neg;
 
   template <typename Int>
-  explicit Dec(Int v, PadSpec spec = base::kNoPad,
+  explicit Dec(Int v, PadSpec spec = bela::kNoPad,
                typename std::enable_if<(sizeof(Int) <= 8)>::type * = nullptr)
       : value(v >= 0 ? static_cast<uint64_t>(v)
                      : uint64_t{0} - static_cast<uint64_t>(v)),
-        width(spec == base::kNoPad
+        width(spec == bela::kNoPad
                   ? 1
-                  : spec >= base::kSpacePad2 ? spec - base::kSpacePad2 + 2
-                                             : spec - base::kZeroPad2 + 2),
-        fill(spec >= base::kSpacePad2 ? L' ' : L'0'), neg(v < 0) {}
+                  : spec >= bela::kSpacePad2 ? spec - bela::kSpacePad2 + 2
+                                             : spec - bela::kZeroPad2 + 2),
+        fill(spec >= bela::kSpacePad2 ? L' ' : L'0'), neg(v < 0) {}
 };
 
 // -----------------------------------------------------------------------------
@@ -339,6 +339,6 @@ SixDigits(double d) {
   return result;
 }
 
-} // namespace base
+} // namespace bela
 
 #endif

@@ -9,6 +9,6 @@ add_library(bela STATIC
   numbers.cc
   stdwriter.cc
   strcat.cc
-  strreplace.cc
+  str_replace.cc
   subsitute.cc
 )

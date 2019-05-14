@@ -40,7 +40,7 @@ ssize_t WriteToLegacy(HANDLE hConsole, std::wstring_view sv) {
 }
 
 static inline ssize_t WriteToFile(FILE *out, std::wstring_view sv) {
-  auto s = base::ToNarrow(sv);
+  auto s = bela::ToNarrow(sv);
   return static_cast<ssize_t>(fwrite(s.data(), 1, s.size(), out));
 }
 

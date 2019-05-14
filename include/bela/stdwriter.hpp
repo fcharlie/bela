@@ -17,6 +17,11 @@ ssize_t FPrintF(FILE *out, const wchar_t *fmt, Args... args) {
   return StdWrite(out, str);
 }
 
+inline ssize_t FPrintF(FILE *out, const wchar_t *fmt) {
+  auto str = StrFormat(fmt);
+  return StdWrite(out, str);
+}
+
 } // namespace bela
 
 #endif

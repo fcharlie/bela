@@ -59,7 +59,7 @@ AlphaNum::AlphaNum(Dec dec) {
 }
 
 // ----------------------------------------------------------------------
-// StrCat()
+// StringCat()
 //    This merges the given strings or integers, with no delimiter. This
 //    is designed to be the fastest possible way to construct a string out
 //    of a mix of raw C strings, string_views, strings, and integer values.
@@ -75,7 +75,7 @@ static wchar_t *Append(wchar_t *out, const AlphaNum &x) {
   return after;
 }
 
-std::wstring StrCat(const AlphaNum &a, const AlphaNum &b) {
+std::wstring StringCat(const AlphaNum &a, const AlphaNum &b) {
   std::wstring result;
   result.resize(a.size() + b.size());
   wchar_t *const begin = &*result.begin();
@@ -86,7 +86,8 @@ std::wstring StrCat(const AlphaNum &a, const AlphaNum &b) {
   return result;
 }
 
-std::wstring StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c) {
+std::wstring StringCat(const AlphaNum &a, const AlphaNum &b,
+                       const AlphaNum &c) {
   std::wstring result;
   result.resize(a.size() + b.size() + c.size());
   wchar_t *const begin = &*result.begin();
@@ -98,8 +99,8 @@ std::wstring StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c) {
   return result;
 }
 
-std::wstring StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
-                    const AlphaNum &d) {
+std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
+                       const AlphaNum &d) {
   std::wstring result;
   result.resize(a.size() + b.size() + c.size() + d.size());
   wchar_t *const begin = &*result.begin();

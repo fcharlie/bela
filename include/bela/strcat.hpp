@@ -146,7 +146,7 @@ struct Dec {
 // AlphaNum
 // -----------------------------------------------------------------------------
 //
-// The `AlphaNum` class acts as the main parameter type for `StrCat()` and
+// The `AlphaNum` class acts as the main parameter type for `StringCat()` and
 // `StrAppend()`, providing efficient conversion of numeric, boolean, and
 // hexadecimal values (through the `Hex` type) into strings.
 class AlphaNum {
@@ -230,25 +230,25 @@ private:
 };
 
 // -----------------------------------------------------------------------------
-// StrCat()
+// StringCat()
 // -----------------------------------------------------------------------------
 //
 // Merges given strings or numbers, using no delimiter(s).
 //
-// `StrCat()` is designed to be the fastest possible way to construct a string
+// `StringCat()` is designed to be the fastest possible way to construct a string
 // out of a mix of raw C strings, string_views, strings, bool values,
 // and numeric values.
 //
-// Don't use `StrCat()` for user-visible strings. The localization process
+// Don't use `StringCat()` for user-visible strings. The localization process
 // works poorly on strings built up out of fragments.
 //
-// For clarity and performance, don't use `StrCat()` when appending to a
+// For clarity and performance, don't use `StringCat()` when appending to a
 // string. Use `StrAppend()` instead. In particular, avoid using any of these
 // (anti-)patterns:
 //
-//   str.append(StrCat(...))
-//   str += StrCat(...)
-//   str = StrCat(str, ...)
+//   str.append(StringCat(...))
+//   str += StringCat(...)
+//   str = StringCat(str, ...)
 //
 // The last case is the worst, with a potential to change a loop
 // from a linear time operation with O(1) dynamic allocations into a
@@ -265,22 +265,22 @@ void AppendPieces(std::string *dest,
 
 } // namespace strings_internal
 
-[[nodiscard]] inline std::wstring StrCat() { return std::wstring(); }
+[[nodiscard]] inline std::wstring StringCat() { return std::wstring(); }
 
-[[nodiscard]] inline std::wstring StrCat(const AlphaNum &a) {
+[[nodiscard]] inline std::wstring StringCat(const AlphaNum &a) {
   return std::wstring(a.data(), a.size());
 }
 
-[[nodiscard]] std::wstring StrCat(const AlphaNum &a, const AlphaNum &b);
-[[nodiscard]] std::wstring StrCat(const AlphaNum &a, const AlphaNum &b,
+[[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b);
+[[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b,
                                   const AlphaNum &c);
-[[nodiscard]] std::wstring StrCat(const AlphaNum &a, const AlphaNum &b,
+[[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b,
                                   const AlphaNum &c, const AlphaNum &d);
 
 // Support 5 or more arguments
 template <typename... AV>
 [[nodiscard]] inline std::wstring
-StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
+StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
        const AlphaNum &d, const AlphaNum &e, const AV &... args) {
   return strings_internal::CatPieces(
       {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(),
@@ -292,7 +292,7 @@ StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
 // -----------------------------------------------------------------------------
 //
 // Appends a string or set of strings to an existing string, in a similar
-// fashion to `StrCat()`.
+// fashion to `StringCat()`.
 //
 // WARNING: `StrAppend(&str, a, b, c, ...)` requires that none of the
 // a, b, c, parameters be a reference into str. For speed, `StrAppend()` does
@@ -332,7 +332,7 @@ inline void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b,
              static_cast<const AlphaNum &>(args).Piece()...});
 }
 
-// Helper function for the future StrCat default floating-point format, %.6g
+// Helper function for the future StringCat default floating-point format, %.6g
 // This is fast.
 inline strings_internal::AlphaNumBuffer<
     numbers_internal::kSixDigitsToBufferSize>

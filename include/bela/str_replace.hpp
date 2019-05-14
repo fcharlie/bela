@@ -13,7 +13,7 @@ namespace bela {
     std::initializer_list<std::pair<std::wstring_view, std::wstring_view>>
         replacements);
 template <typename StrToStrMapping>
-std::wstring StrReplaceAll(std::wstring_view s,
+[[nodiscard]] std::wstring StrReplaceAll(std::wstring_view s,
                            const StrToStrMapping &replacements);
 int StrReplaceAll(
     std::initializer_list<std::pair<std::wstring_view, std::wstring_view>>

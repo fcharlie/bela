@@ -37,11 +37,14 @@ size_t memspn(const wchar_t *s, size_t slen, const wchar_t *accept) {
 
 cont:
   c = *p++;
-  if (slen-- == 0)
+  if (slen-- == 0) {
     return p - 1 - s;
-  for (spanp = accept; (sc = *spanp++) != '\0';)
-    if (sc == c)
+  }
+  for (spanp = accept; (sc = *spanp++) != '\0';) {
+    if (sc == c) {
       goto cont;
+    }
+  }
   return p - 1 - s;
 }
 
@@ -52,9 +55,11 @@ size_t memcspn(const wchar_t *s, size_t slen, const wchar_t *reject) {
 
   while (slen-- != 0) {
     c = *p++;
-    for (spanp = reject; (sc = *spanp++) != '\0';)
-      if (sc == c)
+    for (spanp = reject; (sc = *spanp++) != '\0';) {
+      if (sc == c) {
         return p - 1 - s;
+      }
+    }
   }
   return p - s;
 }
@@ -64,9 +69,11 @@ wchar_t *mempbrk(const wchar_t *s, size_t slen, const wchar_t *accept) {
   int sc;
 
   for (; slen; ++s, --slen) {
-    for (scanp = accept; (sc = *scanp++) != '\0';)
-      if (sc == *s)
+    for (scanp = accept; (sc = *scanp++) != '\0';) {
+      if (sc == *s) {
         return const_cast<wchar_t *>(s);
+      }
+    }
   }
   return nullptr;
 }
@@ -78,20 +85,20 @@ const wchar_t *memmatch(const wchar_t *phaystack, size_t haylen,
   if (0 == neelen) {
     return phaystack; // even if haylen is 0
   }
-  if (haylen < neelen)
+  if (haylen < neelen) {
     return nullptr;
+  }
 
   const wchar_t *match;
   const wchar_t *hayend = phaystack + haylen - neelen + 1;
   // A static cast is used here to work around the fact that memchr returns
   // a void* on Posix-compliant systems and const void* on Windows.
-  while (
-      (match = static_cast<const wchar_t *>(memchr(
-           phaystack, pneedle[0], (hayend - phaystack) * sizeof(wchar_t))))) {
-    if (memcmp(match, pneedle, neelen * sizeof(wchar_t)) == 0)
+  while ((match = static_cast<const wchar_t *>(wmemchr(
+              phaystack, pneedle[0], (hayend - phaystack)))) != nullptr) {
+    if (memcmp(match, pneedle, neelen * sizeof(wchar_t)) == 0) {
       return match;
-    else
-      phaystack = match + 1;
+    }
+    phaystack = match + 1;
   }
   return nullptr;
 }

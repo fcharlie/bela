@@ -1,7 +1,7 @@
 ///
 #ifndef BELA_STRCAT_HPP
 #define BELA_STRCAT_HPP
-
+#pragma once
 #include <array>
 #include <cstdint>
 #include <string>

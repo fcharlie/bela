@@ -1,6 +1,7 @@
 /////
 #ifndef BELA_FMT_HPP
 #define BELA_FMT_HPP
+#pragma once
 #include <cstdint>
 #include <cstdlib>
 #include <cstddef>

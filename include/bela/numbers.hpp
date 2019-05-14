@@ -1,6 +1,7 @@
 ///////////
-#ifndef ABSLW_NUMBERS_HPP
-#define ABSLW_NUMBERS_HPP
+#ifndef BELA_NUMBERS_HPP
+#define BELA_NUMBERS_HPP
+#pragma once
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>

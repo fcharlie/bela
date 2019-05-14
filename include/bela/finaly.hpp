@@ -1,6 +1,7 @@
 ////////
 #ifndef BELA_FINALY_HPP
 #define BELA_FINALY_HPP
+#pragma once
 #include <memory>
 
 namespace bela {

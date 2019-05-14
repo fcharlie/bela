@@ -1,9 +1,9 @@
 ///////
-#ifndef ABSLW_PARSEARGV_HPP
-#define ABSLW_PARSEARGV_HPP
+#ifndef BELA_PARSEARGV_HPP
+#define BELA_PARSEARGV_HPP
+#pragma once
 #include <functional>
 #include <vector>
-//
 #include "strcat.hpp"
 
 namespace bela {

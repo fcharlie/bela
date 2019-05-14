@@ -4,7 +4,7 @@
 #pragma once
 #include <cstring>
 #include <cstdlib>
-#include <cctype>
+#include <cwctype>
 #include <wchar.h>
 
 namespace bela {
@@ -37,13 +37,9 @@ const wchar_t *int_memmatch(const wchar_t *haystack, size_t haylen,
   const wchar_t *needleend = needlestart + neelen;
 
   for (; haystack < hayend; ++haystack) {
-    wchar_t hay = case_sensitive
-                      ? *haystack
-                      : towlower(static_cast<unsigned char>(*haystack));
+    wchar_t hay = case_sensitive ? *haystack : towlower(*haystack);
 
-    wchar_t nee = case_sensitive
-                      ? *needle
-                      : towlower(static_cast<unsigned char>(*needle));
+    wchar_t nee = case_sensitive ? *needle : towlower(*needle);
     if (hay == nee) {
       if (++needle == needleend) {
         return haystack + 1 - neelen;

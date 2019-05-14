@@ -1,6 +1,7 @@
 /////////
-#ifndef ASBLW_STDWRITER_HPP
-#define ASBLW_STDWRITER_HPP
+#ifndef BELA_STDWRITER_HPP
+#define BELA_STDWRITER_HPP
+#pragma once
 #include <cstdio>
 #include <string_view>
 #include "fmt.hpp"

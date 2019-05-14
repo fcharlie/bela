@@ -133,7 +133,7 @@ std::wstring CatPieces(std::initializer_list<std::wstring_view> pieces) {
   return result;
 }
 
-// It's possible to call StrAppend with an absl::string_view that is itself a
+// It's possible to call StrAppend with an std::wstring_view that is itself a
 // fragment of the string we're appending to.  However the results of this are
 // random. Therefore, check for this in debug mode.  Use unsigned math so we
 // only have to do one comparison. Note, there's an exception case: appending an

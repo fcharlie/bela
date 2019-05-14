@@ -1,6 +1,7 @@
 ////////////
-#ifndef ABSLW_MATCH_HPP
-#define ABSLW_MATCH_HPP
+#ifndef BELA_MATCH_HPP
+#define BELA_MATCH_HPP
+#pragma once
 #include <cstring>
 #include <string_view>
 

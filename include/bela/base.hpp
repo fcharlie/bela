@@ -20,7 +20,7 @@ namespace bela {
 constexpr auto noerror_t = 0L; // NO_ERROR 0L
 struct error_code {
   std::wstring message;
-  long code{noerror};
+  long code{noerror_t};
   const wchar_t *data() const { return message.data(); }
   explicit operator bool() const noexcept { return code != noerror_t; }
 };

@@ -90,7 +90,7 @@ public:
     return *this;
   }
   std::wstring_view view() const { return std::wstring_view(saver_); }
-  wchar_t *data() { return saver_.data(); }
+  wchar_t *data() { return saver_.data(); } // CreateProcessW require
   const wchar_t *data() const { return saver_.data(); }
   size_t size() const { return saver_.size(); }
 

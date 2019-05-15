@@ -27,16 +27,44 @@ struct error_code {
   explicit operator bool() const noexcept { return code != NO_ERROR; }
 };
 
-inline error_code make_error_code(std::wstring_view msg, long ec) {
-  return error_code{std::wstring(msg), ec};
+inline bela::error_code make_error_code(long code, const AlphaNum &a) {
+  return bela::error_code{std::wstring(a.Piece()), code};
 }
-
-template <typename... Args>
-inline error_code strcat_error_code(long ec, std::wstring_view v0,
-                                    const Args &... args) {
-  return error_code{strings_internal::CatPieces(
-                        {v0, static_cast<const AlphaNum &>(args).Piece()...}),
-                    ec};
+inline bela::error_code make_error_code(long code, const AlphaNum &a,
+                                        const AlphaNum &b) {
+  bela::error_code ec;
+  ec.code = code;
+  ec.message.reserve(a.Piece().size() + b.Piece().size());
+  ec.message.assign(a.Piece()).append(b.Piece());
+  return ec;
+}
+inline bela::error_code make_error_code(long code, const AlphaNum &a,
+                                        const AlphaNum &b, const AlphaNum &c) {
+  bela::error_code ec;
+  ec.code = code;
+  ec.message.reserve(a.Piece().size() + b.Piece().size() + c.Piece().size());
+  ec.message.assign(a.Piece()).append(b.Piece()).append(c.Piece());
+  return ec;
+}
+inline bela::error_code make_error_code(long code, const AlphaNum &a,
+                                        const AlphaNum &b, const AlphaNum &c,
+                                        const AlphaNum &d) {
+  bela::error_code ec;
+  ec.code = code;
+  ec.message.reserve(a.Piece().size() + b.Piece().size() + c.Piece().size() +
+                     d.Piece().size());
+  ec.message.assign(a.Piece()).append(b.Piece()).append(c.Piece()).append(
+      d.Piece());
+  return ec;
+}
+template <typename... AV>
+bela::error_code make_error_code(long code, const AlphaNum &a,
+                                 const AlphaNum &b, const AlphaNum &c,
+                                 const AlphaNum &d, AV... av) {
+  bela::error_code ec;
+  ec.code = code;
+  ec.message = strings_internal::CatPieces({a, b, c, d, av...});
+  return ec;
 }
 
 inline std::wstring system_error_dump(DWORD ec) {

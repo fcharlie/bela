@@ -11,14 +11,14 @@
 #if defined(_MSC_VER)
 // Define ssize_t inside of our namespace.
 #if defined(_WIN64)
-typedef __int64 __ssize_t;
+typedef __int64 __bela__ssize_t;
 #else
-typedef long __ssize_t;
+typedef long __bela__ssize_t;
 #endif
 #endif
 
 namespace bela {
-using ssize_t = __ssize_t;
+using ssize_t = __bela__ssize_t;
 namespace format_internal {
 enum class ArgType {
   INTEGER, // short,int,

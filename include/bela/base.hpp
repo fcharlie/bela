@@ -1,4 +1,5 @@
 //////////
+// Bela windows basic defined
 #ifndef BELA_BASE_HPP
 #define BELA_BASE_HPP
 #pragma once
@@ -15,16 +16,13 @@
 #include <vector>
 #include "strcat.hpp"
 
-#ifndef NO_ERROR
-#define NO_ERROR (long)0
-#endif
-
 namespace bela {
+constexpr auto noerror_t = 0L; // NO_ERROR 0L
 struct error_code {
   std::wstring message;
-  long code{0};
+  long code{noerror};
   const wchar_t *data() const { return message.data(); }
-  explicit operator bool() const noexcept { return code != NO_ERROR; }
+  explicit operator bool() const noexcept { return code != noerror_t; }
 };
 
 inline bela::error_code make_error_code(long code, const AlphaNum &a) {

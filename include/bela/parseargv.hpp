@@ -42,8 +42,8 @@ public:
   const StringArray &UnresolvedArgs() const { return uargs; }
 
 private:
-  int argc_;
-  wchar_t *const *argv_;
+  const int argc_;
+  const wchar_t *const *argv_;
   int index{0};
   bool subcmdmode_{false};
   StringArray uargs;

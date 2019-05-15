@@ -1,5 +1,6 @@
 //////////
 // Bela windows basic defined
+// Windows error_code impl
 #ifndef BELA_BASE_HPP
 #define BELA_BASE_HPP
 #pragma once

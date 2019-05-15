@@ -8,7 +8,8 @@ add_library(bela STATIC
   memutil.cc
   numbers.cc
   stdwriter.cc
-  strcat.cc
+  str_split.cc
   str_replace.cc
+  strcat.cc
   subsitute.cc
 )

@@ -19,9 +19,9 @@ namespace bela {
 //
 // `StrSplit()` uses delimiters to define the boundaries between elements in the
 // provided input. Several `Delimiter` types are defined below. If a string
-// (`const char*`, `std::wstring`, or `std::wstring_view`) is passed in place of
-// an explicit `Delimiter` object, `StrSplit()` treats it the same way as if it
-// were passed a `ByString` delimiter.
+// (`const wchar_t*`, `std::wstring`, or `std::wstring_view`) is passed in place
+// of an explicit `Delimiter` object, `StrSplit()` treats it the same way as if
+// it were passed a `ByString` delimiter.
 //
 // A `Delimiter` is an object with a `Find()` function that knows how to find
 // the first occurrence of itself in a given `std::wstring_view`.
@@ -54,8 +54,8 @@ namespace bela {
 // function:
 //
 //   struct SimpleDelimiter {
-//     const char c_;
-//     explicit SimpleDelimiter(char c) : c_(c) {}
+//     const wchar_t c_;
+//     explicit SimpleDelimiter(wchar_t c) : c_(c) {}
 //     std::wstring_view Find(std::wstring_view text, size_t pos) {
 //       auto found = text.find(c_, pos);
 //       if (found == std::wstring_view::npos)
@@ -100,19 +100,19 @@ private:
 //
 //   // Because a char literal is converted to a bela::ByChar,
 //   // the following two splits are equivalent.
-//   std::vector<std::wstring> v1 = bela::StrSplit("a,b,c", ',');
+//   std::vector<std::wstring> v1 = bela::StrSplit(L"a,b,c", ',');
 //   using bela::ByChar;
-//   std::vector<std::wstring> v2 = bela::StrSplit("a,b,c", ByChar(','));
-//   // v[0] == "a", v[1] == "b", v[2] == "c"
+//   std::vector<std::wstring> v2 = bela::StrSplit(L"a,b,c", ByChar(','));
+//   // v[0] == L"a", v[1] == L"b", v[2] == L"c"
 //
 // `ByChar` is also the default delimiter if a single character is given
 // as the delimiter to `StrSplit()`. For example, the following calls are
 // equivalent:
 //
-//   std::vector<std::wstring> v = bela::StrSplit("a-b", '-');
+//   std::vector<std::wstring> v = bela::StrSplit(L"a-b", '-');
 //
 //   using bela::ByChar;
-//   std::vector<std::wstring> v = bela::StrSplit("a-b", ByChar('-'));
+//   std::vector<std::wstring> v = bela::StrSplit(L"a-b", ByChar('-'));
 //
 class ByChar {
 public:
@@ -128,8 +128,6 @@ private:
 // A delimiter that will match any of the given byte-sized characters within
 // its provided string.
 //
-// Note: this delimiter works with single-byte string data, but does not work
-// with variable-width encodings, such as UTF-8.
 //
 // Example:
 //
@@ -231,9 +229,9 @@ private:
 // Example:
 //
 //   using bela::MaxSplits;
-//   std::vector<std::wstring> v = bela::StrSplit("a,b,c", MaxSplits(',', 1));
+//   std::vector<std::wstring> v = bela::StrSplit(L"a,b,c", MaxSplits(',', 1));
 //
-//   // v[0] == "a", v[1] == "b,c"
+//   // v[0] == L"a", v[1] == L"b,c"
 template <typename Delimiter>
 inline strings_internal::MaxSplitsImpl<
     typename strings_internal::SelectDelimiter<Delimiter>::type>
@@ -269,10 +267,10 @@ MaxSplits(Delimiter delimiter, int limit) {
 //
 // Example:
 //
-//  std::vector<std::wstring> v = bela::StrSplit(" a , ,,b,", ',',
+//  std::vector<std::wstring> v = bela::StrSplit(L" a , ,,b,", ',',
 //  AllowEmpty());
 //
-//  // v[0] == " a ", v[1] == " ", v[2] == "", v[3] = "b", v[4] == ""
+//  // v[0] == L" a ", v[1] == L" ", v[2] == L"", v[3] = L"b", v[4] == L""
 struct AllowEmpty {
   bool operator()(std::wstring_view) const { return true; }
 };
@@ -284,9 +282,9 @@ struct AllowEmpty {
 //
 // Example:
 //
-//   std::vector<std::wstring> v = bela::StrSplit(",a,,b,", ',', SkipEmpty());
+//   std::vector<std::wstring> v = bela::StrSplit(L",a,,b,", ',', SkipEmpty());
 //
-//   // v[0] == "a", v[1] == "b"
+//   // v[0] == L"a", v[1] == L"b"
 //
 // Note: `SkipEmpty()` does not consider a string containing only whitespace
 // to be empty. To skip such whitespace as well, use the `SkipWhitespace()`
@@ -302,14 +300,14 @@ struct SkipEmpty {
 //
 // Example:
 //
-//   std::vector<std::wstring> v = bela::StrSplit(" a , ,,b,",
+//   std::vector<std::wstring> v = bela::StrSplit(L" a , ,,b,",
 //                                               ',', SkipWhitespace());
-//   // v[0] == " a ", v[1] == "b"
+//   // v[0] == L" a ", v[1] == L"b"
 //
 //   // SkipEmpty() would return whitespace elements
-//   std::vector<std::wstring> v = bela::StrSplit(" a , ,,b,", ',',
+//   std::vector<std::wstring> v = bela::StrSplit(L" a , ,,b,", ',',
 //   SkipEmpty());
-//   // v[0] == " a ", v[1] == " ", v[2] == "b"
+//   // v[0] == L" a ", v[1] == L" ", v[2] == L"b"
 struct SkipWhitespace {
   bool operator()(std::wstring_view sp) const {
     sp = bela::StripAsciiWhitespace(sp);
@@ -331,16 +329,16 @@ struct SkipWhitespace {
 //
 // Example:
 //
-//   std::vector<std::wstring> v = bela::StrSplit("a,b,c,d", ',');
-//   // v[0] == "a", v[1] == "b", v[2] == "c", v[3] == "d"
+//   std::vector<std::wstring> v = bela::StrSplit(L"a,b,c,d", ',');
+//   // v[0] == L"a", v[1] == L"b", v[2] == L"c", v[3] == L"d"
 //
 // You can also provide an explicit `Delimiter` object:
 //
 // Example:
 //
 //   using bela::ByAnyChar;
-//   std::vector<std::wstring> v = bela::StrSplit("a,b=c", ByAnyChar(",="));
-//   // v[0] == "a", v[1] == "b", v[2] == "c"
+//   std::vector<std::wstring> v = bela::StrSplit(L"a,b=c", ByAnyChar(",="));
+//   // v[0] == L"a", v[1] == L"b", v[2] == L"c"
 //
 // See above for more information on delimiters.
 //
@@ -350,9 +348,9 @@ struct SkipWhitespace {
 //
 // Example:
 //
-//   std::vector<std::wstring> v = bela::StrSplit(" a , ,,b,",
+//   std::vector<std::wstring> v = bela::StrSplit(L" a , ,,b,",
 //                                               ',', SkipWhitespace());
-//   // v[0] == " a ", v[1] == "b"
+//   // v[0] == L" a ", v[1] == L"b"
 //
 // See above for more information on predicates.
 //
@@ -375,12 +373,12 @@ struct SkipWhitespace {
 //
 //   // The results are returned as `std::wstring_view` objects. Note that we
 //   // have to ensure that the input string outlives any results.
-//   std::vector<std::wstring_view> v = bela::StrSplit("a,b,c", ',');
+//   std::vector<std::wstring_view> v = bela::StrSplit(L"a,b,c", ',');
 //
 //   // Stores results in a std::set<std::wstring>, which also performs
 //   // de-duplication and orders the elements in ascending order.
-//   std::set<std::wstring> a = bela::StrSplit("b,a,c,a,b", ',');
-//   // v[0] == "a", v[1] == "b", v[2] = "c"
+//   std::set<std::wstring> a = bela::StrSplit(L"b,a,c,a,b", ',');
+//   // v[0] == L"a", v[1] == L"b", v[2] = L"c"
 //
 //   // `StrSplit()` can be used within a range-based for loop, in which case
 //   // each element will be of type `std::wstring_view`.
@@ -417,7 +415,7 @@ struct SkipWhitespace {
 //
 // Example:
 //
-//   // The input string "a=b=c,d=e,f=,g" becomes
+//   // The input string L"a=b=c,d=e,f=,g" becomes
 //   // { "a" => "b=c", "d" => "e", "f" => "", "g" => "" }
 //   std::map<std::wstring, std::wstring> m;
 //   for (std::wstring_view sp : bela::StrSplit("a=b=c,d=e,f=,g", ',')) {

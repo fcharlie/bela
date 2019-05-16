@@ -242,8 +242,8 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
         }
         w.Append(args[ca].strings.data, args[ca].strings.len);
       } else if (args[ca].at == ArgType::USTRING) {
-        auto ws = base::ToWide(
-            std::wstring_view(args[ca].ustring.data, args[ca].ustring.len));
+        auto us = std::string_view(args[ca].ustring.data, args[ca].ustring.len);
+        auto ws = bela::ToWide(us);
         if (width > ws.size()) {
           w.Pad(width - static_cast<uint32_t>(ws.size()), zero);
         }

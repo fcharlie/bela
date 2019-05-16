@@ -82,6 +82,11 @@ struct FormatArg {
     strings.data = (str == nullptr) ? L"(NULL)" : str;
     strings.len = (str == nullptr) ? sizeof("(NULL)") - 1 : wcslen(str);
   }
+  // A C-style text string. and string_view
+  FormatArg(wchar_t *str) : at(ArgType::STRING) {
+    strings.data = (str == nullptr) ? L"(NULL)" : str;
+    strings.len = (str == nullptr) ? sizeof("(NULL)") - 1 : wcslen(str);
+  }
   template <typename Allocator>
   FormatArg( // NOLINT(runtime/explicit)
       const std::basic_string<wchar_t, std::char_traits<wchar_t>, Allocator>

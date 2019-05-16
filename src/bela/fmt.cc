@@ -2,9 +2,9 @@
 #include <cstring>
 #include <wchar.h>
 #include <algorithm>
+#include <vector>
 #include <cmath>
 #include <bela/fmt.hpp>
-#include <bela/base.hpp>
 
 namespace bela {
 namespace format_internal {
@@ -16,6 +16,176 @@ size_t memsearch(const wchar_t *begin, const wchar_t *end, int ch) {
     }
   }
   return npos;
+}
+
+/* Some fundamental constants */
+#define UNI_REPLACEMENT_CHAR (char32_t)0x0000FFFD
+#define UNI_MAX_BMP (char32_t)0x0000FFFF
+#define UNI_MAX_UTF16 (char32_t)0x0010FFFF
+#define UNI_MAX_UTF32 (char32_t)0x7FFFFFFF
+#define UNI_MAX_LEGAL_UTF32 (char32_t)0x0010FFFF
+
+#define UNI_MAX_UTF8_BYTES_PER_CODE_POINT 4
+
+#define UNI_UTF16_BYTE_ORDER_MARK_NATIVE 0xFEFF
+#define UNI_UTF16_BYTE_ORDER_MARK_SWAPPED 0xFFFE
+#define UNI_SUR_HIGH_START (char32_t)0xD800
+#define UNI_SUR_HIGH_END (char32_t)0xDBFF
+#define UNI_SUR_LOW_START (char32_t)0xDC00
+#define UNI_SUR_LOW_END (char32_t)0xDFFF
+
+struct u16container {
+  std::vector<char16_t> data_;
+  const wchar_t *wstr() const {
+    return reinterpret_cast<const wchar_t *>(data_.data());
+  }
+  size_t size() const { return data_.size(); }
+  bool mbrtoc16(const char *s, size_t n, bool skipillegal = false);
+};
+
+/*
+ * Index into the table below with the first byte of a UTF-8 sequence to
+ * get the number of trailing bytes that are supposed to follow it.
+ * Note that *legal* UTF-8 values can't have 4 or 5-bytes. The table is
+ * left as-is for anyone who may want to do such conversion, which was
+ * allowed in earlier algorithms.
+ */
+// clang-format off
+static const char trailingbytesu8[256] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
+};
+// clang-format on
+
+bool islegau8(const uint8_t *source, int length) {
+  uint16_t a;
+  const uint8_t *srcptr = source + length;
+  switch (length) {
+  default:
+    return false;
+    /* Everything else falls through when "true"... */
+  case 4:
+    if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
+      return false;
+    }
+  case 3:
+    if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
+      return false;
+    }
+  case 2:
+    if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
+      return false;
+    }
+    switch (*source) {
+    /* no fall-through in this inner switch */
+    case 0xE0:
+      if (a < 0xA0) {
+        return false;
+      }
+      break;
+    case 0xED:
+      if (a > 0x9F) {
+        return false;
+      }
+      break;
+    case 0xF0:
+      if (a < 0x90) {
+        return false;
+      }
+      break;
+    case 0xF4:
+      if (a > 0x8F) {
+        return false;
+      }
+      break;
+    default:
+      if (a < 0x80) {
+        return false;
+      }
+    }
+
+  case 1:
+    if (*source >= 0x80 && *source < 0xC2) {
+      return false;
+    }
+  }
+  return *source <= 0xF4;
+}
+
+static const char32_t offsetfromu8[6] = {0x00000000UL, 0x00003080UL,
+                                         0x000E2080UL, 0x03C82080UL,
+                                         0xFA082080UL, 0x82082080UL};
+
+bool u16container::mbrtoc16(const char *s, size_t n, bool skipillegal) {
+  constexpr const char32_t halfBase = 0x0010000UL;
+  constexpr const char32_t halfMask = 0x3FFUL;
+  constexpr const int halfShift = 10; /* used for shifting by 10 bits */
+
+  // UTF-8 all 1byte. ---> numbers equal UTF-16
+  // UTF-8 all 4byte --> UTF-16/ numbers/2
+  data_.reserve(n); // This capacity is almost enough
+  auto it = reinterpret_cast<const unsigned char *>(s);
+  auto end = it + n;
+  while (it < end) {
+    char32_t ch = 0;
+    unsigned short nb = trailingbytesu8[*it];
+    if (nb >= end - it) {
+      return false;
+    }
+    if (!islegau8(it, nb + 1)) {
+      return false;
+    }
+    switch (nb) {
+    case 5:
+      ch += *it++;
+      ch <<= 6; /* remember, illegal UTF-8 */
+    case 4:
+      ch += *it++;
+      ch <<= 6; /* remember, illegal UTF-8 */
+    case 3:
+      ch += *it++;
+      ch <<= 6;
+    case 2:
+      ch += *it++;
+      ch <<= 6;
+    case 1:
+      ch += *it++;
+      ch <<= 6;
+    case 0:
+      ch += *it++;
+    }
+    ch -= offsetfromu8[nb];
+    if (ch <= UNI_MAX_BMP) {
+      if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+        if (skipillegal) {
+          return false;
+        }
+        data_.push_back(static_cast<char16_t>(UNI_REPLACEMENT_CHAR));
+        continue;
+      }
+      data_.push_back(static_cast<char16_t>(ch));
+      continue;
+    }
+    if (ch > UNI_MAX_UTF16) {
+      if (skipillegal) {
+        return false;
+      }
+      data_.push_back(static_cast<char16_t>(UNI_REPLACEMENT_CHAR));
+      continue;
+    }
+    ch -= halfBase;
+    data_.push_back(
+        static_cast<char16_t>((ch >> halfShift) + UNI_SUR_HIGH_START));
+    data_.push_back(static_cast<char16_t>((ch & halfMask) + UNI_SUR_LOW_START));
+  }
+  //
+  return true;
 }
 
 class buffer {
@@ -242,12 +412,12 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
         }
         w.Append(args[ca].strings.data, args[ca].strings.len);
       } else if (args[ca].at == ArgType::USTRING) {
-        auto us = std::string_view(args[ca].ustring.data, args[ca].ustring.len);
-        auto ws = bela::ToWide(us);
-        if (width > ws.size()) {
-          w.Pad(width - static_cast<uint32_t>(ws.size()), zero);
+        u16container u16;
+        u16.mbrtoc16(args[ca].ustring.data, args[ca].ustring.len);
+        if (width > u16.size()) {
+          w.Pad(width - static_cast<uint32_t>(u16.size()), zero);
         }
-        w.Append(ws.data(), ws.size());
+        w.Append(u16.wstr(), u16.size());
       }
       ca++;
       break;

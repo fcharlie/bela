@@ -15,6 +15,8 @@ typedef __int64 __bela__ssize_t;
 #else
 typedef long __bela__ssize_t;
 #endif
+#else
+typedef long __bela__ssize_t;
 #endif
 
 namespace bela {

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstddef>
+#include <cstring>
 #include <string>
 #include <string_view>
 
@@ -27,6 +28,7 @@ enum class ArgType {
   UINTEGER,
   FLOAT,
   STRING,
+  USTRING,
   POINTER,
   BOOLEAN
 };
@@ -84,7 +86,6 @@ struct FormatArg {
     strings.data = (str == nullptr) ? L"(NULL)" : str;
     strings.len = (str == nullptr) ? sizeof("(NULL)") - 1 : wcslen(str);
   }
-  // A C-style text string. and string_view
   FormatArg(wchar_t *str) : at(ArgType::STRING) {
     strings.data = (str == nullptr) ? L"(NULL)" : str;
     strings.len = (str == nullptr) ? sizeof("(NULL)") - 1 : wcslen(str);
@@ -100,6 +101,27 @@ struct FormatArg {
   FormatArg(std::wstring_view sv) : at(ArgType::STRING) {
     strings.data = sv.data();
     strings.len = sv.size();
+  }
+  /// UTF-8 support
+  // A C-style text string. and string_view
+  FormatArg(const char *str) : at(ArgType::USTRING) {
+    ustring.data = (str == nullptr) ? "(NULL)" : str;
+    ustring.len = (str == nullptr) ? sizeof("(NULL)") - 1 : strlen(str);
+  }
+  FormatArg(char *str) : at(ArgType::USTRING) {
+    ustring.data = (str == nullptr) ? "(NULL)" : str;
+    ustring.len = (str == nullptr) ? sizeof("(NULL)") - 1 : strlen(str);
+  }
+  template <typename Allocator>
+  FormatArg( // NOLINT(runtime/explicit)
+      const std::basic_string<char, std::char_traits<char>, Allocator> &str)
+      : at(ArgType::USTRING) {
+    ustring.data = str.data();
+    ustring.len = str.size();
+  }
+  FormatArg(std::string_view sv) : at(ArgType::USTRING) {
+    ustring.data = sv.data();
+    ustring.len = sv.size();
   }
 
   // Any pointer value that can be cast to a "void*".
@@ -156,10 +178,10 @@ struct FormatArg {
       const wchar_t *data;
       size_t len;
     } strings;
-    // struct {
-    //   const char *str;
-    //   size_t len;
-    // } mbstring;
+    struct {
+      const char *data;
+      size_t len;
+    } ustring;
     const void *ptr;
   };
   const ArgType at;

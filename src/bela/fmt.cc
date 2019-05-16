@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <bela/fmt.hpp>
+#include <bela/base.hpp>
 
 namespace bela {
 namespace format_internal {
@@ -240,6 +241,13 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
           w.Pad(width - args[ca].strings.len, zero);
         }
         w.Append(args[ca].strings.data, args[ca].strings.len);
+      } else if (args[ca].at == ArgType::UINTEGER) {
+        auto ws = base::ToWide(
+            std::wstring_view(args[ca].ustring.data, args[ca].ustring.len));
+        if (width > ws.size()) {
+          w.Pad(width - static_cast<uint32_t>(ws.size()), zero);
+        }
+        w.Append(ws.data(), ws.size());
       }
       ca++;
       break;

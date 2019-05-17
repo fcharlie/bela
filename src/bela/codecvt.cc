@@ -107,6 +107,7 @@ std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
   auto end = it + len;
   constexpr const char32_t byteMask = 0xBF;
   constexpr const char32_t byteMark = 0x80;
+  uint8_t buffer[8] = {0};
   while (it < end) {
     unsigned short bw = 0;
     char32_t ch = *it++;
@@ -138,19 +139,21 @@ std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
       bw = 3;
       ch = UNI_REPLACEMENT_CHAR;
     }
+    auto target = buffer + bw;
     switch (bw) { /* note: everything falls through. */
     case 4:
-      s.push_back((uint8_t)((ch | byteMark) & byteMask));
+      *--target = (uint8_t)((ch | byteMark) & byteMask);
       ch >>= 6;
     case 3:
-      s.push_back((uint8_t)((ch | byteMark) & byteMask));
+      *--target = (uint8_t)((ch | byteMark) & byteMask);
       ch >>= 6;
     case 2:
-      s.push_back((uint8_t)((ch | byteMark) & byteMask));
+      *--target = (uint8_t)((ch | byteMark) & byteMask);
       ch >>= 6;
     case 1:
-      s.push_back((uint8_t)(ch | firstByteMark[bw]));
+      *--target = (uint8_t)(ch | firstByteMark[bw]);
     }
+    s.append(reinterpret_cast<const char *>(target), bw);
   }
   return s;
 }
@@ -224,7 +227,7 @@ bool mbrtoc16(const unsigned char *s, size_t len,
 std::wstring mbrtowc(const unsigned char *str, size_t len, bool skipillegal) {
   std::wstring s;
   if (!mbrtoc16(str, len, s, skipillegal)) {
-    return L"";
+    s.clear();
   }
   return s;
 }
@@ -232,7 +235,7 @@ std::u16string mbrtoc16(const unsigned char *str, size_t len,
                         bool skipillegal) {
   std::u16string s;
   if (!mbrtoc16(str, len, s, skipillegal)) {
-    return U"";
+    s.clear();
   }
   return s;
 }

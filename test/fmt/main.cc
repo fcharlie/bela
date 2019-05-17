@@ -1,5 +1,4 @@
 ///
-#include <bela/fmt.hpp>
 #include <bela/stdwriter.hpp>
 
 int wmain(int argc, wchar_t **argv) {

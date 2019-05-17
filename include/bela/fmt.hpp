@@ -20,8 +20,13 @@ typedef long __bela__ssize_t;
 typedef long __bela__ssize_t;
 #endif
 
+// The unix compilers use a 32-bit wchar_t
+// The windows compilers, gcc and MSVC, both define a 16 bit wchar_t.
+// If you need to port this code to a non-Windows system, please be aware.
+
 namespace bela {
 using ssize_t = __bela__ssize_t;
+
 namespace format_internal {
 enum class ArgType {
   INTEGER, // short,int,
@@ -81,7 +86,9 @@ struct FormatArg {
     floating.d = f;
     floating.width = sizeof(float);
   }
-  // A C-style text string. and string_view
+
+  // wchar_t
+  // A C-style text string. and wstring_view
   FormatArg(const wchar_t *str) : at(ArgType::STRING) {
     strings.data = (str == nullptr) ? L"(NULL)" : str;
     strings.len = (str == nullptr) ? sizeof("(NULL)") - 1 : wcslen(str);
@@ -102,7 +109,33 @@ struct FormatArg {
     strings.data = sv.data();
     strings.len = sv.size();
   }
-  /// UTF-8 support
+  // support char16_t under Windows.
+  FormatArg(const char16_t *str) : at(ArgType::STRING) {
+    strings.data =
+        (str == nullptr) ? L"(NULL)" : reinterpret_cast<const wchar_t *>(str);
+    strings.len =
+        (str == nullptr) ? sizeof("(NULL)") - 1 : wcslen(strings.data);
+  }
+  FormatArg(char16_t *str) : at(ArgType::STRING) {
+    strings.data =
+        (str == nullptr) ? L"(NULL)" : reinterpret_cast<const wchar_t *>(str);
+    strings.len =
+        (str == nullptr) ? sizeof("(NULL)") - 1 : wcslen(strings.data);
+  }
+  template <typename Allocator>
+  FormatArg( // NOLINT(runtime/explicit)
+      const std::basic_string<char16_t, std::char_traits<char16_t>, Allocator>
+          &str)
+      : at(ArgType::STRING) {
+    strings.data = reinterpret_cast<const wchar_t *>(str.data());
+    strings.len = str.size();
+  }
+  FormatArg(std::u16string_view sv) : at(ArgType::STRING) {
+    strings.data = reinterpret_cast<const wchar_t *>(sv.data());
+    strings.len = sv.size();
+  }
+
+  // UTF-8 support
   // A C-style text string. and string_view
   FormatArg(const char *str) : at(ArgType::USTRING) {
     ustring.data = (str == nullptr) ? "(NULL)" : str;
@@ -186,6 +219,8 @@ struct FormatArg {
   };
   const ArgType at;
 };
+
+// Format function
 ssize_t StrFormatInternal(wchar_t *buf, size_t sz, const wchar_t *fmt,
                           const FormatArg *args, size_t max_args);
 std::wstring StrFormatInternal(const wchar_t *fmt, const FormatArg *args,

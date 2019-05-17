@@ -86,30 +86,6 @@ inline error_code make_system_error_code() {
   return ec;
 }
 
-// ToNarrow UTF-16 to UTF-8
-inline std::string ToNarrow(std::wstring_view uw) {
-  auto l = WideCharToMultiByte(CP_UTF8, 0, uw.data(), (int)uw.size(), nullptr,
-                               0, nullptr, nullptr);
-  std::string ustr;
-  ustr.resize(l + 1);
-  auto N = WideCharToMultiByte(CP_UTF8, 0, uw.data(), (int)uw.size(),
-                               ustr.data(), l + 1, nullptr, nullptr);
-  ustr.resize(N);
-  return ustr;
-}
-
-// ToWide UTF-8 to UTF-16
-inline std::wstring ToWide(std::string_view u8) {
-  std::wstring wstr;
-  auto N =
-      MultiByteToWideChar(CP_UTF8, 0, u8.data(), (DWORD)u8.size(), nullptr, 0);
-  if (N > 0) {
-    wstr.resize(N);
-    MultiByteToWideChar(CP_UTF8, 0, u8.data(), (DWORD)u8.size(), &wstr[0], N);
-  }
-  return wstr;
-}
-
 } // namespace bela
 
 #endif

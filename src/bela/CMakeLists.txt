@@ -3,6 +3,7 @@
 
 add_library(bela STATIC
   ascii.cc
+  codecvt.cc
   fmt.cc
   match.cc
   memutil.cc

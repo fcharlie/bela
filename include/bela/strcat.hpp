@@ -196,8 +196,7 @@ public:
           &str)
       : piece_(str) {}
 
-  // Use std::string literals ":" instead of character literals ':'.
-  AlphaNum(wchar_t c) = delete; // NOLINT(runtime/explicit)
+  AlphaNum(wchar_t c) : piece_(digits_, 1) { digits_[0] = c; }
 
   AlphaNum(const AlphaNum &) = delete;
   AlphaNum &operator=(const AlphaNum &) = delete;
@@ -235,9 +234,9 @@ private:
 //
 // Merges given strings or numbers, using no delimiter(s).
 //
-// `StringCat()` is designed to be the fastest possible way to construct a string
-// out of a mix of raw C strings, string_views, strings, bool values,
-// and numeric values.
+// `StringCat()` is designed to be the fastest possible way to construct a
+// string out of a mix of raw C strings, string_views, strings, bool values, and
+// numeric values.
 //
 // Don't use `StringCat()` for user-visible strings. The localization process
 // works poorly on strings built up out of fragments.
@@ -273,15 +272,15 @@ void AppendPieces(std::string *dest,
 
 [[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b);
 [[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b,
-                                  const AlphaNum &c);
+                                     const AlphaNum &c);
 [[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b,
-                                  const AlphaNum &c, const AlphaNum &d);
+                                     const AlphaNum &c, const AlphaNum &d);
 
 // Support 5 or more arguments
 template <typename... AV>
 [[nodiscard]] inline std::wstring
 StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
-       const AlphaNum &d, const AlphaNum &e, const AV &... args) {
+          const AlphaNum &d, const AlphaNum &e, const AV &... args) {
   return strings_internal::CatPieces(
       {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(),
        static_cast<const AlphaNum &>(args).Piece()...});

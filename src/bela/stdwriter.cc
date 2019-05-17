@@ -28,6 +28,8 @@ ssize_t WriteToLegacy(HANDLE hConsole, std::wstring_view sv) {
     sv.remove_prefix(pos + 1);
     pos = sv.find('m');
     if (pos == std::wstring::npos) {
+      buf.push_back(sep);
+      buf.append(sv);
       break;
     }
     sv.remove_prefix(pos + 1);

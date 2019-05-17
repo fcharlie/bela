@@ -187,7 +187,7 @@ struct FormatArg {
       if (integer.width == 2) {
         return static_cast<uint32_t>(0 - static_cast<int16_t>(i));
       }
-      if (integer.width == 1) {
+      if (integer.width == 4) {
         return static_cast<uint32_t>(0 - static_cast<int32_t>(i));
       }
       return static_cast<uint64_t>(0 - i);

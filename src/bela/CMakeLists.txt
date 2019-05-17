@@ -1,5 +1,4 @@
-# strings libaray
-
+# bela base libaray
 
 add_library(bela STATIC
   ascii.cc

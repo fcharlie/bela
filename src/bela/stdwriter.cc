@@ -1,6 +1,7 @@
 ///////////
 #include <bela/base.hpp>
 #include <bela/stdwriter.hpp>
+#include <bela/codecvt.hpp>
 
 namespace bela {
 

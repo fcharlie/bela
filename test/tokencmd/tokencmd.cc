@@ -5,7 +5,7 @@
 #include <clocale>
 
 int TestTokenize() {
-  auto cmd = L"ccc\\clang -c -DFOO=\"\"\"ABC\"\"\" x.cpp";
+  auto cmd = L"ccc\\clang -c -DFOO=\"\"\"ABC\"\"\" x.cpp    ";
   bela::FPrintF(stderr, L"tokenize [%s]\n", cmd);
   bela::Tokenizer tokenizer;
   if (!tokenizer.Tokenize(cmd)) {

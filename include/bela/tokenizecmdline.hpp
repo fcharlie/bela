@@ -6,11 +6,17 @@
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
+#include <algorithm>
 
 namespace bela {
 namespace cmdline_internal {
 constexpr inline bool isWhitespace(wchar_t ch) {
   return ch == L' ' || ch == L'\t' || ch == L'\r' || ch == L'\n';
+}
+
+inline std::wstring_view StripTrailingWhitespace(std::wstring_view str) {
+  auto it = std::find_if_not(str.rbegin(), str.rend(), isWhitespace);
+  return str.substr(0, str.rend() - it);
 }
 
 constexpr inline bool isWhitespaceOrNull(wchar_t ch) {
@@ -83,6 +89,7 @@ void Tokenizer::SaveArg(const wchar_t *data, size_t len) {
 }
 
 inline bool Tokenizer::Tokenize(std::wstring_view src) {
+  src = cmdline_internal::StripTrailingWhitespace(src);
   if (src.empty()) {
     return false;
   }

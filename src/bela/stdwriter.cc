@@ -147,7 +147,7 @@ is NULL
 }
 
 std::wstring FileTypeModeName(HANDLE hFile) {
-  if (hFile == nullptr || hFile==INVALID_HANDLE_VALUE) {
+  if (hFile == nullptr || hFile == INVALID_HANDLE_VALUE) {
     return L"UNKOWN";
   }
   switch (GetFileType(hFile)) {

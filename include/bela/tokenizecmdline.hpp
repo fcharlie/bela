@@ -17,7 +17,8 @@ constexpr inline bool isWhitespaceOrNull(wchar_t ch) {
   return isWhitespace(ch) || ch == L'\0';
 }
 constexpr inline bool isQuote(wchar_t ch) { return ch == '\"' || ch == '\''; }
-inline void TokenFill(std::vector<wchar_t> &Token, size_t n, wchar_t ch) {
+
+inline void vector_fill_n(std::vector<wchar_t> &Token, size_t n, wchar_t ch) {
   for (size_t i = 0; i < n; i++) {
     Token.push_back(ch);
   }
@@ -34,17 +35,18 @@ inline size_t parseBackslash(std::wstring_view Src, size_t I,
 
   bool FollowedByDoubleQuote = (I != E && Src[I] == '"');
   if (FollowedByDoubleQuote) {
-    TokenFill(Token, BackslashCount / 2, '\\');
+    vector_fill_n(Token, BackslashCount / 2, '\\');
     if (BackslashCount % 2 == 0) {
       return I - 1;
     }
     Token.push_back('"');
     return I;
   }
-  TokenFill(Token, BackslashCount, '\\');
+  vector_fill_n(Token, BackslashCount, '\\');
   return I - 1;
 }
 } // namespace cmdline_internal
+
 class Tokenizer {
 public:
   Tokenizer() = default;
@@ -57,43 +59,45 @@ public:
       }
     }
   }
-  bool Tokenize(std::wstring_view cmdline, bool MarkEOLs = false);
+  bool Tokenize(std::wstring_view cmdline);
   const wchar_t *const *Argv() const { return saver_.data(); };
   wchar_t **Argv() { return saver_.data(); }
   size_t Argc() const { return saver_.size(); }
 
 private:
   std::vector<wchar_t *> saver_;
-  void Append(const std::vector<wchar_t> &Token);
+  void SaveArg(const wchar_t *data, size_t len);
+  void SaveArg(const std::vector<wchar_t> &token) {
+    SaveArg(token.data(), token.size());
+  }
 };
 
-void Tokenizer::Append(const std::vector<wchar_t> &Token) {
-  auto size = Token.size() + 1;
+void Tokenizer::SaveArg(const wchar_t *data, size_t len) {
+  auto size = len + 1;
   auto mem = static_cast<wchar_t *>(malloc(size * sizeof(wchar_t)));
   if (mem != nullptr) {
-    memcpy(mem, Token.data(), Token.size() * sizeof(wchar_t));
-    mem[Token.size()] = L'\0';
+    memcpy(mem, data, len * sizeof(wchar_t));
+    mem[len] = L'\0';
     saver_.push_back(mem);
   }
 }
 
-inline bool Tokenizer::Tokenize(std::wstring_view Src, bool MarkEOLs) {
-  std::vector<wchar_t> Token(128);
-
+inline bool Tokenizer::Tokenize(std::wstring_view src) {
+  if (src.empty()) {
+    return false;
+  }
+  std::vector<wchar_t> token;
+  token.reserve(128);
   // This is a small state machine to consume characters until it reaches the
   // end of the source string.
   enum { INIT, UNQUOTED, QUOTED } State = INIT;
-  for (size_t I = 0, E = Src.size(); I != E; ++I) {
-    char C = Src[I];
+  for (size_t I = 0, E = src.size(); I != E; ++I) {
+    auto C = src[I];
 
     // INIT state indicates that the current input index is at the start of
     // the string or between tokens.
     if (State == INIT) {
       if (cmdline_internal::isWhitespaceOrNull(C)) {
-        // Mark the end of lines in response files
-        if (MarkEOLs && C == '\n') {
-          saver_.push_back(nullptr);
-        }
         continue;
       }
       if (C == '"') {
@@ -101,11 +105,11 @@ inline bool Tokenizer::Tokenize(std::wstring_view Src, bool MarkEOLs) {
         continue;
       }
       if (C == '\\') {
-        I = cmdline_internal::parseBackslash(Src, I, Token);
+        I = cmdline_internal::parseBackslash(src, I, token);
         State = UNQUOTED;
         continue;
       }
-      Token.push_back(C);
+      token.push_back(C);
       State = UNQUOTED;
       continue;
     }
@@ -115,13 +119,9 @@ inline bool Tokenizer::Tokenize(std::wstring_view Src, bool MarkEOLs) {
     if (State == UNQUOTED) {
       // Whitespace means the end of the token.
       if (cmdline_internal::isWhitespaceOrNull(C)) {
-        Append(Token);
-        Token.clear();
+        SaveArg(token);
+        token.clear();
         State = INIT;
-        // Mark the end of lines in response files
-        if (MarkEOLs && C == '\n') {
-          saver_.push_back(nullptr);
-        }
         continue;
       }
       if (C == '"') {
@@ -129,20 +129,20 @@ inline bool Tokenizer::Tokenize(std::wstring_view Src, bool MarkEOLs) {
         continue;
       }
       if (C == '\\') {
-        I = cmdline_internal::parseBackslash(Src, I, Token);
+        I = cmdline_internal::parseBackslash(src, I, token);
         continue;
       }
-      Token.push_back(C);
+      token.push_back(C);
       continue;
     }
 
     // QUOTED state means that it's reading a token quoted by double quotes.
     if (State == QUOTED) {
       if (C == '"') {
-        if (I < (E - 1) && Src[I + 1] == '"') {
+        if (I < (E - 1) && src[I + 1] == '"') {
           // Consecutive double-quotes inside a quoted string implies one
           // double-quote.
-          Token.push_back('"');
+          token.push_back('"');
           I = I + 1;
           continue;
         }
@@ -150,20 +150,13 @@ inline bool Tokenizer::Tokenize(std::wstring_view Src, bool MarkEOLs) {
         continue;
       }
       if (C == '\\') {
-        I = cmdline_internal::parseBackslash(Src, I, Token);
+        I = cmdline_internal::parseBackslash(src, I, token);
         continue;
       }
-      Token.push_back(C);
+      token.push_back(C);
     }
   }
-  // Append the last token after hitting EOF with no whitespace.
-  if (!Token.empty()) {
-    Append(Token);
-  }
-  // Mark the end of response files
-  if (MarkEOLs) {
-    saver_.push_back(nullptr);
-  }
+  SaveArg(token);
   return true;
 }
 

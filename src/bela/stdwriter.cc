@@ -2,6 +2,8 @@
 #include <bela/base.hpp>
 #include <bela/stdwriter.hpp>
 #include <bela/codecvt.hpp>
+#include <bela/strcat.hpp>
+#include <io.h>
 
 namespace bela {
 
@@ -64,20 +66,22 @@ public:
     static Adapter a;
     return a;
   }
-  ssize_t StdWriteT(HANDLE hFile, std::wstring_view sv, ConsoleMode cm) {
+  std::wstring FileTypeName(FILE *file) const;
+  ssize_t StdWriteConsole(HANDLE hFile, std::wstring_view sv,
+                          ConsoleMode cm) const {
     if (cm == ConsoleMode::Conhost) {
       return WriteToLegacy(hFile, sv);
     }
     return WriteToConsole(hFile, sv);
   }
-  ssize_t StdWrite(FILE *out, std::wstring_view sv) {
+  ssize_t StdWrite(FILE *out, std::wstring_view sv) const {
     if (out == stderr &&
         (em == ConsoleMode::Conhost || em == ConsoleMode::PTY)) {
-      return StdWriteT(hStderr, sv, em);
+      return StdWriteConsole(hStderr, sv, em);
     }
     if (out == stdout &&
         (om == ConsoleMode::Conhost || em == ConsoleMode::PTY)) {
-      return StdWriteT(hStdout, sv, om);
+      return StdWriteConsole(hStdout, sv, om);
     }
     return WriteToFile(out, sv);
   }
@@ -142,7 +146,51 @@ is NULL
   om = GetConsoleModeEx(hStdout);
 }
 
+std::wstring FileTypeModeName(HANDLE hFile) {
+  if (hFile == nullptr || hFile==INVALID_HANDLE_VALUE) {
+    return L"UNKOWN";
+  }
+  switch (GetFileType(hFile)) {
+  default:
+    return L"UNKOWN";
+  case FILE_TYPE_DISK:
+    return L"Disk File";
+  case FILE_TYPE_PIPE:
+    return L"Pipe";
+  case FILE_TYPE_CHAR:
+    break;
+  }
+  DWORD dwMode = 0;
+  if (GetConsoleMode(hFile, &dwMode) &&
+      (dwMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0) {
+    return L"VT Mode Console";
+  }
+  return L"Legacy Console";
+}
+
+std::wstring FileTypeModeName(FILE *file) {
+  auto hFile = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
+  return FileTypeModeName(hFile);
+}
+
+std::wstring Adapter::FileTypeName(FILE *file) const {
+  if (file == stderr) {
+    auto m = FileTypeModeName(hStderr);
+    return m;
+  }
+  if (file == stdout) {
+    auto m = FileTypeModeName(hStdout);
+    return m;
+  }
+  return FileTypeModeName(file);
+}
+
 ssize_t StdWrite(FILE *out, std::wstring_view msg) {
   return Adapter::instance().StdWrite(out, msg);
 }
+
+std::wstring FileTypeName(FILE *file) {
+  return Adapter::instance().FileTypeName(file);
+}
+
 } // namespace bela

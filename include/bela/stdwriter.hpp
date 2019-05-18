@@ -4,6 +4,7 @@
 #pragma once
 #include <cstdio>
 #include <string_view>
+#include <string>
 #include "fmt.hpp"
 
 namespace bela {
@@ -21,7 +22,7 @@ inline ssize_t FPrintF(FILE *out, const wchar_t *fmt) {
   auto str = StrFormat(fmt);
   return StdWrite(out, str);
 }
-
+std::wstring FileTypeName(FILE *file);
 } // namespace bela
 
 #endif

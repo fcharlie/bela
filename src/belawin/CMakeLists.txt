@@ -3,6 +3,7 @@
 add_library(belawin STATIC
   path.cc
   realpath.cc
+  reparsepoint.cc
   appexeclink.cc
 )
 

@@ -3,7 +3,7 @@
 #include <bela/path.hpp>
 #include <bela/finaly.hpp>
 #include <winioctl.h>
-#include "reparsepoint.hpp"
+#include "reparsepoint_internal.hpp"
 
 namespace bela {
 bool LookupAppExecLinkTarget(std::wstring_view src, AppExecTarget &ae) {

@@ -8,7 +8,7 @@ int wmain(int argc, wchar_t **argv) {
     return 1;
   }
   bela::AppExecTarget ae;
-  if (!bela::LookupAppExecTarget(argv[1], ae)) {
+  if (!bela::LookupAppExecLinkTarget(argv[1], ae)) {
     bela::FPrintF(stderr, L"unable lookup %s AppExecTarget\n", argv[1]);
     return 1;
   }

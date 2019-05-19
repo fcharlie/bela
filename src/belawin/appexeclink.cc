@@ -6,7 +6,7 @@
 #include "reparsepoint.hpp"
 
 namespace bela {
-bool LookupAppExecTarget(std::wstring_view src, AppExecTarget &ae) {
+bool LookupAppExecLinkTarget(std::wstring_view src, AppExecTarget &ae) {
   HANDLE hFile = INVALID_HANDLE_VALUE;
   REPARSE_DATA_BUFFER *buf = nullptr;
   auto closer = bela::finally([&] {

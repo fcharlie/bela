@@ -96,7 +96,7 @@ struct AppExecTarget {
   std::wstring appuserid;
   std::wstring target;
 };
-bool LookupAppExecTarget(std::wstring_view src, AppExecTarget &ae);
+bool LookupAppExecLinkTarget(std::wstring_view src, AppExecTarget &ae);
 } // namespace bela
 
 #endif

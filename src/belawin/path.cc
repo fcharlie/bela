@@ -122,9 +122,13 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
 
 } // namespace path_internal
 
-bool PathExists(std::wstring_view src) {
-  //
-  return false;
+bool PathExists(std::wstring_view src, FileAttribute fa) {
+  // GetFileAttributesExW()
+  auto a = GetFileAttributesW(src.data());
+  if (a == INVALID_FILE_ATTRIBUTES) {
+    return false;
+  }
+  return fa == FileAttribute::None ? true : ((static_cast<DWORD>(fa) & a) != 0);
 }
 
 } // namespace bela

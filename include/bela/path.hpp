@@ -4,6 +4,7 @@
 #pragma once
 #include "strcat.hpp"
 #include "span.hpp"
+#include "base.hpp"
 #include <string_view>
 
 namespace bela {
@@ -53,8 +54,43 @@ PathCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
        static_cast<const AlphaNum &>(args).Piece()...});
 }
 
+enum class FileAttribute : DWORD {
+  None = 0, //
+  Archive = 0x20,
+  Compressed = 0x800,
+  Device = 0x40,
+  Dir = 0x10,
+  Encrypted = 0x4000,
+  Hidden = 0x2,
+  IntegrityStream = 0x8000,
+  Normal = 0x80,
+  NotContentIndexed = 0x2000,
+  NoScrubData = 0x20000,
+  Offline = 0x1000,
+  ReadOnly = 0x1,
+  NoDataAccess = 0x400000,
+  ReccallOnOpen = 0x40000,
+  ReparsePoint = 0x400,
+  SparseFile = 0x200,
+  System = 0x4,
+  Temporary = 0x100,
+  Virtual = 0x10000
+};
+
+[[nodiscard]] constexpr FileAttribute operator&(FileAttribute L,
+                                                FileAttribute R) noexcept {
+  using I = std::underlying_type_t<FileAttribute>;
+  return static_cast<FileAttribute>(static_cast<I>(L) & static_cast<I>(R));
+}
+
+[[nodiscard]] constexpr FileAttribute operator|(FileAttribute L,
+                                                FileAttribute R) noexcept {
+  using I = std::underlying_type_t<FileAttribute>;
+  return static_cast<FileAttribute>(static_cast<I>(L) | static_cast<I>(R));
+}
+
 // std::wstring_view ::data() must Null-terminated string
-bool PathExists(std::wstring_view src);
+bool PathExists(std::wstring_view src, FileAttribute fa = FileAttribute::None);
 
 } // namespace bela
 

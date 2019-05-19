@@ -5,7 +5,6 @@
 #include "strcat.hpp"
 #include "span.hpp"
 #include "base.hpp"
-#include <string_view>
 
 namespace bela {
 // Windows Path base
@@ -91,7 +90,13 @@ enum class FileAttribute : DWORD {
 
 // std::wstring_view ::data() must Null-terminated string
 bool PathExists(std::wstring_view src, FileAttribute fa = FileAttribute::None);
-
+bool LookupRealPath(std::wstring_view src, std::wstring &target);
+struct AppExecTarget {
+  std::wstring pkid;
+  std::wstring appuserid;
+  std::wstring target;
+};
+bool LookupAppExecTarget(std::wstring_view src, AppExecTarget &ae);
 } // namespace bela
 
 #endif

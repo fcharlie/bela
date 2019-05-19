@@ -6,7 +6,7 @@
 
 namespace bela {
 // final_act
-// https://github.com/Microsoft/GSL/blob/ebe7ebfd855a95eb93783164ffb342dbd85cbc27\
+// https://github.com/microsoft/gsl/blob/ebe7ebfd855a95eb93783164ffb342dbd85cbc27\
 // /include/gsl/gsl_util#L85-L89
 
 template <class F> class final_act {
@@ -20,10 +20,10 @@ public:
 
   final_act(const final_act &) = delete;
   final_act &operator=(const final_act &) = delete;
-
   ~final_act() noexcept {
-    if (invoke_)
+    if (invoke_) {
       f_();
+    }
   }
 
 private:

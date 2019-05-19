@@ -36,6 +36,7 @@
 #endif
 
 #include <cstdint>
+#include <type_traits>
 
 namespace bela {
 #if defined(BYTE_ORDER) && defined(BIG_ENDIAN) && BYTE_ORDER == BIG_ENDIAN
@@ -118,30 +119,34 @@ inline constexpr signed long long bswap(signed long long C) {
   return bswap64(C);
 }
 
-template <typename Integer> constexpr Integer ResolveLE(Integer i) {
+template <typename T> constexpr T Swaple(T i) {
+  static_assert(std::is_integral<T>::value, "Integral required.");
   if constexpr (IsBigEndianHost) {
     return bswap(i);
   }
   return i;
 }
 
-template <typename Integer> constexpr Integer ResolveBE(Integer i) {
+template <typename T> constexpr T Swapbe(T i) {
+  static_assert(std::is_integral<T>::value, "Integral required.");
   if constexpr (IsBigEndianHost) {
     return i;
   }
   return bswap(i);
 }
 
-template <typename Integer> constexpr Integer ResolveLE(const void *p) {
-  auto i = *reinterpret_cast<const Integer *>(p);
+template <typename T> constexpr T Resolvele(const void *p) {
+  static_assert(std::is_integral<T>::value, "Integral required.");
+  auto i = *reinterpret_cast<const T *>(p);
   if constexpr (IsBigEndianHost) {
     return bswap(i);
   }
   return i;
 }
 
-template <typename Integer> constexpr Integer ResolveBE(const void *p) {
-  auto i = *reinterpret_cast<const Integer *>(p);
+template <typename T> constexpr T Resolvebe(const void *p) {
+  static_assert(std::is_integral<T>::value, "Integral required.");
+  auto i = *reinterpret_cast<const T *>(p);
   if constexpr (IsBigEndianHost) {
     return i;
   }

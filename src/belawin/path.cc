@@ -2,6 +2,7 @@
 #include <vector>
 #include <bela/path.hpp>
 #include <bela/strip.hpp>
+#include <bela/base.hpp>
 
 namespace bela {
 
@@ -56,6 +57,19 @@ bool PathSplit(container_t &output, std::wstring_view sv) {
 }
 
 namespace path_internal {
+
+std::wstring getcurrentdir() {
+  auto l = GetCurrentDirectoryW(0, nullptr);
+  if (l == 0) {
+    return L"";
+  }
+  std::wstring s;
+  s.resize(l);
+  auto N = GetCurrentDirectoryW(l, s.data());
+  s.resize(N);
+  return s;
+}
+
 std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
   if (pieces.empty()) {
     return L"";
@@ -63,6 +77,11 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
   auto p0 = pieces[0];
   if (p0.empty()) {
     return L"";
+  }
+  std::wstring p0raw;
+  if (p0 == L".") {
+    p0raw = getcurrentdir();
+    p0 = p0raw;
   }
   auto IsUNC = PathStripUNC(p0);
   wchar_t latter = 0;

@@ -30,6 +30,8 @@ if(MSVC)
   add_compile_options("-utf-8")
   add_compile_options("-permissive-")
   add_compile_options("-Zc:__cplusplus")
+  add_compile_options("-DUNICODE=1")
+  add_compile_options("-D_UNICODE=1")
 endif(MSVC)
 
 

@@ -6,4 +6,4 @@ A lot of the code supports wchar_t based on Abseil modifications, some of which 
 
 ## Documents
 
-Chinese docs: [zh_CN](./docs/zh-CN/)
+Chinese docs: [zh-CN](./docs/zh-CN/)

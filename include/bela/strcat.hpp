@@ -259,7 +259,7 @@ namespace strings_internal {
 
 // Do not call directly - this is not part of the public API.
 std::wstring CatPieces(std::initializer_list<std::wstring_view> pieces);
-void AppendPieces(std::string *dest,
+void AppendPieces(std::wstring *dest,
                   std::initializer_list<std::wstring_view> pieces);
 
 } // namespace strings_internal

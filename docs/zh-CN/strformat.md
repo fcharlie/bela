@@ -66,3 +66,5 @@ int wmain(int argc, wchar_t **argv) {
 }
 
 ```
+
+请注意，如果上述 emoji 要正常显示，应当使用 `Windows Terminal` 或者是 `Mintty`。

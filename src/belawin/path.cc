@@ -75,9 +75,6 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
     return L"";
   }
   auto p0 = pieces[0];
-  if (p0.empty()) {
-    return L"";
-  }
   std::wstring p0raw;
   if (p0 == L".") {
     p0raw = getcurrentdir();
@@ -88,11 +85,11 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
   auto haslatter = PathStripDriveLatter(p0, latter);
   container_t pv;
   if (!PathSplit(pv, p0)) {
-    return false;
+    return L"";
   }
   for (size_t i = 1; i < pieces.size(); i++) {
     if (!PathSplit(pv, pieces[i])) {
-      return false;
+      return L"";
     }
   }
   std::wstring s;

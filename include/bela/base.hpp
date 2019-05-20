@@ -74,6 +74,9 @@ inline std::wstring system_error_dump(DWORD ec) {
   if (rl == 0) {
     return L"FormatMessageW error";
   }
+  if(buf[rl-1]=='\n'){
+    rl--;
+  }
   std::wstring msg(buf, rl);
   LocalFree(buf);
   return msg;

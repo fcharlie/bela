@@ -10,7 +10,7 @@ Bela 目前提供了一个类型安全简单的 `StrFormat`, `StrFormat` 基于 
 |unsigned char|`%c`|ASCII 字符，会被提升为 wchar_t|
 |wchar_t|`%c`|UTF-16 字符|
 |char16_t|`%c`|UTF-16 字符|
-|char32_t|`%c`|UTF-32 Unicode 字符，会转变为 UTF-16 字符，这意味着可以使用 emoji Unicode 码点使用 %c 的方式显示 emoji。|
+|char32_t|`%c`|UTF-32 Unicode 字符，会转变为 UTF-16 字符，这意味着可以使用 Unicode 码点使用 %c 的方式输出 emoji。|
 |short|`%d`|16位整型|
 |unsigned short|`%d`|16位无符号整型|
 |int|`%d`|32位整型|
@@ -40,4 +40,29 @@ Bela 目前提供了一个类型安全简单的 `StrFormat`, `StrFormat` 基于 
 ```c++
 template <typename... Args>
 ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt, Args... args)
+```
+
+## 示例
+
+```c++
+///
+#include <bela/strcat.hpp>
+#include <bela/stdwriter.hpp>
+
+int wmain(int argc, wchar_t **argv) {
+  auto ux = "\xf0\x9f\x98\x81 UTF-8 text \xE3\x8D\xA4"; // force encode UTF-8
+  wchar_t wx[] = L"Engine \xD83D\xDEE0 中国";
+  bela::FPrintF(
+      stderr,
+      L"Argc: %d Arg0: \x1b[32m%s\x1b[0m W: %s UTF-8: %s __cplusplus: %d\n",
+      argc, argv[0], wx, ux, __cplusplus);
+  char32_t em = 0x1F603;//😃
+  auto s = bela::StringCat(L"Look emoji -->", em, L" U: ",
+                           static_cast<uint32_t>(em));
+  bela::FPrintF(stderr, L"emoji test %c %s\n", em, s);
+  bela::FPrintF(stderr, L"hStderr Mode: %s hStdin Mode: %s\n",
+                bela::FileTypeName(stderr), bela::FileTypeName(stdin));
+  return 0;
+}
+
 ```

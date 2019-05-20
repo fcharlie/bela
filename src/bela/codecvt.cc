@@ -20,6 +20,7 @@ namespace bela {
 
 size_t char32tochar16(char32_t ch, char16_t *buf, size_t n) {
   constexpr const char32_t halfMask = 0x3FFUL;
+  constexpr const char32_t halfBase = 0x0010000UL;
   constexpr const int halfShift = 10; /* used for shifting by 10 bits */
   if (n < 3) {
     return 0;
@@ -32,8 +33,13 @@ size_t char32tochar16(char32_t ch, char16_t *buf, size_t n) {
     buf[0] = static_cast<char16_t>(ch);
     return 1;
   }
+  if (ch > UNI_MAX_LEGAL_UTF32) {
+    buf[0] = static_cast<char16_t>(UNI_REPLACEMENT_CHAR);
+    return 1;
+  }
+  ch -= halfBase;
   buf[0] = static_cast<char16_t>((ch >> halfShift) + UNI_SUR_HIGH_START);
-  buf[1] = static_cast<char16_t>((ch & halfMask) + UNI_SUR_HIGH_START);
+  buf[1] = static_cast<char16_t>((ch & halfMask) + UNI_SUR_LOW_START);
   return 2;
 }
 

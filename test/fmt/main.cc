@@ -8,7 +8,8 @@ int wmain(int argc, wchar_t **argv) {
       stderr,
       L"Argc: %d Arg0: \x1b[32m%s\x1b[0m W: %s UTF-8: %s __cplusplus: %d\n",
       argc, argv[0], wx, ux, __cplusplus);
-  bela::FPrintF(stderr, L"hStderr Mode: %s hStdin Mode: %s\n",
+  char32_t em = 0x1F921;
+  bela::FPrintF(stderr, L"%c hStderr Mode: %s hStdin Mode: %s\n", em,
                 bela::FileTypeName(stderr), bela::FileTypeName(stdin));
   return 0;
 }

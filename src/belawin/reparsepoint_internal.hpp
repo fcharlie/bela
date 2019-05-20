@@ -223,6 +223,23 @@
 #define SYMLINK_RESERVED_MASK                                                  \
   0xF0000000 // We reserve the high nibble for internal use
 
+#if !defined(FSCTL_GET_REPARSE_POINT)
+#define FSCTL_GET_REPARSE_POINT 0x900a8
+#endif
+
+#ifndef MAXIMUM_REPARSE_DATA_BUFFER_SIZE
+#define MAXIMUM_REPARSE_DATA_BUFFER_SIZE (16 * 1024)
+#endif
+
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10_RS1)
+#define FSCTL_SET_REPARSE_POINT_EX                                             \
+  CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 259, METHOD_BUFFERED,                      \
+           FILE_SPECIAL_ACCESS) // REPARSE_DATA_BUFFER_EX
+// #define FSCTL_GET_REPARSE_POINT_EX                                             \
+//   CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 260, METHOD_BUFFERED,                      \
+//            FILE_SPECIAL_ACCESS) // REPARSE_DATA_BUFFER_EX
+#endif                          /* (_WIN32_WINNT >= _WIN32_WINNT_WIN10_RS1) */
+
 typedef struct _REPARSE_DATA_BUFFER {
   ULONG ReparseTag;         // Reparse tag type
   USHORT ReparseDataLength; // Length of the reparse data
@@ -238,6 +255,11 @@ typedef struct _REPARSE_DATA_BUFFER {
       USHORT PrintNameLength;
       ULONG Flags;
       WCHAR PathBuffer[1];
+      // Example of distinction between substitute and print names:
+      // mklink /d ldrive c:\
+      // SubstituteName: c:\\??\
+      // PrintName: c:\
+
     } SymbolicLinkReparseBuffer;
 
     // Structure for IO_REPARSE_TAG_MOUNT_POINT
@@ -302,6 +324,65 @@ typedef struct _REPARSE_DATA_BUFFER {
     } GenericReparseBuffer;
   } DUMMYUNIONNAME;
 } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+
+typedef struct _REPARSE_DATA_BUFFER_EX {
+
+  ULONG Flags;
+
+  //
+  //  This is the existing reparse tag on the file if any,  if the
+  //  caller wants to replace the reparse tag too.
+  //
+  //    - To set the reparse data  along with the reparse tag that
+  //      could be different,  pass the current reparse tag of the
+  //      file.
+  //
+  //    - To update the reparse data while having the same reparse
+  //      tag,  the caller should give the existing reparse tag in
+  //      this ExistingReparseTag field.
+  //
+  //    - To set the reparse tag along with reparse data on a file
+  //      that doesn't have a reparse tag yet, set this to zero.
+  //
+  //  If the ExistingReparseTag  does not match the reparse tag on
+  //  the file,  the FSCTL_SET_REPARSE_POINT_EX  would  fail  with
+  //  STATUS_IO_REPARSE_TAG_MISMATCH. NOTE: If a file doesn't have
+  //  a reparse tag, ExistingReparseTag should be 0.
+  //
+
+  ULONG ExistingReparseTag;
+
+  //
+  //  For non-Microsoft reparse tags, this is the existing reparse
+  //  guid on the file if any,  if the caller wants to replace the
+  //  reparse tag and / or guid along with the data.
+  //
+  //  If ExistingReparseTag is 0, the file is not expected to have
+  //  any reparse tags, so ExistingReparseGuid is ignored. And for
+  //  non-Microsoft tags ExistingReparseGuid should match the guid
+  //  in the file if ExistingReparseTag is non zero.
+  //
+
+  GUID ExistingReparseGuid;
+
+  //
+  //  Reserved
+  //
+
+  ULONGLONG Reserved;
+
+  //
+  //  Reparse data to set
+  //
+
+  union {
+
+    REPARSE_DATA_BUFFER ReparseDataBuffer;
+    REPARSE_GUID_DATA_BUFFER ReparseGuidDataBuffer;
+
+  } DUMMYUNIONNAME;
+
+} REPARSE_DATA_BUFFER_EX, *PREPARSE_DATA_BUFFER_EX;
 
 #define REPARSE_DATA_BUFFER_HEADER_SIZE                                        \
   FIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer)

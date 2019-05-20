@@ -49,6 +49,14 @@ static bool NtSymbolicLink(const ReparseBuffer *buf, facv_t &av) {
   return true;
 }
 
+static bool GlobalSymbolicLink(const ReparseBuffer *buf, facv_t &av) {
+  if (!NtSymbolicLink(buf, av)) {
+    return true;
+  }
+  av.emplace_back(L"IsGlobal", L"True");
+  return true;
+}
+
 static bool AppExecLink(const ReparseBuffer *buf, facv_t &av) {
   if (buf->AppExecLinkReparseBuffer.StringCount < 3) {
     return false;
@@ -104,6 +112,7 @@ bool ReparsePoint::Analyze(std::wstring_view file, bela::error_code &ec) {
   static const constexpr Distributor av[] = {
       {IO_REPARSE_TAG_APPEXECLINK, AppExecLink}, // AppExecLink
       {IO_REPARSE_TAG_SYMLINK, NtSymbolicLink},
+      {IO_REPARSE_TAG_GLOBAL_REPARSE, GlobalSymbolicLink},
       {IO_REPARSE_TAG_MOUNT_POINT, MountPoint},
       {IO_REPARSE_TAG_AF_UNIX, AFUnix},
       {IO_REPARSE_TAG_LX_SYMLINK, LxSymbolicLink}

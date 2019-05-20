@@ -38,6 +38,7 @@ enum class ArgType {
   BOOLEAN
 };
 struct FormatArg {
+  // %c
   FormatArg(char c) : at(ArgType::INTEGER) {
     integer.i = c; /// if caset to uint64_t
     integer.width = sizeof(char);
@@ -46,6 +47,19 @@ struct FormatArg {
     integer.i = c;
     integer.width = sizeof(char);
   }
+  FormatArg(wchar_t c) : at(ArgType::INTEGER) {
+    integer.i = c;
+    integer.width = sizeof(wchar_t);
+  }
+  FormatArg(char16_t c) : at(ArgType::INTEGER) {
+    integer.i = c;
+    integer.width = sizeof(char16_t);
+  }
+  FormatArg(char32_t c) : at(ArgType::INTEGER) {
+    integer.i = c;
+    integer.width = sizeof(char32_t);
+  }
+  //%d
   FormatArg(signed short j) : at(ArgType::INTEGER) {
     integer.i = j;
     integer.width = sizeof(short);
@@ -82,6 +96,7 @@ struct FormatArg {
     integer.i = b ? 1 : 0;
     integer.width = sizeof(char);
   }
+  // %f
   FormatArg(float f) : at(ArgType::FLOAT) {
     floating.d = f;
     floating.width = sizeof(float);

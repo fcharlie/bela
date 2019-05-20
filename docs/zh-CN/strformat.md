@@ -10,7 +10,7 @@ Bela 目前提供了一个类型安全简单的 `StrFormat`, `StrFormat` 基于 
 |unsigned char|`%c`|ASCII 字符，会被提升为 wchar_t|
 |wchar_t|`%c`|UTF-16 字符|
 |char16_t|`%c`|UTF-16 字符|
-|char32_t|`%c`|UTF-32 Unicode 字符，会转变为 UTF-16 字符，这意味着可以使用 Unicode 码点使用 %c 的方式输出 emoji。|
+|char32_t|`%c`|UTF-32 Unicode 字符，会被转为 UTF-16 字符，这意味着可以使用 Unicode 码点以 %c 的方式输出 emoji。|
 |short|`%d`|16位整型|
 |unsigned short|`%d`|16位无符号整型|
 |int|`%d`|32位整型|

@@ -6,7 +6,7 @@ Bela 目前提供了一个类型安全简单的 `StrFormat`, `StrFormat` 基于 
 
 |类型|占位符|备注|
 |---|---|---|
-|char|`%c`|ASCII 字符， 会被提升为 wchar_t|
+|char|`%c`|ASCII 字符，会被提升为 wchar_t|
 |unsigned char|`%c`|ASCII 字符，会被提升为 wchar_t|
 |wchar_t|`%c`|UTF-16 字符|
 |char16_t|`%c`|UTF-16 字符|

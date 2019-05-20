@@ -5,6 +5,7 @@
 #include <vector>
 
 namespace bela {
+size_t char32tochar16(char32_t ch, char16_t *buf, size_t n);
 std::string c16tomb(const char16_t *data, size_t len, bool skipillegal = false);
 std::wstring mbrtowc(const unsigned char *str, size_t len,
                      bool skipillegal = false);

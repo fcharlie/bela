@@ -170,37 +170,6 @@ template <> inline bool Writer<buffer>::Overflow() { return t.IsOverflow(); }
 using StringWriter = Writer<std::wstring>;
 using BufferWriter = Writer<buffer>;
 
-#define UNI_MAX_BMP (char32_t)0x0000FFFF
-#define UNI_MAX_UTF16 (char32_t)0x0010FFFF
-#define UNI_MAX_UTF32 (char32_t)0x7FFFFFFF
-#define UNI_MAX_LEGAL_UTF32 (char32_t)0x0010FFFF
-#define UNI_REPLACEMENT_CHAR (char32_t)0x0000FFFD
-#define UNI_UTF16_BYTE_ORDER_MARK_NATIVE 0xFEFF
-#define UNI_UTF16_BYTE_ORDER_MARK_SWAPPED 0xFFFE
-#define UNI_SUR_HIGH_START (char32_t)0xD800
-#define UNI_SUR_HIGH_END (char32_t)0xDBFF
-#define UNI_SUR_LOW_START (char32_t)0xDC00
-#define UNI_SUR_LOW_END (char32_t)0xDFFF
-
-size_t CodePointToU16(char32_t ch, wchar_t *buf, size_t n) {
-  constexpr const char32_t halfMask = 0x3FFUL;
-  constexpr const int halfShift = 10; /* used for shifting by 10 bits */
-  if (n < 4) {
-    return 0;
-  }
-  if (ch <= UNI_MAX_BMP) {
-    if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_START) {
-      buf[0] = static_cast<wchar_t>(UNI_REPLACEMENT_CHAR);
-      return 1;
-    }
-    buf[0] = static_cast<wchar_t>(ch);
-    return 1;
-  }
-  buf[0] = static_cast<wchar_t>((ch >> halfShift) + UNI_SUR_HIGH_START);
-  buf[0] = static_cast<wchar_t>((ch & halfMask) + UNI_SUR_HIGH_START);
-  return 0;
-}
-
 template <typename T>
 bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
                        size_t max_args) {
@@ -258,8 +227,9 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       if (args[ca].at == ArgType::INTEGER || args[ca].at == ArgType::UINTEGER) {
         if (args[ca].integer.width == 4) {
-          auto n = CodePointToU16(static_cast<char32_t>(args[ca].integer.i),
-                                  digits, kFastToBufferSize);
+          auto n = char32tochar16(static_cast<char32_t>(args[ca].integer.i),
+                                  reinterpret_cast<char16_t *>(digits),
+                                  kFastToBufferSize);
           if (width > n) {
             w.Pad(width - n, zero);
           }

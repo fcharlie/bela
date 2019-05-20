@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <vector>
 #include "numbers.hpp"
+#include "codecvt.hpp"
 
 namespace bela {
 namespace strings_internal {
@@ -197,6 +198,13 @@ public:
       : piece_(str) {}
 
   AlphaNum(wchar_t c) : piece_(digits_, 1) { digits_[0] = c; }
+  AlphaNum(char16_t ch) : piece_(digits_, 1) {
+    digits_[0] = static_cast<wchar_t>(ch);
+  }
+  AlphaNum(char32_t ch)
+      : piece_(digits_,
+               bela::char32tochar16(ch, reinterpret_cast<char16_t *>(digits_),
+                                    numbers_internal::kFastToBufferSize)) {}
 
   AlphaNum(const AlphaNum &) = delete;
   AlphaNum &operator=(const AlphaNum &) = delete;

@@ -125,10 +125,7 @@ bool islegau8(const uint8_t *source, int length) {
   return *source <= 0xF4;
 }
 
-size_t char32tochar8(char32_t ch, unsigned char *buf, size_t n) {
-  if (n < 4) {
-    return 0;
-  }
+static inline size_t char32tochar8_internal(char32_t ch, unsigned char *buf) {
   size_t bw = 0;
   if (ch < (char32_t)0x80) {
     bw = 1;
@@ -159,6 +156,13 @@ size_t char32tochar8(char32_t ch, unsigned char *buf, size_t n) {
   return bw;
 }
 
+size_t char32tochar8(char32_t ch, unsigned char *buf, size_t n) {
+  if (n < 4) {
+    return 0;
+  }
+  return char32tochar8_internal(ch, buf);
+}
+
 std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
   std::string s;
   s.reserve(len);
@@ -166,7 +170,6 @@ std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
   auto end = it + len;
   uint8_t buffer[8] = {0};
   while (it < end) {
-    unsigned short bw = 0;
     char32_t ch = *it++;
     if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
       if (it >= end) {
@@ -183,34 +186,8 @@ std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
         return s;
       }
     }
-    /* Figure out how many bytes the result will require */
-    if (ch < (char32_t)0x80) {
-      bw = 1;
-    } else if (ch < (char32_t)0x800) {
-      bw = 2;
-    } else if (ch < (char32_t)0x10000) {
-      bw = 3;
-    } else if (ch < (char32_t)0x110000) {
-      bw = 4;
-    } else {
-      bw = 3;
-      ch = UNI_REPLACEMENT_CHAR;
-    }
-    auto target = buffer + bw;
-    switch (bw) { /* note: everything falls through. */
-    case 4:
-      *--target = (uint8_t)((ch | byteMark) & byteMask);
-      ch >>= 6;
-    case 3:
-      *--target = (uint8_t)((ch | byteMark) & byteMask);
-      ch >>= 6;
-    case 2:
-      *--target = (uint8_t)((ch | byteMark) & byteMask);
-      ch >>= 6;
-    case 1:
-      *--target = (uint8_t)(ch | firstByteMark[bw]);
-    }
-    s.append(reinterpret_cast<const char *>(target), bw);
+    auto bw = char32tochar8_internal(ch, buffer);
+    s.append(reinterpret_cast<const char *>(buffer), bw);
   }
   return s;
 }

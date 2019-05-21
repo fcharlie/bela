@@ -29,35 +29,41 @@ using ssize_t = __bela__ssize_t;
 
 namespace format_internal {
 enum class ArgType {
+  BOOLEAN,
+  CHARACTER,
   INTEGER, // short,int,
   UINTEGER,
   FLOAT,
   STRING,
   USTRING,
-  POINTER,
-  BOOLEAN
+  POINTER
 };
 struct FormatArg {
+  // %b
+  FormatArg(bool b) : at(ArgType::BOOLEAN) {
+    character.c = b ? 1 : 0;
+    character.width = sizeof(bool);
+  }
   // %c
-  FormatArg(char c) : at(ArgType::INTEGER) {
-    integer.i = c; /// if caset to uint64_t
-    integer.width = sizeof(char);
+  FormatArg(char c) : at(ArgType::CHARACTER) {
+    character.c = c; /// if caset to uint64_t
+    character.width = sizeof(char);
   }
-  FormatArg(unsigned char c) : at(ArgType::UINTEGER) {
-    integer.i = c;
-    integer.width = sizeof(char);
+  FormatArg(unsigned char c) : at(ArgType::CHARACTER) {
+    character.c = c;
+    character.width = sizeof(char);
   }
-  FormatArg(wchar_t c) : at(ArgType::UINTEGER) {
-    integer.i = c;
-    integer.width = sizeof(wchar_t);
+  FormatArg(wchar_t c) : at(ArgType::CHARACTER) {
+    character.c = c;
+    character.width = sizeof(wchar_t);
   }
-  FormatArg(char16_t c) : at(ArgType::UINTEGER) {
-    integer.i = c;
-    integer.width = sizeof(char16_t);
+  FormatArg(char16_t c) : at(ArgType::CHARACTER) {
+    character.c = c;
+    character.width = sizeof(char16_t);
   }
-  FormatArg(char32_t c) : at(ArgType::UINTEGER) {
-    integer.i = c;
-    integer.width = sizeof(char32_t);
+  FormatArg(char32_t c) : at(ArgType::CHARACTER) {
+    character.c = c;
+    character.width = sizeof(char32_t);
   }
   //%d
   FormatArg(signed short j) : at(ArgType::INTEGER) {
@@ -92,10 +98,7 @@ struct FormatArg {
     integer.i = j;
     integer.width = sizeof(long long);
   }
-  FormatArg(bool b) : at(ArgType::BOOLEAN) {
-    integer.i = b ? 1 : 0;
-    integer.width = sizeof(char);
-  }
+
   // %f
   FormatArg(float f) : at(ArgType::FLOAT) {
     floating.d = f;
@@ -188,6 +191,9 @@ struct FormatArg {
       x.d = floating.d;
       return x.i;
     }
+    case ArgType::CHARACTER: {
+      return static_cast<uint32_t>(character.c);
+    }
     default:
       break;
     }
@@ -218,6 +224,10 @@ struct FormatArg {
       int64_t i;
       unsigned char width;
     } integer;
+    struct {
+      char32_t c;
+      unsigned char width;
+    } character;
     struct {
       double d;
       unsigned char width;

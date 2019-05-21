@@ -159,6 +159,46 @@ public:
       Append(p, dend - p);
     }
   }
+  // Char set pad is space
+  void AddUnicode(char32_t ch, size_t width, size_t chw) {
+    wchar_t digits[kFastToBufferSize + 1];
+    const auto dend = digits + kFastToBufferSize;
+    if (chw <= 2) {
+      if (width > 1) {
+        Pad(width - 1, false);
+      }
+      Out(static_cast<wchar_t>(ch));
+      return;
+    }
+    auto n = char32tochar16(reinterpret_cast<char16_t *>(digits),
+                            kFastToBufferSize, ch);
+    if (width > n) {
+      Pad(width - n, false);
+    }
+    Append(digits, n);
+  }
+
+  void AddUnicodePoint(char32_t ch) {
+    wchar_t digits[kFastToBufferSize + 1];
+    const auto dend = digits + kFastToBufferSize;
+    auto val = static_cast<uint32_t>(ch);
+    if (val > 0xFFFF) {
+      Append(L"U+", 2);
+      auto p = AlphaNumber(val, digits, 8, 16, '0', true);
+      Append(p, dend - p);
+    } else {
+      Append(L"u+", 2);
+      auto p = AlphaNumber(val, digits, 4, 16, '0', true);
+      Append(p, dend - p);
+    }
+  }
+  void AddBoolean(bool b) {
+    if (b) {
+      Append(L"true", sizeof("true") - 1);
+    } else {
+      Append(L"false", sizeof("false") - 1);
+    }
+  }
 
 private:
   T &t;
@@ -211,13 +251,17 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at == ArgType::INTEGER || args[ca].at == ArgType::UINTEGER ||
-          args[ca].at == ArgType::BOOLEAN) {
-        if (args[ca].integer.i == 0) {
-          w.Append(L"false", sizeof("false") - 1);
-        } else {
-          w.Append(L"true", sizeof("true") - 1);
-        }
+      switch (args[ca].at) {
+      case ArgType::BOOLEAN:
+      case ArgType::CHARACTER:
+        w.AddBoolean(args[ca].character.c != 0);
+        break;
+      case ArgType::INTEGER:
+      case ArgType::UINTEGER:
+        w.AddBoolean(args[ca].integer.i != 0);
+        break;
+      default:
+        break;
       }
       ca++;
       break;
@@ -225,21 +269,15 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at == ArgType::INTEGER || args[ca].at == ArgType::UINTEGER) {
-        if (args[ca].integer.width == 4) {
-          auto n = char32tochar16(reinterpret_cast<char16_t *>(digits),
-                                  kFastToBufferSize,
-                                  static_cast<char32_t>(args[ca].integer.i));
-          if (width > n) {
-            w.Pad(width - n, zero);
-          }
-          w.Append(digits, n);
-        } else {
-          if (width > 1) {
-            w.Pad(width - 1, zero);
-          }
-          w.Out(static_cast<wchar_t>(args[ca].integer.i));
-        }
+      switch (args[ca].at) {
+      case ArgType::CHARACTER:
+        w.AddUnicode(args[ca].character.c, width, args[ca].character.width);
+        break;
+      case ArgType::UINTEGER:
+      case ArgType::INTEGER:
+        w.AddUnicode(static_cast<char32_t>(args[ca].integer.i), width,
+                     args[ca].integer.width > 2 ? 4 : args[ca].integer.width);
+        break;
       }
       ca++;
       break;
@@ -313,19 +351,16 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at == ArgType::INTEGER || args[ca].at == ArgType::UINTEGER) {
-        if (args[ca].integer.width == sizeof(char32_t)) {
-          auto val = static_cast<uint32_t>(args[ca].integer.i);
-          if (val > 0xFFFF) {
-            w.Append(L"U+", 2);
-            auto p = AlphaNumber(val, digits, 8, 16, '0', true);
-            w.Append(p, dend - p);
-          } else {
-            w.Append(L"u+", 2);
-            auto p = AlphaNumber(val, digits, 4, 16, '0', true);
-            w.Append(p, dend - p);
-          }
-        }
+      switch (args[ca].at) {
+      case ArgType::CHARACTER:
+        w.AddUnicodePoint(args[ca].character.c);
+        break;
+      case ArgType::INTEGER:
+      case ArgType::UINTEGER:
+        w.AddUnicodePoint(static_cast<char32_t>(args[ca].integer.i));
+        break;
+      default:
+        break;
       }
       ca++;
       break;
@@ -359,7 +394,7 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       if (args[ca].at == ArgType::POINTER) {
         auto ptr = reinterpret_cast<ptrdiff_t>(args[ca].ptr);
-        auto p = AlphaNumber(ptr, digits, width, 16, zero ? '0' : ' ');
+        auto p = AlphaNumber(ptr, digits, width, 16, zero ? '0' : ' ', true);
         w.Append(L"0x", 2);    /// Force append 0x to pointer
         w.Append(p, dend - p); // 0xffff00000;
       }

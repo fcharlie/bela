@@ -309,6 +309,26 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       ca++;
       break;
+    case 'U':
+      if (ca >= max_args) {
+        return false;
+      }
+      if (args[ca].at == ArgType::INTEGER || args[ca].at == ArgType::UINTEGER) {
+        if (args[ca].integer.width == sizeof(char32_t)) {
+          auto val = static_cast<uint32_t>(args[ca].integer.i);
+          if (val > 0xFFFF) {
+            w.Append(L"U+", 2);
+            auto p = AlphaNumber(val, digits, 8, 16, '0', true);
+            w.Append(p, dend - p);
+          } else {
+            w.Append(L"u+", 2);
+            auto p = AlphaNumber(val, digits, 4, 16, '0', true);
+            w.Append(p, dend - p);
+          }
+        }
+      }
+      ca++;
+      break;
     case 'f':
       if (ca >= max_args) {
         return false;

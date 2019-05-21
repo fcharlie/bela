@@ -47,15 +47,15 @@ struct FormatArg {
     integer.i = c;
     integer.width = sizeof(char);
   }
-  FormatArg(wchar_t c) : at(ArgType::INTEGER) {
+  FormatArg(wchar_t c) : at(ArgType::UINTEGER) {
     integer.i = c;
     integer.width = sizeof(wchar_t);
   }
-  FormatArg(char16_t c) : at(ArgType::INTEGER) {
+  FormatArg(char16_t c) : at(ArgType::UINTEGER) {
     integer.i = c;
     integer.width = sizeof(char16_t);
   }
-  FormatArg(char32_t c) : at(ArgType::INTEGER) {
+  FormatArg(char32_t c) : at(ArgType::UINTEGER) {
     integer.i = c;
     integer.width = sizeof(char32_t);
   }

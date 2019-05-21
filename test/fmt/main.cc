@@ -12,7 +12,7 @@ int wmain(int argc, wchar_t **argv) {
   char32_t em = 0x1F603; // 😃 U+1F603
   auto s = bela::StringCat(L"Look emoji -->", em, L" U+",
                            bela::AlphaNum(bela::Hex(em)));
-  bela::FPrintF(stderr, L"emoji test %c %s\n", em, s);
+  bela::FPrintF(stderr, L"emoji test %c %U %s\n", em, em, s);
   bela::FPrintF(stderr, L"hStderr Mode: %s hStdin Mode: %s\n",
                 bela::FileTypeName(stderr), bela::FileTypeName(stdin));
   return 0;

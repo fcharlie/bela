@@ -227,9 +227,9 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       if (args[ca].at == ArgType::INTEGER || args[ca].at == ArgType::UINTEGER) {
         if (args[ca].integer.width == 4) {
-          auto n = char32tochar16(static_cast<char32_t>(args[ca].integer.i),
-                                  reinterpret_cast<char16_t *>(digits),
-                                  kFastToBufferSize);
+          auto n = char32tochar16(reinterpret_cast<char16_t *>(digits),
+                                  kFastToBufferSize,
+                                  static_cast<char32_t>(args[ca].integer.i));
           if (width > n) {
             w.Pad(width - n, zero);
           }

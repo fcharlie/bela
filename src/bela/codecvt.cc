@@ -40,15 +40,12 @@ namespace bela {
 constexpr const char32_t offsetfromu8[6] = {0x00000000UL, 0x00003080UL,
                                             0x000E2080UL, 0x03C82080UL,
                                             0xFA082080UL, 0x82082080UL};
-constexpr const uint8_t firstByteMark[7] = {0x00, 0x00, 0xC0, 0xE0,
-                                            0xF0, 0xF8, 0xFC}; // U8
 constexpr const char32_t halfBase = 0x0010000UL;
 constexpr const char32_t halfMask = 0x3FFUL;
 constexpr const int halfShift = 10; /* used for shifting by 10 bits */
-constexpr const char32_t byteMask = 0xBF;
-constexpr const char32_t byteMark = 0x80;
+constexpr const size_t kMaxEncodedUTF8Size = 4;
 
-size_t char32tochar16(char32_t ch, char16_t *buf, size_t n) {
+size_t char32tochar16(char16_t *buf, size_t n, char32_t ch) {
   if (n < 2) {
     return 0;
   }
@@ -125,42 +122,40 @@ bool islegau8(const uint8_t *source, int length) {
   return *source <= 0xF4;
 }
 
-static inline size_t char32tochar8_internal(char32_t ch, unsigned char *buf) {
-  size_t bw = 0;
+static inline size_t char32tochar8_internal(char *buffer, char32_t ch) {
   if (ch < (char32_t)0x80) {
-    bw = 1;
-  } else if (ch < (char32_t)0x800) {
-    bw = 2;
-  } else if (ch < (char32_t)0x10000) {
-    bw = 3;
-  } else if (ch < (char32_t)0x110000) {
-    bw = 4;
-  } else {
-    bw = 3;
-    ch = UNI_REPLACEMENT_CHAR;
+    *buffer = static_cast<char>(ch);
+    return 1;
   }
-  auto target = buf + bw;
-  switch (bw) { /* note: everything falls through. */
-  case 4:
-    *--target = (uint8_t)((ch | byteMark) & byteMask);
+  if (ch < (char32_t)0x800) {
+    buffer[1] = static_cast<char>(0x80 | (ch & 0x3F));
     ch >>= 6;
-  case 3:
-    *--target = (uint8_t)((ch | byteMark) & byteMask);
-    ch >>= 6;
-  case 2:
-    *--target = (uint8_t)((ch | byteMark) & byteMask);
-    ch >>= 6;
-  case 1:
-    *--target = (uint8_t)(ch | firstByteMark[bw]);
+    buffer[0] = static_cast<char>(0xc0 | ch);
+    return 2;
   }
-  return bw;
+  if (ch < (char32_t)0x10000) {
+    buffer[2] = static_cast<char>(0x80 | (ch & 0x3F));
+    ch >>= 6;
+    buffer[1] = static_cast<char>(0x80 | (ch & 0x3F));
+    ch >>= 6;
+    buffer[0] = static_cast<char>(0xE0 | ch);
+    return 3;
+  }
+  buffer[3] = static_cast<char>(0x80 | (ch & 0x3F));
+  ch >>= 6;
+  buffer[2] = static_cast<char>(0x80 | (ch & 0x3F));
+  ch >>= 6;
+  buffer[1] = static_cast<char>(0x80 | (ch & 0x3F));
+  ch >>= 6;
+  buffer[0] = static_cast<char>(0xF0 | ch);
+  return 4;
 }
 
-size_t char32tochar8(char32_t ch, unsigned char *buf, size_t n) {
-  if (n < 4) {
+size_t char32tochar8(char *buf, size_t n, char32_t ch) {
+  if (n < kMaxEncodedUTF8Size) {
     return 0;
   }
-  return char32tochar8_internal(ch, buf);
+  return char32tochar8_internal(buf, ch);
 }
 
 std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
@@ -168,7 +163,7 @@ std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
   s.reserve(len);
   auto it = data;
   auto end = it + len;
-  uint8_t buffer[8] = {0};
+  char buffer[8] = {0};
   while (it < end) {
     char32_t ch = *it++;
     if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
@@ -186,7 +181,7 @@ std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
         return s;
       }
     }
-    auto bw = char32tochar8_internal(ch, buffer);
+    auto bw = char32tochar8_internal(buffer, ch);
     s.append(reinterpret_cast<const char *>(buffer), bw);
   }
   return s;

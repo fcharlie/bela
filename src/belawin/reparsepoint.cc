@@ -16,7 +16,7 @@ struct Distributor {
   bool (*imp)(const ReparseBuffer *, facv_t &);
 };
 
-static bool WinntSymlink(const ReparseBuffer *buf, facv_t &av) {
+static bool NtSymbolicLink(const ReparseBuffer *buf, facv_t &av) {
   std::wstring target;
   auto wstr =
       buf->SymbolicLinkReparseBuffer.PathBuffer +
@@ -49,6 +49,14 @@ static bool WinntSymlink(const ReparseBuffer *buf, facv_t &av) {
   return true;
 }
 
+static bool GlobalSymbolicLink(const ReparseBuffer *buf, facv_t &av) {
+  if (!NtSymbolicLink(buf, av)) {
+    return true;
+  }
+  av.emplace_back(L"IsGlobal", L"True");
+  return true;
+}
+
 static bool AppExecLink(const ReparseBuffer *buf, facv_t &av) {
   if (buf->AppExecLinkReparseBuffer.StringCount < 3) {
     return false;
@@ -65,10 +73,50 @@ static bool AppExecLink(const ReparseBuffer *buf, facv_t &av) {
   return true;
 }
 
+static bool MountPoint(const ReparseBuffer *buf, facv_t &av) {
+  auto wstr =
+      buf->MountPointReparseBuffer.PathBuffer +
+      (buf->MountPointReparseBuffer.SubstituteNameOffset / sizeof(WCHAR));
+  auto wlen = buf->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+  /* Only treat junctions that look like \??\<drive>:\ as symlink. */
+  /* Junctions can also be used as mount points, like \??\Volume{<guid>}, */
+  /* but that's confusing for programs since they wouldn't be able to */
+  /* actually understand such a path when returned by uv_readlink(). */
+  /* UNC paths are never valid for junctions so we don't care about them. */
+  if (!(wlen >= 6 && wstr[0] == L'\\' && wstr[1] == L'?' && wstr[2] == L'?' &&
+        wstr[3] == L'\\' &&
+        ((wstr[4] >= L'A' && wstr[4] <= L'Z') ||
+         (wstr[4] >= L'a' && wstr[4] <= L'z')) &&
+        wstr[5] == L':' && (wlen == 6 || wstr[6] == L'\\'))) {
+    return false;
+  }
+
+  /* Remove leading \??\ */
+  wstr += 4;
+  wlen -= 4;
+  av.emplace_back(L"Target", std::wstring(wstr, wlen));
+  return true;
+}
+
+static bool AFUnix(const ReparseBuffer *buf, facv_t &av) {
+  //
+  return true;
+}
+
+static bool LxSymbolicLink(const ReparseBuffer *buf, facv_t &av) {
+  // Not implemented
+  return true;
+}
+
 bool ReparsePoint::Analyze(std::wstring_view file, bela::error_code &ec) {
   static const constexpr Distributor av[] = {
       {IO_REPARSE_TAG_APPEXECLINK, AppExecLink}, // AppExecLink
-      {IO_REPARSE_TAG_SYMLINK, WinntSymlink}
+      {IO_REPARSE_TAG_SYMLINK, NtSymbolicLink},
+      {IO_REPARSE_TAG_GLOBAL_REPARSE, GlobalSymbolicLink},
+      {IO_REPARSE_TAG_MOUNT_POINT, MountPoint},
+      {IO_REPARSE_TAG_AF_UNIX, AFUnix},
+      {IO_REPARSE_TAG_LX_SYMLINK, LxSymbolicLink}
+      ///  WSL1 symlink is a file. WSL2???
       // end value
   };
   HANDLE hFile = INVALID_HANDLE_VALUE;
@@ -84,6 +132,7 @@ bool ReparsePoint::Analyze(std::wstring_view file, bela::error_code &ec) {
   buf = reinterpret_cast<REPARSE_DATA_BUFFER *>(
       HeapAlloc(GetProcessHeap(), 0, MAXIMUM_REPARSE_DATA_BUFFER_SIZE));
   if (buf == nullptr) {
+    ec = bela::make_system_error_code();
     return false;
   }
   hFile = CreateFileW(
@@ -91,12 +140,16 @@ bool ReparsePoint::Analyze(std::wstring_view file, bela::error_code &ec) {
       nullptr, OPEN_EXISTING,
       FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
+    ec = bela::make_system_error_code();
     return false;
   }
   DWORD dwBytes = 0;
+  // FIXME some reparsepoint type (AF_UNX LX_SYMLINK... ) cannot resolve as
+  // reparsepoint
   if (DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, nullptr, 0, buf,
                       MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &dwBytes,
                       nullptr) != TRUE) {
+    ec = bela::make_system_error_code();
     return false;
   }
   tagvalue = buf->ReparseTag;

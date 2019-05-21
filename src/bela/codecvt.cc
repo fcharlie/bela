@@ -60,8 +60,13 @@ size_t char32tochar16(char32_t ch, char16_t *buf, size_t n) {
     buf[0] = static_cast<char16_t>(ch);
     return 1;
   }
+  if (ch > UNI_MAX_LEGAL_UTF32) {
+    buf[0] = static_cast<char16_t>(UNI_REPLACEMENT_CHAR);
+    return 1;
+  }
+  ch -= halfBase;
   buf[0] = static_cast<char16_t>((ch >> halfShift) + UNI_SUR_HIGH_START);
-  buf[1] = static_cast<char16_t>((ch & halfMask) + UNI_SUR_HIGH_START);
+  buf[1] = static_cast<char16_t>((ch & halfMask) + UNI_SUR_LOW_START);
   return 2;
 }
 

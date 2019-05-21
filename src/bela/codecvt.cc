@@ -18,10 +18,38 @@
 
 namespace bela {
 
+/*
+ * Index into the table below with the first byte of a UTF-8 sequence to
+ * get the number of trailing bytes that are supposed to follow it.
+ * Note that *legal* UTF-8 values can't have 4 or 5-bytes. The table is
+ * left as-is for anyone who may want to do such conversion, which was
+ * allowed in earlier algorithms.
+ */
+// clang-format off
+    static const char trailingbytesu8[256] = {
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
+    };
+// clang-format on
+constexpr const char32_t offsetfromu8[6] = {0x00000000UL, 0x00003080UL,
+                                            0x000E2080UL, 0x03C82080UL,
+                                            0xFA082080UL, 0x82082080UL};
+constexpr const uint8_t firstByteMark[7] = {0x00, 0x00, 0xC0, 0xE0,
+                                            0xF0, 0xF8, 0xFC}; // U8
+constexpr const char32_t halfBase = 0x0010000UL;
+constexpr const char32_t halfMask = 0x3FFUL;
+constexpr const int halfShift = 10; /* used for shifting by 10 bits */
+constexpr const char32_t byteMask = 0xBF;
+constexpr const char32_t byteMark = 0x80;
+
 size_t char32tochar16(char32_t ch, char16_t *buf, size_t n) {
-  constexpr const char32_t halfMask = 0x3FFUL;
-  constexpr const int halfShift = 10; /* used for shifting by 10 bits */
-  if (n < 3) {
+  if (n < 2) {
     return 0;
   }
   if (ch <= UNI_MAX_BMP) {
@@ -36,26 +64,6 @@ size_t char32tochar16(char32_t ch, char16_t *buf, size_t n) {
   buf[1] = static_cast<char16_t>((ch & halfMask) + UNI_SUR_HIGH_START);
   return 2;
 }
-
-/*
- * Index into the table below with the first byte of a UTF-8 sequence to
- * get the number of trailing bytes that are supposed to follow it.
- * Note that *legal* UTF-8 values can't have 4 or 5-bytes. The table is
- * left as-is for anyone who may want to do such conversion, which was
- * allowed in earlier algorithms.
- */
-// clang-format off
-  static const char trailingbytesu8[256] = {
-      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-      2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
-  };
-// clang-format on
 
 bool islegau8(const uint8_t *source, int length) {
   uint16_t a;
@@ -112,21 +120,45 @@ bool islegau8(const uint8_t *source, int length) {
   return *source <= 0xF4;
 }
 
-static const char32_t offsetfromu8[6] = {0x00000000UL, 0x00003080UL,
-                                         0x000E2080UL, 0x03C82080UL,
-                                         0xFA082080UL, 0x82082080UL};
-constexpr const char32_t halfBase = 0x0010000UL;
-constexpr const char32_t halfMask = 0x3FFUL;
-constexpr const int halfShift = 10; /* used for shifting by 10 bits */
-static const uint8_t firstByteMark[7] = {0x00, 0x00, 0xC0, 0xE0,
-                                         0xF0, 0xF8, 0xFC};
+size_t char32tochar8(char32_t ch, unsigned char *buf, size_t n) {
+  if (n < 4) {
+    return 0;
+  }
+  size_t bw = 0;
+  if (ch < (char32_t)0x80) {
+    bw = 1;
+  } else if (ch < (char32_t)0x800) {
+    bw = 2;
+  } else if (ch < (char32_t)0x10000) {
+    bw = 3;
+  } else if (ch < (char32_t)0x110000) {
+    bw = 4;
+  } else {
+    bw = 3;
+    ch = UNI_REPLACEMENT_CHAR;
+  }
+  auto target = buf + bw;
+  switch (bw) { /* note: everything falls through. */
+  case 4:
+    *--target = (uint8_t)((ch | byteMark) & byteMask);
+    ch >>= 6;
+  case 3:
+    *--target = (uint8_t)((ch | byteMark) & byteMask);
+    ch >>= 6;
+  case 2:
+    *--target = (uint8_t)((ch | byteMark) & byteMask);
+    ch >>= 6;
+  case 1:
+    *--target = (uint8_t)(ch | firstByteMark[bw]);
+  }
+  return bw;
+}
+
 std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
   std::string s;
   s.reserve(len);
   auto it = data;
   auto end = it + len;
-  constexpr const char32_t byteMask = 0xBF;
-  constexpr const char32_t byteMark = 0x80;
   uint8_t buffer[8] = {0};
   while (it < end) {
     unsigned short bw = 0;

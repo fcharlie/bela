@@ -135,7 +135,7 @@ public:
       Append(L"inf", 3);
       return;
     }
-    wchar_t digits[kFastToBufferSize + 1];
+    wchar_t digits[kFastToBufferSize];
     const auto dend = digits + kFastToBufferSize;
     auto ui64 = static_cast<int64_t>(d);
     uint64_t frac = 0;
@@ -161,8 +161,8 @@ public:
   }
   // Char set pad is space
   void AddUnicode(char32_t ch, size_t width, size_t chw) {
-    wchar_t digits[kFastToBufferSize + 1];
-    const auto dend = digits + kFastToBufferSize;
+    constexpr size_t kMaxEncodedUTF16Size = 2;
+    wchar_t digits[kMaxEncodedUTF16Size + 2];
     if (chw <= 2) {
       if (width > 1) {
         Pad(width - 1, false);
@@ -216,7 +216,7 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
   if (args == nullptr || max_args == 0) {
     return false;
   }
-  wchar_t digits[kFastToBufferSize + 1];
+  wchar_t digits[kFastToBufferSize];
   const auto dend = digits + kFastToBufferSize;
   auto it = fmt;
   auto end = it + wcslen(fmt);
@@ -277,6 +277,8 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       case ArgType::INTEGER:
         w.AddUnicode(static_cast<char32_t>(args[ca].integer.i), width,
                      args[ca].integer.width > 2 ? 4 : args[ca].integer.width);
+        break;
+      default:
         break;
       }
       ca++;

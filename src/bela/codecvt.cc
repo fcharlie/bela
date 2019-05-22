@@ -78,10 +78,12 @@ bool islegau8(const uint8_t *source, int length) {
     if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
       return false;
     }
+    [[fallthrough]];
   case 3:
     if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
       return false;
     }
+    [[fallthrough]];
   case 2:
     if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
       return false;
@@ -113,7 +115,7 @@ bool islegau8(const uint8_t *source, int length) {
         return false;
       }
     }
-
+    [[fallthrough]];
   case 1:
     if (*source >= 0x80 && *source < 0xC2) {
       return false;
@@ -207,22 +209,28 @@ bool mbrtoc16(const unsigned char *s, size_t len,
     if (!islegau8(it, nb + 1)) {
       return false;
     }
+    // https://docs.microsoft.com/en-us/cpp/cpp/attributes?view=vs-2019
     switch (nb) {
     case 5:
       ch += *it++;
       ch <<= 6; /* remember, illegal UTF-8 */
+      [[fallthrough]];
     case 4:
       ch += *it++;
       ch <<= 6; /* remember, illegal UTF-8 */
+      [[fallthrough]];
     case 3:
       ch += *it++;
       ch <<= 6;
+      [[fallthrough]];
     case 2:
       ch += *it++;
       ch <<= 6;
+      [[fallthrough]];
     case 1:
       ch += *it++;
       ch <<= 6;
+      [[fallthrough]];
     case 0:
       ch += *it++;
     }

@@ -152,7 +152,7 @@ inline std::wstring PathEnv() {
 }
 
 bool PathFindExecutable(std::wstring_view cmd, std::wstring_view parent,
-                        std::string &exe) {
+                        std::wstring &exe) {
   exe = bela::StringCat(parent, L"\\", cmd);
   if (PathFileIsExists(exe)) {
     return true;
@@ -161,7 +161,7 @@ bool PathFindExecutable(std::wstring_view cmd, std::wstring_view parent,
   constexpr std::wstring_view suffix[] = {L".exe", L".com", L".bat", L".cmd"};
   for (auto s : suffix) {
     exe.resize(old_size);
-    absl::StrAppend(&exe, s);
+    bela::StrAppend(&exe, s);
     if (PathFileIsExists(exe)) {
       return true;
     }

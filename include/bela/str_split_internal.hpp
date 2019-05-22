@@ -310,7 +310,7 @@ private:
     std::vector<std::wstring_view, A>
     operator()(const Splitter &splitter) const {
       struct raw_view {
-        const char *data;
+        const wchar_t *data;
         size_t size;
         operator std::wstring_view() const { // NOLINT(runtime/explicit)
           return {data, size};

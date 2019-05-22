@@ -44,7 +44,7 @@ ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt, Args... args)
 
 ## 示例
 
-```c++
+```cpp
 ///
 #include <bela/strcat.hpp>
 #include <bela/stdwriter.hpp>
@@ -54,8 +54,7 @@ int wmain(int argc, wchar_t **argv) {
   wchar_t wx[] = L"Engine \xD83D\xDEE0 中国";
   bela::FPrintF(
       stderr,
-      L"Argc: %d Arg0: \x1b[32m%s\x1b[0m W: %s UTF-8: %s __cplusplus: %d\n",
-      argc, argv[0], wx, ux, __cplusplus);
+      L"Argc: %d Arg0: \x1b[32m%s\x1b[0m W: %s UTF-8: %s __cplusplus: %d\n", argc, argv[0], wx, ux, __cplusplus);
   char32_t em = 0x1F603;//😃
   auto s = bela::StringCat(L"Look emoji -->", em, L" U: ",
                            static_cast<uint32_t>(em));

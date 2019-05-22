@@ -2,6 +2,8 @@
 #include <vector>
 #include <bela/path.hpp>
 #include <bela/strip.hpp>
+#include <bela/strcat.hpp>
+#include <bela/str_split.hpp>
 #include <bela/base.hpp>
 
 namespace bela {
@@ -126,6 +128,72 @@ bool PathExists(std::wstring_view src, FileAttribute fa) {
     return false;
   }
   return fa == FileAttribute::None ? true : ((static_cast<DWORD>(fa) & a) != 0);
+}
+
+inline bool PathFileIsExists(std::wstring_view file) {
+  auto at = GetFileAttributesW(file.data());
+  return (INVALID_FILE_ATTRIBUTES != at &&
+          (at & FILE_ATTRIBUTE_DIRECTORY) == 0);
+}
+//
+inline std::wstring PathEnv() {
+  auto len = GetEnvironmentVariableW(L"PATH", nullptr, 0);
+  if (len == 0) {
+    return L"";
+  }
+  std::wstring s;
+  s.resize(len + 1);
+  len = GetEnvironmentVariableW(L"PATH", s.data(), len + 1);
+  if (len == 0) {
+    return L"";
+  }
+  s.resize(len);
+  return s;
+}
+
+bool PathFindExecutable(std::wstring_view cmd, std::wstring_view parent,
+                        std::string &exe) {
+  exe = bela::StringCat(parent, L"\\", cmd);
+  if (PathFileIsExists(exe)) {
+    return true;
+  }
+  auto old_size = exe.size();
+  constexpr std::wstring_view suffix[] = {L".exe", L".com", L".bat", L".cmd"};
+  for (auto s : suffix) {
+    exe.resize(old_size);
+    absl::StrAppend(&exe, s);
+    if (PathFileIsExists(exe)) {
+      return true;
+    }
+  }
+  exe.clear();
+  return false;
+}
+
+bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe) {
+  if (PathFileIsExists(cmd)) {
+    exe = cmd;
+    return true;
+  }
+  if (cmd.find_first_of(L"\\/") != std::wstring_view::npos) {
+    // is relative or full path and not exists
+    return false;
+  }
+  auto penv = PathEnv();
+  if (penv.empty()) {
+    return false;
+  }
+  std::vector<std::wstring_view> pv =
+      bela::StrSplit(penv, bela::ByChar(L';'), bela::SkipEmpty());
+  for (auto p : pv) {
+    if (p.back() == '\\') {
+      p.remove_suffix(1);
+    }
+    if (PathFindExecutable(cmd, p, exe)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 } // namespace bela

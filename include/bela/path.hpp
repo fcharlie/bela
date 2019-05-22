@@ -90,6 +90,7 @@ enum class FileAttribute : DWORD {
 
 // std::wstring_view ::data() must Null-terminated string
 bool PathExists(std::wstring_view src, FileAttribute fa = FileAttribute::None);
+bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe);
 bool LookupRealPath(std::wstring_view src, std::wstring &target);
 struct AppExecTarget {
   std::wstring pkid;

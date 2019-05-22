@@ -4,6 +4,7 @@
 #include <bela/strip.hpp>
 #include <bela/strcat.hpp>
 #include <bela/str_split.hpp>
+#include <bela/ascii.hpp>
 #include <bela/base.hpp>
 
 namespace bela {
@@ -136,14 +137,14 @@ inline bool PathFileIsExists(std::wstring_view file) {
           (at & FILE_ATTRIBUTE_DIRECTORY) == 0);
 }
 //
-inline std::wstring PathEnv() {
-  auto len = GetEnvironmentVariableW(L"PATH", nullptr, 0);
+inline std::wstring GetEnv(std::wstring_view val) {
+  auto len = GetEnvironmentVariableW(val.data(), nullptr, 0);
   if (len == 0) {
     return L"";
   }
   std::wstring s;
   s.resize(len + 1);
-  len = GetEnvironmentVariableW(L"PATH", s.data(), len + 1);
+  len = GetEnvironmentVariableW(val.data(), s.data(), len + 1);
   if (len == 0) {
     return L"";
   }
@@ -151,45 +152,57 @@ inline std::wstring PathEnv() {
   return s;
 }
 
-bool PathFindExecutable(std::wstring_view cmd, std::wstring_view parent,
-                        std::wstring &exe) {
-  exe = bela::StringCat(parent, L"\\", cmd);
-  if (PathFileIsExists(exe)) {
+bool HasExt(std::wstring_view file) {
+  auto pos = file.find(L'.');
+  if (pos == std::wstring_view::npos) {
+    return false;
+  }
+  return (file.find_last_of(L":\\/") < pos);
+}
+
+bool FindExecutable(std::wstring_view file,
+                    const std::vector<std::wstring> &exts, std::wstring &p) {
+  if (HasExt(file) && PathFileIsExists(file)) {
+    p = file;
     return true;
   }
-  auto old_size = exe.size();
-  constexpr std::wstring_view suffix[] = {L".exe", L".com", L".bat", L".cmd"};
-  for (auto s : suffix) {
-    exe.resize(old_size);
-    bela::StrAppend(&exe, s);
-    if (PathFileIsExists(exe)) {
+  for (const auto &e : exts) {
+    auto newfile = bela::StringCat(file, e);
+    if (PathFileIsExists(newfile)) {
+      p.assign(std::move(newfile));
       return true;
     }
   }
-  exe.clear();
   return false;
 }
 
 bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe) {
-  if (PathFileIsExists(cmd)) {
-    exe = cmd;
+  constexpr std::wstring_view defaultexts[] = {L".com", L".exe", L".bat",
+                                               L".cmd"};
+  std::wstring suffixwapper;
+  std::vector<std::wstring> exts;
+  auto pathext = GetEnv(L"PATHEXT");
+  if (!pathext.empty()) {
+    exts = bela::StrSplit(pathext, bela::ByChar(L';'), bela::SkipEmpty());
+    for (auto &e : exts) {
+      bela::AsciiStrToLower(&e);
+    }
+  } else {
+    exts.assign(std::begin(defaultexts), std::end(defaultexts));
+  }
+  if (cmd.find_first_of(L":\\/") != std::wstring_view::npos) {
+    return FindExecutable(cmd, exts, exe);
+  }
+  auto cwdfile = bela::PathCat(L".", cmd);
+  if (FindExecutable(cwdfile, exts, exe)) {
     return true;
   }
-  if (cmd.find_first_of(L"\\/") != std::wstring_view::npos) {
-    // is relative or full path and not exists
-    return false;
-  }
-  auto penv = PathEnv();
-  if (penv.empty()) {
-    return false;
-  }
-  std::vector<std::wstring_view> pv =
-      bela::StrSplit(penv, bela::ByChar(L';'), bela::SkipEmpty());
-  for (auto p : pv) {
-    if (p.back() == '\\') {
-      p.remove_suffix(1);
-    }
-    if (PathFindExecutable(cmd, p, exe)) {
+  auto path = GetEnv(L"PATH");
+  std::vector<std::wstring_view> pathv =
+      bela::StrSplit(path, bela::ByChar(L';'), bela::SkipEmpty());
+  for (auto p : pathv) {
+    auto pfile = bela::PathCat(p, cmd);
+    if (FindExecutable(pfile, exts, exe)) {
       return true;
     }
   }

@@ -7,3 +7,11 @@ add_executable(pathcat_test
 target_link_libraries(pathcat_test
   belawin
 )
+
+add_executable(which
+  which.cc
+)
+
+target_link_libraries(which
+  belawin
+)

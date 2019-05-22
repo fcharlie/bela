@@ -183,10 +183,8 @@ bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe) {
   std::vector<std::wstring> exts;
   auto pathext = GetEnv(L"PATHEXT");
   if (!pathext.empty()) {
+    bela::AsciiStrToLower(&pathext); // tolower
     exts = bela::StrSplit(pathext, bela::ByChar(L';'), bela::SkipEmpty());
-    for (auto &e : exts) {
-      bela::AsciiStrToLower(&e);
-    }
   } else {
     exts.assign(std::begin(defaultexts), std::end(defaultexts));
   }

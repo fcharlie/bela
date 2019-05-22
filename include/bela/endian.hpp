@@ -36,6 +36,7 @@
 #endif
 
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
 
 namespace bela {
@@ -135,9 +136,15 @@ template <typename T> constexpr T Swapbe(T i) {
   return bswap(i);
 }
 
+template <typename T> inline T unalignedloadT(const void *p) {
+  T t;
+  memcpy(&t, p, sizeof(T));
+  return t;
+}
+
 template <typename T> constexpr T Resolvele(const void *p) {
   static_assert(std::is_integral<T>::value, "Integral required.");
-  auto i = *reinterpret_cast<const T *>(p);
+  auto i = unalignedloadT<T>(p);
   if constexpr (IsBigEndianHost) {
     return bswap(i);
   }
@@ -146,7 +153,7 @@ template <typename T> constexpr T Resolvele(const void *p) {
 
 template <typename T> constexpr T Resolvebe(const void *p) {
   static_assert(std::is_integral<T>::value, "Integral required.");
-  auto i = *reinterpret_cast<const T *>(p);
+  auto i = unalignedloadT<T>(p);
   if constexpr (IsBigEndianHost) {
     return i;
   }

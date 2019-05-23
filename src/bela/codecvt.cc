@@ -1,4 +1,7 @@
 //////////
+// see:
+// https://github.com/llvm-mirror/llvm/blob/master/lib/Support/ConvertUTF.cpp
+//
 #include <bela/codecvt.hpp>
 /* Some fundamental constants */
 #define UNI_REPLACEMENT_CHAR (char32_t)0x0000FFFD

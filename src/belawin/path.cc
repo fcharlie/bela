@@ -34,7 +34,7 @@ inline bool PathStripDriveLatter(std::wstring_view &sv, wchar_t &dl) {
   return false;
 }
 using container_t = std::vector<std::wstring_view>;
-bool PathSplit(container_t &output, std::wstring_view sv) {
+bool PathSplit(std::wstring_view sv, container_t &output) {
   constexpr std::wstring_view dotdot = L"..";
   constexpr std::wstring_view dot = L".";
   size_t first = 0;
@@ -87,11 +87,11 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
   wchar_t latter = 0;
   auto haslatter = PathStripDriveLatter(p0, latter);
   container_t pv;
-  if (!PathSplit(pv, p0)) {
+  if (!PathSplit(p0, pv)) {
     return L"";
   }
   for (size_t i = 1; i < pieces.size(); i++) {
-    if (!PathSplit(pv, pieces[i])) {
+    if (!PathSplit(pieces[i], pv)) {
       return L"";
     }
   }
@@ -166,8 +166,15 @@ bool FindExecutable(std::wstring_view file,
     p = file;
     return true;
   }
+  std::wstring newfile;
+  newfile.reserve(file.size() + 8);
+  newfile.assign(file);
+  auto rawsize = newfile.size();
   for (const auto &e : exts) {
-    auto newfile = bela::StringCat(file, e);
+    // rawsize always < newfile.size();
+    // std::char_traits::assign
+    newfile.resize(rawsize);
+    newfile.append(e);
     if (PathFileIsExists(newfile)) {
       p.assign(std::move(newfile));
       return true;

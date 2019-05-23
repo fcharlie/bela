@@ -191,9 +191,9 @@ template <typename Delimiter> struct SelectDelimiter {
   using type = Delimiter;
 };
 
-template <> struct SelectDelimiter<char> { using type = ByChar; };
-template <> struct SelectDelimiter<char *> { using type = ByString; };
-template <> struct SelectDelimiter<const char *> { using type = ByString; };
+template <> struct SelectDelimiter<wchar_t> { using type = ByChar; };
+template <> struct SelectDelimiter<wchar_t *> { using type = ByString; };
+template <> struct SelectDelimiter<const wchar_t *> { using type = ByString; };
 template <> struct SelectDelimiter<std::wstring_view> {
   using type = ByString;
 };

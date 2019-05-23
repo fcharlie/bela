@@ -11,7 +11,7 @@ namespace bela {
 namespace strings_internal {
 
 template <typename T> inline void memcopy(T *dest, const T *src, size_t n) {
-  if(n!=0){
+  if (n != 0) {
     memcpy(dest, src, sizeof(T) * n);
   }
 }

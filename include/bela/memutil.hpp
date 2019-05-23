@@ -11,7 +11,9 @@ namespace bela {
 namespace strings_internal {
 
 template <typename T> inline void memcopy(T *dest, const T *src, size_t n) {
-  memcpy(dest, src, sizeof(T) * n);
+  if(n!=0){
+    memcpy(dest, src, sizeof(T) * n);
+  }
 }
 
 int memcasecmp(const wchar_t *s1, const wchar_t *s2, size_t len);

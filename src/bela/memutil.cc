@@ -1,4 +1,6 @@
 ////
+#include <cwctype>
+// https://en.cppreference.com/w/cpp/header/cwctype
 #include <bela/memutil.hpp>
 
 namespace bela {
@@ -7,25 +9,28 @@ namespace strings_internal {
 
 int memcasecmp(const wchar_t *s1, const wchar_t *s2, size_t len) {
   for (size_t i = 0; i < len; i++) {
-    const int diff = int{towlower(s1[i])} - int{towlower(s1[i])};
-    if (diff != 0)
-      return diff;
+    const auto diff = ::towlower(s1[i]) - ::towlower(s2[i]);
+    if (diff != 0) {
+      return static_cast<int>(diff);
+    }
   }
   return 0;
 }
 
 wchar_t *memdup(const wchar_t *s, size_t slen) {
   void *copy;
-  if ((copy = malloc(slen * sizeof(wchar_t))) == nullptr)
+  if ((copy = malloc(slen * sizeof(wchar_t))) == nullptr) {
     return nullptr;
+  }
   memcpy(copy, s, slen * sizeof(wchar_t));
   return reinterpret_cast<wchar_t *>(copy);
 }
 
 wchar_t *memrchr(const wchar_t *s, int c, size_t slen) {
   for (const wchar_t *e = s + slen - 1; e >= s; e--) {
-    if (*e == c)
+    if (*e == c) {
       return const_cast<wchar_t *>(e);
+    }
   }
   return nullptr;
 }

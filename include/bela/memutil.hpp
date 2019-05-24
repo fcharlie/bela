@@ -35,9 +35,9 @@ const wchar_t *int_memmatch(const wchar_t *haystack, size_t haylen,
   const wchar_t *needleend = needlestart + neelen;
 
   for (; haystack < hayend; ++haystack) {
-    wchar_t hay = case_sensitive ? *haystack : towlower(*haystack);
+    wchar_t hay = case_sensitive ? *haystack : std::towlower(*haystack);
 
-    wchar_t nee = case_sensitive ? *needle : towlower(*needle);
+    wchar_t nee = case_sensitive ? *needle : std::towlower(*needle);
     if (hay == nee) {
       if (++needle == needleend) {
         return haystack + 1 - neelen;

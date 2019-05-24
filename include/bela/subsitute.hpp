@@ -4,11 +4,10 @@
 #pragma once
 #include "ascii.hpp"
 #include "strcat.hpp" //AlphaNum
+#include "algorithm.hpp"
 
 namespace bela {
-template <typename T, size_t N>
-auto ArraySizeHelper(const T (&array)[N]) -> char (&)[N];
-#define BELA_ARRAYSIZE(array) (sizeof(ArraySizeHelper(array)))
+
 namespace substitute_internal {
 void SubstituteAndAppendArray(std::wstring *output, std::wstring_view format,
                               const std::wstring_view *args_array,
@@ -23,14 +22,14 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
                                 const AlphaNum &a0) {
   const std::wstring_view args[] = {a0.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
                                 const AlphaNum &a0, const AlphaNum &a1) {
   const std::wstring_view args[] = {a0.Piece(), a1.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
@@ -38,7 +37,7 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
                                 const AlphaNum &a2) {
   const std::wstring_view args[] = {a0.Piece(), a1.Piece(), a2.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
@@ -47,7 +46,7 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
   const std::wstring_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(),
                                     a3.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
@@ -57,7 +56,7 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
   const std::wstring_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(),
                                     a3.Piece(), a4.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
@@ -67,7 +66,7 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
   const std::wstring_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(),
                                     a3.Piece(), a4.Piece(), a5.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
@@ -79,7 +78,7 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
                                     a3.Piece(), a4.Piece(), a5.Piece(),
                                     a6.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
@@ -91,7 +90,7 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
                                     a3.Piece(), a4.Piece(), a5.Piece(),
                                     a6.Piece(), a7.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
@@ -104,7 +103,7 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
                                     a3.Piece(), a4.Piece(), a5.Piece(),
                                     a6.Piece(), a7.Piece(), a8.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
@@ -117,7 +116,7 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format,
       a0.Piece(), a1.Piece(), a2.Piece(), a3.Piece(), a4.Piece(),
       a5.Piece(), a6.Piece(), a7.Piece(), a8.Piece(), a9.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                BELA_ARRAYSIZE(args));
+                                                bela::ArrayLength(args));
 }
 
 [[nodiscard]] inline std::wstring Substitute(std::wstring_view format) {

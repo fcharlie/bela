@@ -8,7 +8,7 @@ AlphaNum::AlphaNum(Hex hex) {
   wchar_t *const end = &digits_[numbers_internal::kFastToBufferSize];
   wchar_t *writer = end;
   uint64_t value = hex.value;
-  static const wchar_t hexdigits[] = L"0123456789abcdef";
+  static constexpr const wchar_t hexdigits[] = L"0123456789abcdef";
   do {
     *--writer = hexdigits[value & 0xF];
     value >>= 4;

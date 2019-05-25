@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cwctype>
 #include <cwchar>
+#include "ascii.hpp"
 
 namespace bela {
 namespace strings_internal {
@@ -35,9 +36,9 @@ const wchar_t *int_memmatch(const wchar_t *haystack, size_t haylen,
   const wchar_t *needleend = needlestart + neelen;
 
   for (; haystack < hayend; ++haystack) {
-    wchar_t hay = case_sensitive ? *haystack : std::towlower(*haystack);
+    wchar_t hay = case_sensitive ? *haystack : bela::ascii_tolower(*haystack);
 
-    wchar_t nee = case_sensitive ? *needle : std::towlower(*needle);
+    wchar_t nee = case_sensitive ? *needle : bela::ascii_tolower(*needle);
     if (hay == nee) {
       if (++needle == needleend) {
         return haystack + 1 - neelen;

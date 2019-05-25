@@ -9,7 +9,7 @@ namespace strings_internal {
 
 int memcasecmp(const wchar_t *s1, const wchar_t *s2, size_t len) {
   for (size_t i = 0; i < len; i++) {
-    const auto diff = std::towlower(s1[i]) - std::towlower(s2[i]);
+    const auto diff = bela::ascii_tolower(s1[i]) - bela::ascii_tolower(s2[i]);
     if (diff != 0) {
       return static_cast<int>(diff);
     }

@@ -1,4 +1,9 @@
-//////////
+//======================================================
+// Ascii for wchar_t
+// This implementation is strictly Ascii, if you want to convert a
+// case-insensitive or other detection of a language greater than 0xFF, use
+// <cwctype>
+//======================================================
 #ifndef BELA_ASCII_HPP
 #define BELA_ASCII_HPP
 #pragma once
@@ -76,7 +81,7 @@ inline bool ascii_isblank(wchar_t c) {
 }
 
 // ascii_iscntrl()
-//
+// wchar_t on Windows is 2Byte
 // Determines whether the given character is a control character.
 inline bool ascii_iscntrl(wchar_t c) {
   return (c < 0xFF && ascii_internal::kPropertyBits[c] & 0x40) != 0;

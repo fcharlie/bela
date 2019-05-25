@@ -11,10 +11,60 @@ namespace bela {
 
 enum class ConsoleMode {
   File, //
-  TTY,
   Conhost,
+  ConPTY,
   PTY
 };
+
+/*
+Mintty is not a full replacement for Cygwin Console (i.e. cygwin running
+in a Windows console window).
+Like xterm and rxvt, mintty communicates with the child process through a
+pseudo terminal device, which Cygwin emulates using Windows pipes.
+This means that native Windows command line programs started in mintty see
+a pipe rather than a console device.
+As a consequence, such programs often disable interactive input. Also,
+direct calls to low-level Win32 console functions will fail.
+Programs that access the console as a file should be fine though.
+*/
+bool IsCygwinPipe(HANDLE hFile) {
+  constexpr unsigned int pipemaxlen = 512;
+  WCHAR buffer[pipemaxlen] = {0};
+  if (GetFileInformationByHandleEx(hFile, FileNameInfo, buffer,
+                                   pipemaxlen * 2) != TRUE) {
+    return false;
+  }
+  auto pb = reinterpret_cast<FILE_NAME_INFO *>(buffer);
+  auto pipename = std::wstring_view(pb->FileName, pb->FileNameLength / 2);
+
+  std::vector<std::wstring_view> pvv =
+      bela::StrSplit(pipename, bela::ByChar(L'-'), bela::SkipEmpty());
+  if (pvv.size() < 5) {
+    return false;
+  }
+  constexpr std::wstring_view cygprefix = L"\\cygwin";
+  constexpr std::wstring_view msysprefix = L"\\msys";
+  constexpr std::wstring_view ptyprefix = L"pty";
+  constexpr std::wstring_view pipeto = L"to";
+  constexpr std::wstring_view pipefrom = L"from";
+  constexpr std::wstring_view master = L"master";
+  if (pvv[0] != cygprefix && pvv[0] != msysprefix) {
+    return false;
+  }
+  if (pvv[1].empty()) {
+    return false;
+  }
+  if (!bela::StartsWith(pvv[2], ptyprefix)) {
+    return false;
+  }
+  if (pvv[3] != pipeto && pvv[3] != pipefrom) {
+    return false;
+  }
+  if (pvv[4] != master) {
+    return false;
+  }
+  return true;
+}
 
 // Remove all color string
 ssize_t WriteToLegacy(HANDLE hConsole, std::wstring_view sv) {
@@ -46,7 +96,7 @@ ssize_t WriteToLegacy(HANDLE hConsole, std::wstring_view sv) {
   return static_cast<ssize_t>(dwWrite);
 }
 
-static inline ssize_t WriteToFile(FILE *out, std::wstring_view sv) {
+static inline ssize_t WriteToTTY(FILE *out, std::wstring_view sv) {
   auto s = bela::ToNarrow(sv);
   return static_cast<ssize_t>(fwrite(s.data(), 1, s.size(), out));
 }
@@ -78,14 +128,14 @@ public:
   }
   ssize_t StdWrite(FILE *out, std::wstring_view sv) const {
     if (out == stderr &&
-        (em == ConsoleMode::Conhost || em == ConsoleMode::PTY)) {
+        (em == ConsoleMode::Conhost || em == ConsoleMode::ConPTY)) {
       return StdWriteConsole(hStderr, sv, em);
     }
     if (out == stdout &&
-        (om == ConsoleMode::Conhost || em == ConsoleMode::PTY)) {
+        (om == ConsoleMode::Conhost || em == ConsoleMode::ConPTY)) {
       return StdWriteConsole(hStdout, sv, om);
     }
-    return WriteToFile(out, sv);
+    return WriteToTTY(out, sv);
   }
 
 private:
@@ -119,10 +169,13 @@ ConsoleMode GetConsoleModeEx(HANDLE hFile) {
     return ConsoleMode::File;
   }
   if (ft != FILE_TYPE_CHAR) {
-    return ConsoleMode::TTY; // cygwin is pipe
+    if (IsCygwinPipe(hFile)) {
+      ConsoleMode::PTY; // cygwin is pipe
+    }
+    return ConsoleMode::File; // cygwin is pipe
   }
   if (EnableVirtualTerminal(hFile)) {
-    return ConsoleMode::PTY;
+    return ConsoleMode::ConPTY;
   }
   return ConsoleMode::Conhost;
 }
@@ -146,55 +199,6 @@ is NULL
   em = GetConsoleModeEx(hStderr);
   hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
   om = GetConsoleModeEx(hStdout);
-}
-
-/*
-Mintty is not a full replacement for Cygwin Console (i.e. cygwin running
-in a Windows console window).
-Like xterm and rxvt, mintty communicates with the child process through a
-pseudo terminal device, which Cygwin emulates using Windows pipes.
-This means that native Windows command line programs started in mintty see
-a pipe rather than a console device.
-As a consequence, such programs often disable interactive input. Also,
-direct calls to low-level Win32 console functions will fail.
-Programs that access the console as a file should be fine though.
-*/
-bool IsCygwinPipe(HANDLE hFile) {
-  WCHAR buffer[4096] = {0};
-  if (GetFileInformationByHandleEx(hFile, FileNameInfo, buffer, 4096 * 2) !=
-      TRUE) {
-    return false;
-  }
-  auto pb = reinterpret_cast<FILE_NAME_INFO *>(buffer);
-  auto pipename = std::wstring_view(pb->FileName, pb->FileNameLength / 2);
-
-  std::vector<std::wstring_view> pvv =
-      bela::StrSplit(pipename, bela::ByChar(L'-'), bela::SkipEmpty());
-  if (pvv.size() < 5) {
-    return false;
-  }
-  constexpr std::wstring_view cygprefix = L"\\cygwin";
-  constexpr std::wstring_view msysprefix = L"\\msys";
-  constexpr std::wstring_view ptyprefix = L"pty";
-  constexpr std::wstring_view pipeto = L"to";
-  constexpr std::wstring_view pipefrom = L"from";
-  constexpr std::wstring_view master = L"master";
-  if (pvv[0] != cygprefix && pvv[0] != msysprefix) {
-    return false;
-  }
-  if (pvv[1].empty()) {
-    return false;
-  }
-  if (!bela::StartsWith(pvv[2], ptyprefix)) {
-    return false;
-  }
-  if (pvv[3] != pipeto && pvv[3] != pipefrom) {
-    return false;
-  }
-  if (pvv[4] != master) {
-    return false;
-  }
-  return true;
 }
 
 std::wstring FileTypeModeName(HANDLE hFile) {

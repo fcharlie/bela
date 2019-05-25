@@ -12,10 +12,12 @@ int wmain(int argc, wchar_t **argv) {
                 argc, argv[0], wx, ux, __cplusplus, iscpp17);
 
   char32_t em = 0x1F603; // 😃 U+1F603
+  char32_t sh = 0x1F496; //  💖
   char32_t em2 = U'中';
   auto s = bela::StringCat(L"Look emoji -->", em, L" U+",
                            bela::AlphaNum(bela::Hex(em)));
-  bela::FPrintF(stderr, L"emoji test %c %U %U %s P: %p\n", em, em, em2, s, &em);
+  bela::FPrintF(stderr, L"emoji %c %c %U %U %s P: %p\n", em, sh, em, em2, s,
+                &em);
   bela::FPrintF(stderr, L"hStderr Mode:    %s.\nhStdin Mode:     %s.\n",
                 bela::FileTypeName(stderr), bela::FileTypeName(stdin));
   return 0;

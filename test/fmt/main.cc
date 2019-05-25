@@ -16,7 +16,7 @@ int wmain(int argc, wchar_t **argv) {
   auto s = bela::StringCat(L"Look emoji -->", em, L" U+",
                            bela::AlphaNum(bela::Hex(em)));
   bela::FPrintF(stderr, L"emoji test %c %U %U %s P: %p\n", em, em, em2, s, &em);
-  bela::FPrintF(stderr, L"hStderr Mode: %s hStdin Mode: %s\n",
+  bela::FPrintF(stderr, L"hStderr Mode:    %s.\nhStdin Mode:     %s.\n",
                 bela::FileTypeName(stderr), bela::FileTypeName(stdin));
   return 0;
 }

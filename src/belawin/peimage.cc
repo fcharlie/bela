@@ -7,6 +7,12 @@
 #include <bela/codecvt.hpp>
 
 namespace bela {
+// https://docs.microsoft.com/en-us/windows/desktop/Debug/pe-format
+// PE32+ executable (console) x86-64, for MS Windows
+// PE32 executable (DLL) (console) Intel 80386 Mono/.Net assembly, for MS
+// Windows PE32 executable (console) Intel 80386, for MS Windows file command
+// not support check arm and arm64
+// Not depend DebHelp.dll
 typedef enum ReplacesGeneralNumericDefines {
 // Directory entry macro for CLR data.
 #ifndef IMAGE_DIRECTORY_ENTRY_COMHEADER
@@ -80,6 +86,10 @@ std::wstring fromascii(std::string_view sv) {
   return output;
 }
 
+// Name: An ASCII string that contains the name to import. This is the string
+// that must be matched to the public name in the DLL. This string is case
+// sensitive and terminated by a null byte.
+// SO we use ASCII to convert this.
 inline std::wstring DllName(MemView mv, LPVOID nh, ULONG nva) {
   auto va =
       BelaImageRvaToVa((PIMAGE_NT_HEADERS)nh, (LPVOID)mv.data(), nva, nullptr);

@@ -5,6 +5,7 @@ add_library(belawin STATIC
   realpath.cc
   reparsepoint.cc
   appexeclink.cc
+  peimage.cc
 )
 
 target_link_libraries(belawin

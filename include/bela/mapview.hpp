@@ -22,7 +22,7 @@ public:
   }
   template <typename T> bool StartsWith(std::basic_string_view<T> sv) const {
     return sv.size() * sizeof(T) <= size_ &&
-           (memcmp(data_, mv.data(), mv.size() * sizeof(T)) == 0);
+           (memcmp(data_, sv.data(), sv.size() * sizeof(T)) == 0);
   }
 
   bool StartsWith(MemView mv) const {
@@ -37,7 +37,7 @@ public:
   template <typename T>
   bool IndexsWith(size_t pos, std::basic_string_view<T> sv) const {
     return sv.size() * sizeof(T) + pos <= size_ &&
-           (memcmp(data_ + pos, mv.data(), mv.size() * sizeof(T)) == 0);
+           (memcmp(data_ + pos, sv.data(), sv.size() * sizeof(T)) == 0);
   }
 
   bool IndexsWith(size_t pos, MemView mv) const {
@@ -59,7 +59,7 @@ public:
     }
     return (unsigned char)data_[off];
   }
-  template <typename T> const T *cast(size_t off) {
+  template <typename T> const T *cast(size_t off) const {
     if (off + sizeof(T) >= size_) {
       return nullptr;
     }
@@ -120,7 +120,8 @@ inline bool MapView::MappingView(std::wstring_view file, bela::error_code &ec,
   LARGE_INTEGER li;
   if (GetFileSizeEx(FileHandle, &li) != TRUE ||
       (std::size_t)li.QuadPart < minsize) {
-    ec = bela::make_error_code(-1, L"File size too smal, size: ", li.QuadPart);
+    ec = bela::make_error_code(bela::FileSizeTooSmall,
+                               L"File size too smal, size: ", li.QuadPart);
     return false;
   }
   if ((FileMap = CreateFileMappingW(FileHandle, nullptr, PAGE_READONLY, 0, 0,

@@ -7,12 +7,6 @@
 #include "base.hpp"
 
 namespace bela {
-enum parse_error_category : long {
-  None = 0, // None error
-  SkipParse = 0x4001,
-  ParseBroken = 0x4002
-};
-
 enum HasArgs {
   required_argument, /// -i 11 or -i=xx
   no_argument,

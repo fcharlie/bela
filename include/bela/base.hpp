@@ -18,12 +18,18 @@
 #include "strcat.hpp"
 
 namespace bela {
-constexpr auto noerror_t = 0L; // NO_ERROR 0L
+enum bela_extend_error_category : long {
+  None = 0, // None error
+  SkipParse = 0x4001,
+  ParseBroken = 0x4002,
+  FileSizeTooSmall=0x4003,
+};
+
 struct error_code {
   std::wstring message;
-  long code{noerror_t};
+  long code{None};
   const wchar_t *data() const { return message.data(); }
-  explicit operator bool() const noexcept { return code != noerror_t; }
+  explicit operator bool() const noexcept { return code != None; }
 };
 
 inline bela::error_code make_error_code(long code, const AlphaNum &a) {
@@ -74,7 +80,7 @@ inline std::wstring system_error_dump(DWORD ec) {
   if (rl == 0) {
     return L"FormatMessageW error";
   }
-  if(buf[rl-1]=='\n'){
+  if (buf[rl - 1] == '\n') {
     rl--;
   }
   std::wstring msg(buf, rl);

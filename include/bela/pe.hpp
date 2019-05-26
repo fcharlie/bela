@@ -2,9 +2,13 @@
 #ifndef BELA_PE_HPP
 #define BELA_PE_HPP
 #include <cstdint>
+#include <vector>
+#include <string>
+#include <optional>
+#include "base.hpp"
 
 namespace bela {
-enum class Machine : uint32_t {
+enum class Machine : uint16_t {
   UNKNOWN = 0,
   TARGET_HOST = 0x0001, // Useful for indicating we want to interact with the
                         // host and not a WoW guest.
@@ -38,7 +42,7 @@ enum class Machine : uint32_t {
   ARM64 = 0xAA64, // ARM64 Little-Endian
   CEE = 0xC0EE
 };
-enum class Subsytem : uint32_t {
+enum class Subsytem : uint16_t {
   UNKNOWN = 0,
   NATIVE = 1,
   GUI = 2,
@@ -55,6 +59,32 @@ enum class Subsytem : uint32_t {
   WINDOWS_BOOT_APPLICATION = 16,
   XBOX_CODE_CATALOG = 17
 };
+
+struct PEVersionPair {
+  uint16_t major{0};
+  uint16_t minor{0};
+  std::wstring ToString() const { return bela::StringCat(major, L".", minor); }
+};
+
+struct PESimpleDetails {
+  std::wstring clrmsg;
+  std::vector<std::wstring> depends; // depends dll
+  std::vector<std::wstring> delays;  // delay load library
+  PEVersionPair osver;
+  PEVersionPair linkver;
+  PEVersionPair imagever;
+  Machine machine;
+  Subsytem subsystem;
+  uint16_t characteristics{0};
+  uint16_t dllcharacteristics{0};
+  bool IsConsole() const { return subsystem == Subsytem::CUI; }
+  bool IsDLL() const {
+    constexpr uint16_t imagefiledll = 0x2000;
+    return (characteristics & imagefiledll) != 0;
+  }
+};
+std::optional<PESimpleDetails> PESimpleDetailsAze(std::wstring_view file,
+                                                      bela::error_code &ec);
 } // namespace bela
 
 #endif

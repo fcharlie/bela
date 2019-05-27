@@ -8,11 +8,21 @@
 #include <bela/base.hpp>
 
 namespace bela {
+// https://docs.microsoft.com/en-us/windows/desktop/FileIO/naming-a-file
 // https://googleprojectzero.blogspot.com/2016/02/the-definitive-guide-on-win32-to-nt.html
-inline bool PathStripUNC(std::wstring_view &sv) {
-  constexpr const std::wstring_view uncprefix = L"\\\\?\\";
-  return bela::ConsumePrefix(&sv, uncprefix);
+inline bool PathStripExtended(std::wstring_view &sv, wchar_t &ch) {
+  if (sv.size() < 4) {
+    return false;
+  }
+  if (sv[0] == '\\' && sv[1] == '\\' && (sv[2] == '?' || sv[2] == '.') &&
+      sv[3] == '\\') {
+    ch = sv[2];
+    sv.remove_prefix(4);
+    return true;
+  }
+  return false;
 }
+
 inline bool PathStripDriveLatter(std::wstring_view &sv, wchar_t &dl) {
   if (sv.size() < 2) {
     return false;
@@ -83,7 +93,8 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
     p0raw = getcurrentdir();
     p0 = p0raw;
   }
-  auto IsUNC = PathStripUNC(p0);
+  wchar_t exch = 0;
+  auto isextend = PathStripExtended(p0, exch);
   wchar_t latter = 0;
   auto haslatter = PathStripDriveLatter(p0, latter);
   container_t pv;
@@ -96,7 +107,7 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
     }
   }
   std::wstring s;
-  size_t alsize = IsUNC ? 4 : 0;
+  size_t alsize = isextend ? 4 : 0;
   if (haslatter) {
     alsize += 2;
   }
@@ -104,8 +115,9 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
     alsize += p.size() + 1;
   }
   s.reserve(alsize);
-  if (IsUNC) {
-    s.append(L"\\\\?\\");
+  if (isextend) {
+    s.append(L"\\\\").push_back(exch);
+    s.push_back(L'\\');
   }
   if (haslatter) {
     s.push_back(latter);

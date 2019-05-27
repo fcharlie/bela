@@ -38,12 +38,12 @@ static inline PVOID belarva(PVOID m, PVOID b) {
 
 PIMAGE_SECTION_HEADER
 BelaImageRvaToSection(PIMAGE_NT_HEADERS nh, PVOID BaseAddress, ULONG rva) {
-  ULONG count = bela::Swaple(nh->FileHeader.NumberOfSections);
+  ULONG count = bela::swaple(nh->FileHeader.NumberOfSections);
   PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(nh);
   ULONG va = 0;
   while (count-- != 0) {
-    va = bela::Swaple(section->VirtualAddress);
-    if ((va <= rva) && (rva < va + bela::Swaple(section->SizeOfRawData))) {
+    va = bela::swaple(section->VirtualAddress);
+    if ((va <= rva) && (rva < va + bela::swaple(section->SizeOfRawData))) {
       return section;
     }
     section++;
@@ -59,9 +59,9 @@ BelaImageRvaToVa(PIMAGE_NT_HEADERS nh, PVOID BaseAddress, ULONG rva,
   if (sh != nullptr) {
     section = *sh;
   }
-  if ((section == nullptr) || (rva < bela::Swaple(section->VirtualAddress)) ||
-      (rva >= bela::Swaple(section->VirtualAddress) +
-                  bela::Swaple(section->SizeOfRawData))) {
+  if ((section == nullptr) || (rva < bela::swaple(section->VirtualAddress)) ||
+      (rva >= bela::swaple(section->VirtualAddress) +
+                  bela::swaple(section->SizeOfRawData))) {
     section = BelaImageRvaToSection(nh, BaseAddress, rva);
     if (section == nullptr) {
       return nullptr;
@@ -71,8 +71,8 @@ BelaImageRvaToVa(PIMAGE_NT_HEADERS nh, PVOID BaseAddress, ULONG rva,
     }
   }
   auto va = reinterpret_cast<ULONG_PTR>(BaseAddress) + rva +
-            static_cast<ULONG_PTR>(bela::Swaple(section->PointerToRawData)) -
-            static_cast<ULONG_PTR>(bela::Swaple(section->VirtualAddress));
+            static_cast<ULONG_PTR>(bela::swaple(section->PointerToRawData)) -
+            static_cast<ULONG_PTR>(bela::swaple(section->VirtualAddress));
   return reinterpret_cast<PVOID>(va);
 }
 // DLL Name is CP_ACP
@@ -137,40 +137,40 @@ template <typename H = IMAGE_NT_HEADERS64>
 std::optional<PESimpleDetails>
 PESimpleDetailsInternal(bela::MemView mv, const H *nh, bela::error_code &ec) {
   PESimpleDetails pm;
-  pm.machine = static_cast<Machine>(bela::Swaple(nh->FileHeader.Machine));
-  pm.characteristics = bela::Swaple(nh->FileHeader.Characteristics);
-  pm.dllcharacteristics = bela::Swaple(nh->OptionalHeader.DllCharacteristics);
-  pm.osver = {bela::Swaple(nh->OptionalHeader.MajorOperatingSystemVersion),
-              bela::Swaple(nh->OptionalHeader.MinorOperatingSystemVersion)};
+  pm.machine = static_cast<Machine>(bela::swaple(nh->FileHeader.Machine));
+  pm.characteristics = bela::swaple(nh->FileHeader.Characteristics);
+  pm.dllcharacteristics = bela::swaple(nh->OptionalHeader.DllCharacteristics);
+  pm.osver = {bela::swaple(nh->OptionalHeader.MajorOperatingSystemVersion),
+              bela::swaple(nh->OptionalHeader.MinorOperatingSystemVersion)};
   pm.subsystem =
-      static_cast<Subsytem>(bela::Swaple(nh->OptionalHeader.Subsystem));
-  pm.linkver = {bela::Swaple(nh->OptionalHeader.MajorLinkerVersion),
-                bela::Swaple(nh->OptionalHeader.MinorLinkerVersion)};
-  pm.imagever = {bela::Swaple(nh->OptionalHeader.MajorImageVersion),
-                 bela::Swaple(nh->OptionalHeader.MinorImageVersion)};
+      static_cast<Subsytem>(bela::swaple(nh->OptionalHeader.Subsystem));
+  pm.linkver = {bela::swaple(nh->OptionalHeader.MajorLinkerVersion),
+                bela::swaple(nh->OptionalHeader.MinorLinkerVersion)};
+  pm.imagever = {bela::swaple(nh->OptionalHeader.MajorImageVersion),
+                 bela::swaple(nh->OptionalHeader.MinorImageVersion)};
   auto clre =
       &(nh->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER]);
   auto end = mv.data() + mv.size();
-  if (bela::Swaple(clre->Size) == sizeof(IMAGE_COR20_HEADER)) {
+  if (bela::swaple(clre->Size) == sizeof(IMAGE_COR20_HEADER)) {
     // Exists IMAGE_COR20_HEADER
-    pm.clrmsg = ClrMessage(mv, (PVOID)nh, bela::Swaple(clre->VirtualAddress));
+    pm.clrmsg = ClrMessage(mv, (PVOID)nh, bela::swaple(clre->VirtualAddress));
   }
 
   // Import
   auto import_ =
       &(nh->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
-  if (bela::Swaple(import_->Size) != 0) {
+  if (bela::swaple(import_->Size) != 0) {
     auto va = BelaImageRvaToVa((PIMAGE_NT_HEADERS)nh, (PVOID)mv.data(),
-                               bela::Swaple(import_->VirtualAddress), nullptr);
+                               bela::swaple(import_->VirtualAddress), nullptr);
     if (va == nullptr ||
-        reinterpret_cast<uint8_t *>(va) + bela::Swaple(import_->Size) >= end) {
+        reinterpret_cast<uint8_t *>(va) + bela::swaple(import_->Size) >= end) {
       return std::make_optional<>(pm);
     }
     auto imdes = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(va);
-    while (bela::Swaple(imdes->Name) != 0) {
+    while (bela::swaple(imdes->Name) != 0) {
       //
       // ASCIIZ
-      auto dnw = DllName(mv, (LPVOID)nh, bela::Swaple(imdes->Name));
+      auto dnw = DllName(mv, (LPVOID)nh, bela::swaple(imdes->Name));
       if (!dnw.empty()) {
         pm.depends.push_back(dnw);
       }
@@ -181,18 +181,18 @@ PESimpleDetailsInternal(bela::MemView mv, const H *nh, bela::error_code &ec) {
   /// Delay import
   auto delay_ =
       &(nh->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
-  if (bela::Swaple(delay_->Size) != 0) {
+  if (bela::swaple(delay_->Size) != 0) {
     auto va = BelaImageRvaToVa((PIMAGE_NT_HEADERS)nh, (PVOID)mv.data(),
-                               bela::Swaple(delay_->VirtualAddress), nullptr);
+                               bela::swaple(delay_->VirtualAddress), nullptr);
     if (va == nullptr ||
-        reinterpret_cast<uint8_t *>(va) + bela::Swaple(delay_->Size) >= end) {
+        reinterpret_cast<uint8_t *>(va) + bela::swaple(delay_->Size) >= end) {
       return std::make_optional<>(pm);
     }
     auto imdes = reinterpret_cast<PIMAGE_DELAYLOAD_DESCRIPTOR>(va);
-    while (bela::Swaple(imdes->DllNameRVA) != 0) {
+    while (bela::swaple(imdes->DllNameRVA) != 0) {
       //
       // ASCIIZ
-      auto dnw = DllName(mv, (LPVOID)nh, bela::Swaple(imdes->DllNameRVA));
+      auto dnw = DllName(mv, (LPVOID)nh, bela::swaple(imdes->DllNameRVA));
       if (!dnw.empty()) {
         pm.delays.push_back(dnw);
       }
@@ -221,14 +221,14 @@ std::optional<PESimpleDetails> PESimpleDetailsAze(std::wstring_view file,
         L"PE file size tool small, less IMAGE_DOS_HEADER");
     return std::nullopt;
   }
-  auto nh = mv.cast<IMAGE_NT_HEADERS32>(bela::Swaple(h->e_lfanew));
+  auto nh = mv.cast<IMAGE_NT_HEADERS32>(bela::swaple(h->e_lfanew));
   if (nh == nullptr) {
     ec = bela::make_error_code(
         bela::FileSizeTooSmall,
         L"PE file size tool small, less IMAGE_NT_HEADERS32");
     return std::nullopt;
   }
-  switch (bela::Swaple(nh->OptionalHeader.Magic)) {
+  switch (bela::swaple(nh->OptionalHeader.Magic)) {
   case IMAGE_NT_OPTIONAL_HDR64_MAGIC:
     return PESimpleDetailsInternal(
         mv, reinterpret_cast<const IMAGE_NT_HEADERS64 *>(nh), ec);

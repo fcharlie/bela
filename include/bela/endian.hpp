@@ -1,6 +1,9 @@
-//// Endian utility
-#ifndef BELA_ENDIAN_HPP
-#define BELA_ENDIAN_HPP
+// C++17 constexpr endian.hpp
+#ifndef QUARANTINE_ENDIAN_HPP
+#define QUARANTINE_ENDIAN_HPP
+#include <cstdint>
+#include <cstring>
+#include <type_traits>
 
 #if defined(__linux__) || defined(__GNU__) || defined(__HAIKU__)
 #include <endian.h>
@@ -22,37 +25,21 @@
 #endif
 #endif
 
-#ifndef BELA_GNUC_PREREQ
-#if defined(__GNUC__) && defined(__GNUC_MINOR__) && defined(__GNUC_PATCHLEVEL__)
-#define BELA_GNUC_PREREQ(maj, min, patch)                                      \
-  ((__GNUC__ << 20) + (__GNUC_MINOR__ << 10) + __GNUC_PATCHLEVEL__ >=          \
-   ((maj) << 20) + ((min) << 10) + (patch))
-#elif defined(__GNUC__) && defined(__GNUC_MINOR__)
-#define BELA_GNUC_PREREQ(maj, min, patch)                                      \
-  ((__GNUC__ << 20) + (__GNUC_MINOR__ << 10) >= ((maj) << 20) + ((min) << 10))
-#else
-#define BELA_GNUC_PREREQ(maj, min, patch) 0
-#endif
-#endif
-
-#include <cstdint>
-#include <cstring>
-#include <type_traits>
-
 namespace bela {
 #if defined(BYTE_ORDER) && defined(BIG_ENDIAN) && BYTE_ORDER == BIG_ENDIAN
 #define IS_BIG_ENDIAN 1
 constexpr bool IsBigEndianHost = true;
+constexpr bool IsLittleEndianHost = false;
 #else
 #define IS_BIG_ENDIAN 0
 constexpr bool IsBigEndianHost = false;
+constexpr bool IsLittleEndianHost = true;
 #endif
 
-inline constexpr bool IsBigEndian() { return IsBigEndianHost; } // dump warning
+constexpr inline bool IsBigEndian() { return IsBigEndianHost; }
+constexpr inline bool IsLittleEndian() { return IsLittleEndianHost; }
 
-/// Why add constexpr  .It is not a bug, it is a feature
-
-inline constexpr uint16_t bswap16(uint16_t value) {
+constexpr inline uint16_t swap16(uint16_t value) {
 #if defined(_MSC_VER) && !defined(_DEBUG)
   // The DLL version of the runtime lacks these functions (bug!?), but in a
   // release build they're replaced with BSWAP instructions anyway.
@@ -63,9 +50,9 @@ inline constexpr uint16_t bswap16(uint16_t value) {
   return Hi | Lo;
 #endif
 }
-
-inline constexpr uint32_t bswap32(uint32_t value) {
-#if defined(__llvm__) || (BELA_GNUC_PREREQ(4, 3, 0) && !defined(__ICC))
+// We use C++17. so GCC version must > 8.0. __builtin_bswap32 awayls exists
+constexpr inline uint32_t swap32(uint32_t value) {
+#if defined(__llvm__) || (defined(__GNUC__) && !defined(__ICC))
   return __builtin_bswap32(value);
 #elif defined(_MSC_VER) && !defined(_DEBUG)
   return _byteswap_ulong(value);
@@ -78,10 +65,8 @@ inline constexpr uint32_t bswap32(uint32_t value) {
 #endif
 }
 
-/// bswap64 - This function returns a byte-swapped representation of
-/// the 64-bit argument.
-inline constexpr uint64_t bswap64(uint64_t value) {
-#if defined(__llvm__) || (BELA_GNUC_PREREQ(4, 3, 0) && !defined(__ICC))
+constexpr inline uint64_t swap64(uint64_t value) {
+#if defined(__llvm__) || (defined(__GNUC__) && !defined(__ICC))
   return __builtin_bswap64(value);
 #elif defined(_MSC_VER) && !defined(_DEBUG)
   return _byteswap_uint64(value);
@@ -92,35 +77,58 @@ inline constexpr uint64_t bswap64(uint64_t value) {
 #endif
 }
 
-inline constexpr uint8_t bswap(uint8_t c) { return c; }
-inline constexpr int8_t bswap(int8_t c) { return c; }
-inline constexpr uint16_t bswap(uint16_t value) { return bswap16(value); }
-inline constexpr int16_t bswap(int16_t value) {
-  return static_cast<int16_t>(bswap16(value));
+constexpr inline uint8_t bswap(uint8_t v) { return v; }
+constexpr inline uint16_t bswap(uint16_t v) { return swap16(v); }
+constexpr inline unsigned int bswap(unsigned int v) {
+  return static_cast<unsigned int>(swap32(static_cast<uint32_t>(v)));
 }
-inline constexpr uint32_t bswap(uint32_t value) { return bswap32(value); }
-
-inline constexpr int32_t bswap(int32_t value) {
-  return static_cast<int32_t>(bswap32(value));
+constexpr inline signed int bswap(signed int v) {
+  return static_cast<signed int>(swap32(static_cast<uint32_t>(v)));
 }
 
-#if __LONG_MAX__ == __INT_MAX__
-inline constexpr unsigned long bswap(unsigned long C) { return bswap32(C); }
-inline constexpr signed long bswap(signed long C) { return bswap32(C); }
-#elif __LONG_MAX__ == __LONG_LONG_MAX__
-inline constexpr unsigned long bswap(unsigned long C) { return bswap64(C); }
-inline constexpr signed long bswap(signed long C) { return bswap64(C); }
-#else
-#error "Unknown long size!"
-#endif
-inline constexpr unsigned long long bswap(unsigned long long C) {
-  return bswap64(C);
+constexpr unsigned long bswap(unsigned long v) {
+  if constexpr (sizeof(unsigned long) == 8) {
+    return static_cast<unsigned long>(swap64(static_cast<uint64_t>(v)));
+  } else if constexpr (sizeof(unsigned long) != 4) {
+    // BAD long size
+    return v;
+  }
+  return static_cast<unsigned long>(swap32(static_cast<uint32_t>(v)));
 }
-inline constexpr signed long long bswap(signed long long C) {
-  return bswap64(C);
+constexpr signed long bswap(signed long v) {
+  if constexpr (sizeof(signed long) == 8) {
+    return static_cast<signed long>(swap64(static_cast<uint64_t>(v)));
+  } else if constexpr (sizeof(signed long) != 4) {
+    // BAD long size
+    return v;
+  }
+  return static_cast<signed long>(swap32(static_cast<uint32_t>(v)));
 }
 
-template <typename T> constexpr T Swaple(T i) {
+constexpr unsigned long long bswap(unsigned long long v) {
+  return static_cast<unsigned long long>(swap64(static_cast<uint64_t>(v)));
+}
+constexpr signed long long bswap(signed long long v) {
+  return static_cast<signed long long>(swap64(static_cast<uint64_t>(v)));
+}
+
+// SO Network order is BigEndian
+template <typename T> inline T htons(T v) {
+  static_assert(std::is_integral_v<T>, "must integer");
+  if constexpr (IsBigEndianHost) {
+    return v;
+  }
+  return bswap(v);
+}
+template <typename T> inline T ntohs(T v) {
+  static_assert(std::is_integral_v<T>, "must integer");
+  if constexpr (IsBigEndianHost) {
+    return v;
+  }
+  return bswap(v);
+}
+
+template <typename T> constexpr T swaple(T i) {
   static_assert(std::is_integral<T>::value, "Integral required.");
   if constexpr (IsBigEndianHost) {
     return bswap(i);
@@ -128,7 +136,7 @@ template <typename T> constexpr T Swaple(T i) {
   return i;
 }
 
-template <typename T> constexpr T Swapbe(T i) {
+template <typename T> constexpr T swapbe(T i) {
   static_assert(std::is_integral<T>::value, "Integral required.");
   if constexpr (IsBigEndianHost) {
     return i;
@@ -137,27 +145,26 @@ template <typename T> constexpr T Swapbe(T i) {
 }
 
 template <typename T> inline T unalignedloadT(const void *p) {
+  static_assert(std::is_integral_v<T>, "must integer");
   T t;
   memcpy(&t, p, sizeof(T));
   return t;
 }
 
-template <typename T> constexpr T Resolvele(const void *p) {
-  static_assert(std::is_integral<T>::value, "Integral required.");
-  auto i = unalignedloadT<T>(p);
-  if constexpr (IsBigEndianHost) {
-    return bswap(i);
+template <typename T> inline T readle(const void *p) {
+  auto v = unalignedloadT<T>(p);
+  if constexpr (IsLittleEndianHost) {
+    return v;
   }
-  return i;
+  return bswap(v);
 }
 
-template <typename T> constexpr T Resolvebe(const void *p) {
-  static_assert(std::is_integral<T>::value, "Integral required.");
-  auto i = unalignedloadT<T>(p);
+template <typename T> inline T readbe(const void *p) {
+  auto v = unalignedloadT<T>(p);
   if constexpr (IsBigEndianHost) {
-    return i;
+    return v;
   }
-  return bswap(i);
+  return bswap(v);
 }
 
 } // namespace bela

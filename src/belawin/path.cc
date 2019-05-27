@@ -8,7 +8,7 @@
 #include <bela/base.hpp>
 
 namespace bela {
-
+// https://googleprojectzero.blogspot.com/2016/02/the-definitive-guide-on-win32-to-nt.html
 inline bool PathStripUNC(std::wstring_view &sv) {
   constexpr const std::wstring_view uncprefix = L"\\\\?\\";
   return bela::ConsumePrefix(&sv, uncprefix);

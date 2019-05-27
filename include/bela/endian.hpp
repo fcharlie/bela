@@ -77,8 +77,12 @@ constexpr inline uint64_t swap64(uint64_t value) {
 #endif
 }
 
-constexpr inline uint8_t bswap(uint8_t v) { return v; }
-constexpr inline uint16_t bswap(uint16_t v) { return swap16(v); }
+constexpr inline unsigned char bswap(unsigned char v) { return v; }
+constexpr inline signed char bswap(signed char v) { return v; }
+constexpr inline unsigned short bswap(unsigned short v) { return swap16(v); }
+constexpr inline signed short bswap(signed short v) {
+  return static_cast<signed short>(swap16(static_cast<uint16_t>(v)));
+}
 constexpr inline unsigned int bswap(unsigned int v) {
   return static_cast<unsigned int>(swap32(static_cast<uint32_t>(v)));
 }

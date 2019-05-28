@@ -21,15 +21,13 @@ typedef enum ReplacesGeneralNumericDefines {
 } ReplacesGeneralNumericDefines;
 #define STORAGE_MAGIC_SIG 0x424A5342 // BSJB
 
-#pragma pack(1)
-struct STORAGESIGNATURE {
+struct alignas(1) STORAGESIGNATURE {
   ULONG Signature;     // Magic signature for physical metadata : 0x424A5342.
   USHORT MajorVersion; // Major version, 1 (ignore on read)
   USHORT MinorVersion; // Minor version, 0 (ignore on read)
   ULONG ExtraData;     // offset to next structure of information
   ULONG Length;        // Length of version string in bytes
 };
-#pragma pack()
 // LE endian
 static inline PVOID belarva(PVOID m, PVOID b) {
   return reinterpret_cast<PVOID>(reinterpret_cast<ULONG_PTR>(b) +

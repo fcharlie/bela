@@ -53,7 +53,7 @@ size_t char32tochar16(char16_t *buf, size_t n, char32_t ch) {
     return 0;
   }
   if (ch <= UNI_MAX_BMP) {
-    if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_START) {
+    if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_LOW_END) {
       buf[0] = static_cast<char16_t>(UNI_REPLACEMENT_CHAR);
       return 1;
     }

@@ -228,6 +228,7 @@ inline std::wstring mbrtowc(std::string_view src) {
   }
   return us;
 }
+inline std::wstring ToWide(std::string_view src) { return mbrtowc(src); }
 #else
 inline std::wstring mbrtowc(std::string_view src) {
   std::wstring us;
@@ -254,7 +255,7 @@ inline std::string u16tomb(std::basic_string_view<T, std::char_traits<T>> src) {
   static_assert(sizeof(T) == 2, "Only supports one-byte character basic types");
   std::string s;
   s.reserve(src.size() * 4 / 2);
-  auto it = static_cast<const char16_t *>(src.data());
+  auto it = reinterpret_cast<const char16_t *>(src.data());
   auto end = it + src.size();
   while (it < end) {
     char32_t rune = *it++;
@@ -274,6 +275,9 @@ inline std::string u16tomb(std::basic_string_view<T, std::char_traits<T>> src) {
   }
   return s;
 }
+
+inline std::string ToNarrow(std::wstring_view ws) { return u16tomb(ws); }
+inline std::string ToNarrow(std::u16string_view us) { return u16tomb(us); }
 
 } // namespace unicode
 } // namespace bela

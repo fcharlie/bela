@@ -196,7 +196,7 @@ public:
       const std::basic_string<wchar_t, std::char_traits<wchar_t>, Allocator>
           &str)
       : piece_(str) {}
-
+  /// WARNING Your codepoint should < 0xD800
   AlphaNum(wchar_t c) : piece_(digits_, 1) { digits_[0] = c; }
   AlphaNum(char16_t ch) : piece_(digits_, 1) {
     digits_[0] = static_cast<wchar_t>(ch);

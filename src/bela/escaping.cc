@@ -154,9 +154,9 @@ bool CUnescapeInternal(std::wstring_view source, bool leave_nulls_escaped,
           ch = (ch << 4) + hex_digit_to_int(*++p);
         if (ch > 0xFF) {
           if (error) {
-            *error = L"Value of \\" +
-                     std::wstring(hex_start, p + 1 - hex_start) +
-                     L" exceeds 0xff";
+            *error = bela::StringCat(
+                L"Value of \\", std::wstring_view(hex_start, p + 1 - hex_start),
+                L" exceeds 0xff");
           }
           return false;
         }
@@ -177,8 +177,9 @@ bool CUnescapeInternal(std::wstring_view source, bool leave_nulls_escaped,
         const wchar_t *hex_start = p;
         if (p + 4 >= end) {
           if (error) {
-            *error = L"\\u must be followed by 4 hex digits: \\" +
-                     std::wstring(hex_start, p + 1 - hex_start);
+            *error = bela::StringCat(
+                L"\\u must be followed by 4 hex digits: \\",
+                std::wstring_view(hex_start, p + 1 - hex_start));
           }
           return false;
         }
@@ -188,8 +189,9 @@ bool CUnescapeInternal(std::wstring_view source, bool leave_nulls_escaped,
             rune = (rune << 4) + hex_digit_to_int(*++p); // Advance p.
           } else {
             if (error) {
-              *error = L"\\u must be followed by 4 hex digits: \\" +
-                       std::wstring_view(hex_start, p + 1 - hex_start);
+              *error = bela::StringCat(
+                  L"\\u must be followed by 4 hex digits: \\",
+                  std::wstring_view(hex_start, p + 1 - hex_start));
             }
             return false;
           }

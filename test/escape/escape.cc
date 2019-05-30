@@ -4,10 +4,11 @@
 #include <bela/stdwriter.hpp>
 
 int wmain() {
-  const wchar_t *msg = L"H\\u2082O \\xE3\\x8D\\xA4 \\U0001F496";
+  const wchar_t *msg =
+      L"H\\u2082O \\U0001F496 \\xA9 \\x1b[32mcolour escape\\x1b[0m";
   std::wstring dest;
   if (bela::CUnescape(msg, &dest)) {
-    bela::FPrintF(stderr, L"%s\n", dest);
+    bela::FPrintF(stderr, L"%s\n%s\n", msg, dest);
   }
   return 0;
 }

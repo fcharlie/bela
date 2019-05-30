@@ -153,13 +153,13 @@ char32tochar8(char32_t rune,
   return 0;
 }
 
-inline constexpr bool replacedchar(char32_t rune) {
+inline constexpr bool issurrogate(char32_t rune) {
   return (rune >= 0xD800 && rune <= 0xDFFF);
 }
 
 inline size_t char32tochar16(char32_t rune, char16_t *dest) {
   if (rune <= 0xFFFF) {
-    dest[0] = replacedchar(rune) ? 0xFFFD : static_cast<char16_t>(rune);
+    dest[0] = issurrogate(rune) ? 0xFFFD : static_cast<char16_t>(rune);
     return 1;
   }
   if (rune > 0x0010FFFF) {
@@ -177,7 +177,7 @@ char32tochar16(char32_t rune,
                std::basic_string<T, std::char_traits<T>, Allocator> &dest) {
   static_assert(sizeof(T) == 2, "Only supports one-byte character basic types");
   if (rune <= 0xFFFF) {
-    dest.push_back(replacedchar(rune) ? 0xFFFD : static_cast<T>(rune));
+    dest.push_back(issurrogate(rune) ? 0xFFFD : static_cast<T>(rune));
     return 1;
   }
   if (rune > 0x0010FFFF) {

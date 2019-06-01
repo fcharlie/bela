@@ -22,7 +22,7 @@ enum bela_extend_error_category : long {
   None = 0, // None error
   SkipParse = 0x4001,
   ParseBroken = 0x4002,
-  FileSizeTooSmall=0x4003,
+  FileSizeTooSmall = 0x4003,
 };
 
 struct error_code {
@@ -94,6 +94,38 @@ inline error_code make_system_error_code() {
   ec.message = system_error_dump(ec.code);
   return ec;
 }
+// https://github.com/microsoft/wil/blob/master/include/wil/stl.h#L38
+template <typename T> struct secure_allocator : public std::allocator<T> {
+  template <typename Other> struct rebind {
+    typedef secure_allocator<Other> other;
+  };
+
+  secure_allocator() : std::allocator<T>() {}
+
+  ~secure_allocator() = default;
+
+  secure_allocator(const secure_allocator &a) : std::allocator<T>(a) {}
+
+  template <class U>
+  secure_allocator(const secure_allocator<U> &a) : std::allocator<T>(a) {}
+
+  T *allocate(size_t n) { return std::allocator<T>::allocate(n); }
+
+  void deallocate(T *p, size_t n) {
+    SecureZeroMemory(p, sizeof(T) * n);
+    std::allocator<T>::deallocate(p, n);
+  }
+};
+
+//! `wil::secure_vector` will be securely zeroed before deallocation.
+template <typename Type>
+using secure_vector = std::vector<Type, bela::secure_allocator<Type>>;
+//! `wil::secure_wstring` will be securely zeroed before deallocation.
+using secure_wstring = std::basic_string<wchar_t, std::char_traits<wchar_t>,
+                                         bela::secure_allocator<wchar_t>>;
+//! `wil::secure_string` will be securely zeroed before deallocation.
+using secure_string = std::basic_string<char, std::char_traits<char>,
+                                        bela::secure_allocator<char>>;
 
 } // namespace bela
 

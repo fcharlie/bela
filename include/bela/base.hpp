@@ -94,6 +94,7 @@ inline error_code make_system_error_code() {
   ec.message = system_error_dump(ec.code);
   return ec;
 }
+
 // https://github.com/microsoft/wil/blob/master/include/wil/stl.h#L38
 template <typename T> struct secure_allocator : public std::allocator<T> {
   template <typename Other> struct rebind {
@@ -117,13 +118,13 @@ template <typename T> struct secure_allocator : public std::allocator<T> {
   }
 };
 
-//! `wil::secure_vector` will be securely zeroed before deallocation.
+//! `bela::secure_vector` will be securely zeroed before deallocation.
 template <typename Type>
 using secure_vector = std::vector<Type, bela::secure_allocator<Type>>;
-//! `wil::secure_wstring` will be securely zeroed before deallocation.
+//! `bela::secure_wstring` will be securely zeroed before deallocation.
 using secure_wstring = std::basic_string<wchar_t, std::char_traits<wchar_t>,
                                          bela::secure_allocator<wchar_t>>;
-//! `wil::secure_string` will be securely zeroed before deallocation.
+//! `bela::secure_string` will be securely zeroed before deallocation.
 using secure_string = std::basic_string<char, std::char_traits<char>,
                                         bela::secure_allocator<char>>;
 

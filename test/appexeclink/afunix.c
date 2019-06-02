@@ -6,7 +6,7 @@
 #include <afunix.h>
 #include <stdlib.h>
 #include <stdio.h>
-#pragma comment(lib,"Ws2_32")
+#pragma comment(lib, "Ws2_32")
 #define SERVER_SOCKET "server.sock"
 
 int __cdecl main(void) {

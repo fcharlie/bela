@@ -1,7 +1,8 @@
 ///
 #include <bela/stdwriter.hpp>
 #include <bela/path.hpp>
-//test\appexeclink\appexeclink_test.exe C:\Users\$Username\AppData\Local\Microsoft\WindowsApps\wt.exe
+// test\appexeclink\appexeclink_test.exe
+// C:\Users\$Username\AppData\Local\Microsoft\WindowsApps\wt.exe
 int wmain(int argc, wchar_t **argv) {
   if (argc < 2) {
     bela::FPrintF(stderr, L"usage: %s appexeclink\n", argv[0]);

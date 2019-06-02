@@ -1,6 +1,7 @@
 # bela win libaray
 
 add_library(belawin STATIC
+  env.cc
   path.cc
   realpath.cc
   reparsepoint.cc

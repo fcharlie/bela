@@ -232,7 +232,11 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       return !w.Overflow();
     }
     w.Append(it, pos);
+    /// fmt endswith '\0'
     it += pos + 1;
+    if (it >= end) {
+      break;
+    }
     // Parse ---
     zero = (*it == '0');
     width = 0;

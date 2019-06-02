@@ -15,3 +15,11 @@ add_executable(which
 target_link_libraries(which
   belawin
 )
+
+add_executable(expandenv
+  expandenv.cc
+)
+
+target_link_libraries(expandenv
+  belawin
+)

@@ -6,6 +6,7 @@
 #include <bela/str_split.hpp>
 #include <bela/ascii.hpp>
 #include <bela/base.hpp>
+#include <bela/env.hpp>
 
 namespace bela {
 // https://docs.microsoft.com/en-us/windows/desktop/FileIO/naming-a-file
@@ -149,27 +150,6 @@ inline bool PathFileIsExists(std::wstring_view file) {
           (at & FILE_ATTRIBUTE_DIRECTORY) == 0);
 }
 
-constexpr auto DWORD_MAX = static_cast<DWORD>(-1);
-template <DWORD Len = DWORD_MAX> std::wstring GetEnv(std::wstring_view val) {
-  std::wstring s;
-  DWORD buflen = Len;
-  if constexpr (Len == DWORD_MAX) {
-    buflen = GetEnvironmentVariableW(val.data(), nullptr, 0);
-    if (buflen == 0) {
-      return L"";
-    }
-    s.resize(buflen);
-  } else {
-    s.resize(Len);
-  }
-  auto len = GetEnvironmentVariableW(val.data(), s.data(), buflen);
-  if (len == 0 || len > buflen) {
-    return L"";
-  }
-  s.resize(len);
-  return s;
-}
-
 bool HasExt(std::wstring_view file) {
   auto pos = file.find(L'.');
   if (pos == std::wstring_view::npos) {
@@ -206,7 +186,7 @@ bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe) {
                                                L".cmd"};
   std::wstring suffixwapper;
   std::vector<std::wstring> exts;
-  auto pathext = GetEnv<256>(L"PATHEXT");
+  auto pathext = GetEnv<64>(L"PATHEXT");
   if (!pathext.empty()) {
     bela::AsciiStrToLower(&pathext); // tolower
     exts = bela::StrSplit(pathext, bela::ByChar(L';'), bela::SkipEmpty());
@@ -221,7 +201,7 @@ bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe) {
   if (FindExecutable(cwdfile, exts, exe)) {
     return true;
   }
-  auto path = GetEnv(L"PATH");
+  auto path = GetEnv<4096>(L"PATH"); // 4K suggest.
   std::vector<std::wstring_view> pathv =
       bela::StrSplit(path, bela::ByChar(L';'), bela::SkipEmpty());
   for (auto p : pathv) {

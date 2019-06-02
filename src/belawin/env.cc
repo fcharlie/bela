@@ -1,6 +1,7 @@
 ///////////
 // bela expand env
 #include <bela/base.hpp>
+#include <bela/env.hpp>
 
 namespace bela {
 namespace env_internal {
@@ -12,27 +13,6 @@ size_t memsearch(const wchar_t *begin, const wchar_t *end, int ch) {
     }
   }
   return npos;
-}
-
-constexpr auto DWORD_MAX = static_cast<DWORD>(-1);
-template <DWORD Len = DWORD_MAX> std::wstring GetEnv(std::wstring_view val) {
-  std::wstring s;
-  DWORD buflen = Len;
-  if constexpr (Len == DWORD_MAX) {
-    buflen = GetEnvironmentVariableW(val.data(), nullptr, 0);
-    if (buflen == 0) {
-      return L"";
-    }
-    s.resize(buflen);
-  } else {
-    s.resize(Len);
-  }
-  auto len = GetEnvironmentVariableW(val.data(), s.data(), buflen);
-  if (len == 0 || len > buflen) {
-    return L"";
-  }
-  s.resize(len);
-  return s;
 }
 
 } // namespace env_internal
@@ -69,7 +49,7 @@ std::wstring ExpandEnv(std::wstring_view sv) {
       break;
     }
     std::wstring key(it, pos);
-    buf.append(env_internal::GetEnv(key));
+    buf.append(GetEnv(key));
     it += pos + 1;
   }
   return buf;
@@ -108,7 +88,7 @@ std::wstring PathUnExpand(std::wstring_view sv) {
         continue;
       }
       if (_wcsnicmp(it, e.data(), e.size()) == 0 && it[e.size()] == '%') {
-        buf.append(env_internal::GetEnv<260>(e));
+        buf.append(GetEnv(e));
         it += e.size() + 1;
       }
     }

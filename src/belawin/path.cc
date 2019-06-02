@@ -148,16 +148,22 @@ inline bool PathFileIsExists(std::wstring_view file) {
   return (INVALID_FILE_ATTRIBUTES != at &&
           (at & FILE_ATTRIBUTE_DIRECTORY) == 0);
 }
-//
-inline std::wstring GetEnv(std::wstring_view val) {
-  auto len = GetEnvironmentVariableW(val.data(), nullptr, 0);
-  if (len == 0) {
-    return L"";
-  }
+
+constexpr auto DWORD_MAX = static_cast<DWORD>(-1);
+template <DWORD Len = DWORD_MAX> std::wstring GetEnv(std::wstring_view val) {
   std::wstring s;
-  s.resize(len + 1);
-  len = GetEnvironmentVariableW(val.data(), s.data(), len + 1);
-  if (len == 0) {
+  DWORD buflen = Len;
+  if constexpr (Len == DWORD_MAX) {
+    buflen = GetEnvironmentVariableW(val.data(), nullptr, 0);
+    if (buflen == 0) {
+      return L"";
+    }
+    s.resize(buflen);
+  } else {
+    s.resize(Len);
+  }
+  auto len = GetEnvironmentVariableW(val.data(), s.data(), buflen);
+  if (len == 0 || len > buflen) {
     return L"";
   }
   s.resize(len);
@@ -200,7 +206,7 @@ bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe) {
                                                L".cmd"};
   std::wstring suffixwapper;
   std::vector<std::wstring> exts;
-  auto pathext = GetEnv(L"PATHEXT");
+  auto pathext = GetEnv<256>(L"PATHEXT");
   if (!pathext.empty()) {
     bela::AsciiStrToLower(&pathext); // tolower
     exts = bela::StrSplit(pathext, bela::ByChar(L';'), bela::SkipEmpty());
@@ -208,7 +214,8 @@ bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe) {
     exts.assign(std::begin(defaultexts), std::end(defaultexts));
   }
   if (cmd.find_first_of(L":\\/") != std::wstring_view::npos) {
-    return FindExecutable(cmd, exts, exe);
+    auto ncmd = bela::PathCat(cmd);
+    return FindExecutable(ncmd, exts, exe);
   }
   auto cwdfile = bela::PathCat(L".", cmd);
   if (FindExecutable(cwdfile, exts, exe)) {

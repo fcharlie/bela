@@ -210,6 +210,7 @@ template <> inline bool Writer<buffer>::Overflow() { return t.IsOverflow(); }
 using StringWriter = Writer<std::wstring>;
 using BufferWriter = Writer<buffer>;
 
+/// because format string is Null-terminated_string
 template <typename T>
 bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
                        size_t max_args) {

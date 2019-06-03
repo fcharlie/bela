@@ -8,6 +8,7 @@
 namespace bela {
 // GetEnv You should set the appropriate size for the initial allocation
 // according to your needs.
+// https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-getenvironmentvariable
 template <size_t Len = 256> std::wstring GetEnv(std::wstring_view val) {
   std::wstring s;
   s.resize(Len);
@@ -15,14 +16,16 @@ template <size_t Len = 256> std::wstring GetEnv(std::wstring_view val) {
   if (len == 0) {
     return L"";
   }
-  if (len > Len) {
+  if (len < Len) {
     s.resize(len);
-    len = GetEnvironmentVariableW(val.data(), s.data(), len);
-    if (len == 0) {
-      return L"";
-    }
+    return s;
   }
   s.resize(len);
+  auto nlen = GetEnvironmentVariableW(val.data(), s.data(), len);
+  if (nlen == 0 || nlen > len) {
+    return L"";
+  }
+  s.resize(nlen);
   return s;
 }
 

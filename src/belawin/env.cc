@@ -23,25 +23,20 @@ std::wstring ExpandEnv(std::wstring_view sv) {
   if (pos == std::wstring_view::npos) {
     return std::wstring(sv);
   }
-  auto pos2 = sv.find(pos + 1, '%');
+  auto pos2 = sv.find(L'%', pos + 1);
   if (pos == std::wstring_view::npos) {
     return std::wstring(sv);
   }
   std::wstring buf;
   buf.resize(sv.size() + 256);
-  auto N = ExpandEnvironmentStringsW(sv.data(), buf.data(), buf.size());
-  if (N == 0) {
-    return L"";
+  auto N = ExpandEnvironmentStringsW(sv.data(), buf.data(),
+                                     static_cast<DWORD>(buf.size()));
+  if (static_cast<size_t>(N) > buf.size()) {
+    buf.resize(N);
+    N = ExpandEnvironmentStringsW(sv.data(), buf.data(),
+                                  static_cast<DWORD>(buf.size()));
   }
-  if (N <= buf.size()) {
-    buf.resize(N - 1);
-    return buf;
-  }
-  buf.resize(N);
-  if ((N = ExpandEnvironmentStringsW(sv.data(), buf.data(), buf.size())) == 0) {
-    return L"";
-  }
-  if (N > buf.size()) {
+  if (N == 0 || static_cast<size_t>(N) > buf.size()) {
     return L"";
   }
   buf.resize(N - 1);

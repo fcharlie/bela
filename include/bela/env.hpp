@@ -3,6 +3,7 @@
 #define BELA_ENV_HPP
 #include <string>
 #include <string_view>
+#include <shared_mutex>
 #include "base.hpp"
 
 namespace bela {
@@ -28,13 +29,43 @@ template <size_t Len = 256> std::wstring GetEnv(std::wstring_view val) {
   s.resize(nlen);
   return s;
 }
-// New expand env not require system call
-//%SystemRoot%\\System32\\cmd.exe --> C:\\Windows\\System32\\cmd.exe
-// %% --> %
-// %SystemRoot% -->C:\\Windows (or others)
-// 
 std::wstring ExpandEnv(std::wstring_view sv);
 std::wstring PathUnExpand(std::wstring_view sv);
+
+namespace env {
+class Derivative {
+public:
+  Derivative() = default;
+  Derivative(const Derivative &) = delete;
+  Derivative &operator=(const Derivative &) = delete;
+  bool EraseEnv(std::wstring_view key);
+  bool SetEnv(std::wstring_view key, std::wstring_view value,
+              bool force = false);
+  bool PutEnv(std::wstring_view nv, bool force = false);
+  std::wstring_view GetEnv(std::wstring_view key) const;
+  bool ExpandEnv(std::wstring_view raw, std::wstring &w) const;
+
+private:
+};
+
+class DerivativeMT {
+public:
+  DerivativeMT() = default;
+  DerivativeMT(const DerivativeMT &) = delete;
+  DerivativeMT &operator=(const DerivativeMT &) = delete;
+  bool EraseEnv(std::wstring_view key);
+  bool SetEnv(std::wstring_view key, std::wstring_view value,
+              bool force = false);
+  bool PutEnv(std::wstring_view nv, bool force = false);
+  std::wstring GetEnv(std::wstring_view key);
+  bool ExpandEnv(std::wstring_view raw, std::wstring &w);
+
+private:
+  std::shared_mutex mtx;
+};
+
+} // namespace env
+
 } // namespace bela
 
 #endif

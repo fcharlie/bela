@@ -16,42 +16,35 @@ size_t memsearch(const wchar_t *begin, const wchar_t *end, int ch) {
 }
 
 } // namespace env_internal
+
 // https://docs.microsoft.com/en-us/windows/desktop/api/processenv/nf-processenv-expandenvironmentstringsw
-// New expand env not require system call
-// %SystemRoot%\\System32\\cmd.exe --> C:\\Windows\\System32\\cmd.exe
-// %% --> %
-// %SystemRoot% -->C:\\Windows (or others)
 std::wstring ExpandEnv(std::wstring_view sv) {
-  std::wstring buf;
-  buf.reserve(sv.size());
-  auto it = sv.data();
-  auto end = it + sv.size();
-  while (it < end) {
-    ///  Fast search %,
-    auto pos = env_internal::memsearch(it, end, '%');
-    if (pos == env_internal::npos) {
-      buf.append(it, end - it);
-      break;
-    }
-    buf.append(it, pos);
-    it += pos + 1;
-    if (it >= end) {
-      break;
-    }
-    if (*it == '%') {
-      it++;
-      buf.push_back('%');
-      continue;
-    }
-    pos = env_internal::memsearch(it, end, '%');
-    if (pos == env_internal::npos) {
-      buf.append(it, end - it);
-      break;
-    }
-    std::wstring key(it, pos);
-    buf.append(GetEnv(key));
-    it += pos + 1;
+  auto pos = sv.find('%');
+  if (pos == std::wstring_view::npos) {
+    return std::wstring(sv);
   }
+  auto pos2 = sv.find(pos + 1, '%');
+  if (pos == std::wstring_view::npos) {
+    return std::wstring(sv);
+  }
+  std::wstring buf;
+  buf.resize(sv.size() + 256);
+  auto N = ExpandEnvironmentStringsW(sv.data(), buf.data(), buf.size());
+  if (N == 0) {
+    return L"";
+  }
+  if (N <= buf.size()) {
+    buf.resize(N - 1);
+    return buf;
+  }
+  buf.resize(N);
+  if ((N = ExpandEnvironmentStringsW(sv.data(), buf.data(), buf.size())) == 0) {
+    return L"";
+  }
+  if (N > buf.size()) {
+    return L"";
+  }
+  buf.resize(N - 1);
   return buf;
 }
 

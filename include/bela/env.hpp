@@ -28,7 +28,11 @@ template <size_t Len = 256> std::wstring GetEnv(std::wstring_view val) {
   s.resize(nlen);
   return s;
 }
-
+// New expand env not require system call
+//%SystemRoot%\\System32\\cmd.exe --> C:\\Windows\\System32\\cmd.exe
+// %% --> %
+// %SystemRoot% -->C:\\Windows (or others)
+// 
 std::wstring ExpandEnv(std::wstring_view sv);
 std::wstring PathUnExpand(std::wstring_view sv);
 } // namespace bela

@@ -17,7 +17,7 @@ int memcasecmp(const wchar_t *s1, const wchar_t *s2, size_t len) {
   return 0;
 }
 
-wchar_t *memdup(const wchar_t *s, size_t slen) {
+[[nodiscard]] wchar_t *memdup(const wchar_t *s, size_t slen) {
   void *copy;
   if ((copy = malloc(slen * sizeof(wchar_t))) == nullptr) {
     return nullptr;

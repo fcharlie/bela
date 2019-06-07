@@ -18,7 +18,7 @@ template <typename T> inline void memcopy(T *dest, const T *src, size_t n) {
 }
 
 int memcasecmp(const wchar_t *s1, const wchar_t *s2, size_t len);
-wchar_t *memdup(const wchar_t *s, size_t slen);
+[[nodiscard]] wchar_t *memdup(const wchar_t *s, size_t slen);
 wchar_t *memrchr(const wchar_t *s, int c, size_t slen);
 size_t memspn(const wchar_t *s, size_t slen, const wchar_t *accept);
 size_t memcspn(const wchar_t *s, size_t slen, const wchar_t *reject);

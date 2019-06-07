@@ -38,6 +38,7 @@ static inline PVOID belarva(PVOID m, PVOID b) {
 
 PIMAGE_SECTION_HEADER
 BelaImageRvaToSection(PIMAGE_NT_HEADERS nh, PVOID BaseAddress, ULONG rva) {
+  (void)BaseAddress;
   ULONG count = bela::swaple(nh->FileHeader.NumberOfSections);
   PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(nh);
   ULONG va = 0;
@@ -164,6 +165,7 @@ PESimpleDetailsInternal(bela::MemView mv, const H *nh, bela::error_code &ec) {
                                bela::swaple(import_->VirtualAddress), nullptr);
     if (va == nullptr ||
         reinterpret_cast<uint8_t *>(va) + bela::swaple(import_->Size) >= end) {
+      ec = bela::make_error_code(INVALID_FILE_SIZE, L"PE file size invaild.");
       return std::make_optional<>(pm);
     }
     auto imdes = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(va);

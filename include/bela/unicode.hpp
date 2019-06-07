@@ -9,7 +9,7 @@
 namespace bela {
 namespace unicode {
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0482r6.html R6
-#if __cplusplus < 202003L      // C++20 add char8_t
+#if !defined(__cpp_char8_t)
 using char8_t = unsigned char; // char8_t
 #endif
 using std::ptrdiff_t;

@@ -355,43 +355,79 @@ inline ExpDigits SplitToSix(const double value) {
   // however value is an IEEE-754 64-bit number, so the table would have 2,000
   // entries, which is not cache-friendly.
   if (d >= 999999.5) {
-    if (d >= 1e+261)
-      exp += 256, d *= 1e-256;
-    if (d >= 1e+133)
-      exp += 128, d *= 1e-128;
-    if (d >= 1e+69)
-      exp += 64, d *= 1e-64;
-    if (d >= 1e+37)
-      exp += 32, d *= 1e-32;
-    if (d >= 1e+21)
-      exp += 16, d *= 1e-16;
-    if (d >= 1e+13)
-      exp += 8, d *= 1e-8;
-    if (d >= 1e+9)
-      exp += 4, d *= 1e-4;
-    if (d >= 1e+7)
-      exp += 2, d *= 1e-2;
-    if (d >= 1e+6)
-      exp += 1, d *= 1e-1;
+    if (d >= 1e+261) {
+      exp += 256;
+      d *= 1e-256;
+    }
+    if (d >= 1e+133) {
+      exp += 128;
+      d *= 1e-128;
+    }
+    if (d >= 1e+69) {
+      exp += 64;
+      d *= 1e-64;
+    }
+    if (d >= 1e+37) {
+      exp += 32;
+      d *= 1e-32;
+    }
+    if (d >= 1e+21) {
+      exp += 16;
+      d *= 1e-16;
+    }
+    if (d >= 1e+13) {
+      exp += 8;
+      d *= 1e-8;
+    }
+    if (d >= 1e+9) {
+      exp += 4;
+      d *= 1e-4;
+    }
+    if (d >= 1e+7) {
+      exp += 2;
+      d *= 1e-2;
+    }
+    if (d >= 1e+6) {
+      exp += 1;
+      d *= 1e-1;
+    }
   } else {
-    if (d < 1e-250)
-      exp -= 256, d *= 1e256;
-    if (d < 1e-122)
-      exp -= 128, d *= 1e128;
-    if (d < 1e-58)
-      exp -= 64, d *= 1e64;
-    if (d < 1e-26)
-      exp -= 32, d *= 1e32;
-    if (d < 1e-10)
-      exp -= 16, d *= 1e16;
-    if (d < 1e-2)
-      exp -= 8, d *= 1e8;
-    if (d < 1e+2)
-      exp -= 4, d *= 1e4;
-    if (d < 1e+4)
-      exp -= 2, d *= 1e2;
-    if (d < 1e+5)
-      exp -= 1, d *= 1e1;
+    if (d < 1e-250) {
+      exp -= 256;
+      d *= 1e256;
+    }
+    if (d < 1e-122) {
+      exp -= 128;
+      d *= 1e128;
+    }
+    if (d < 1e-58) {
+      exp -= 64;
+      d *= 1e64;
+    }
+    if (d < 1e-26) {
+      exp -= 32;
+      d *= 1e32;
+    }
+    if (d < 1e-10) {
+      exp -= 16;
+      d *= 1e16;
+    }
+    if (d < 1e-2) {
+      exp -= 8;
+      d *= 1e8;
+    }
+    if (d < 1e+2) {
+      exp -= 4;
+      d *= 1e4;
+    }
+    if (d < 1e+4) {
+      exp -= 2;
+      d *= 1e2;
+    }
+    if (d < 1e+5) {
+      exp -= 1;
+      d *= 1e1;
+    }
   }
   // At this point, d is in the range [99999.5..999999.5) and exp is in the
   // range [-324..308]. Since we need to round d up, we want to add a half

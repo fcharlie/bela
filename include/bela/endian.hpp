@@ -39,7 +39,7 @@ constexpr bool IsLittleEndianHost = true;
 constexpr inline bool IsBigEndian() { return IsBigEndianHost; }
 constexpr inline bool IsLittleEndian() { return IsLittleEndianHost; }
 
-constexpr inline uint16_t swap16(uint16_t value) {
+inline uint16_t swap16(uint16_t value) {
 #if defined(_MSC_VER) && !defined(_DEBUG)
   // The DLL version of the runtime lacks these functions (bug!?), but in a
   // release build they're replaced with BSWAP instructions anyway.
@@ -51,7 +51,7 @@ constexpr inline uint16_t swap16(uint16_t value) {
 #endif
 }
 // We use C++17. so GCC version must > 8.0. __builtin_bswap32 awayls exists
-constexpr inline uint32_t swap32(uint32_t value) {
+inline uint32_t swap32(uint32_t value) {
 #if defined(__llvm__) || (defined(__GNUC__) && !defined(__ICC))
   return __builtin_bswap32(value);
 #elif defined(_MSC_VER) && !defined(_DEBUG)
@@ -65,7 +65,7 @@ constexpr inline uint32_t swap32(uint32_t value) {
 #endif
 }
 
-constexpr inline uint64_t swap64(uint64_t value) {
+inline uint64_t swap64(uint64_t value) {
 #if defined(__llvm__) || (defined(__GNUC__) && !defined(__ICC))
   return __builtin_bswap64(value);
 #elif defined(_MSC_VER) && !defined(_DEBUG)
@@ -77,20 +77,20 @@ constexpr inline uint64_t swap64(uint64_t value) {
 #endif
 }
 
-constexpr inline unsigned char bswap(unsigned char v) { return v; }
-constexpr inline signed char bswap(signed char v) { return v; }
-constexpr inline unsigned short bswap(unsigned short v) { return swap16(v); }
-constexpr inline signed short bswap(signed short v) {
+inline unsigned char bswap(unsigned char v) { return v; }
+inline signed char bswap(signed char v) { return v; }
+inline unsigned short bswap(unsigned short v) { return swap16(v); }
+inline signed short bswap(signed short v) {
   return static_cast<signed short>(swap16(static_cast<uint16_t>(v)));
 }
-constexpr inline unsigned int bswap(unsigned int v) {
+inline unsigned int bswap(unsigned int v) {
   return static_cast<unsigned int>(swap32(static_cast<uint32_t>(v)));
 }
-constexpr inline signed int bswap(signed int v) {
+inline signed int bswap(signed int v) {
   return static_cast<signed int>(swap32(static_cast<uint32_t>(v)));
 }
 
-constexpr unsigned long bswap(unsigned long v) {
+unsigned long bswap(unsigned long v) {
   if constexpr (sizeof(unsigned long) == 8) {
     return static_cast<unsigned long>(swap64(static_cast<uint64_t>(v)));
   } else if constexpr (sizeof(unsigned long) != 4) {
@@ -99,7 +99,7 @@ constexpr unsigned long bswap(unsigned long v) {
   }
   return static_cast<unsigned long>(swap32(static_cast<uint32_t>(v)));
 }
-constexpr signed long bswap(signed long v) {
+signed long bswap(signed long v) {
   if constexpr (sizeof(signed long) == 8) {
     return static_cast<signed long>(swap64(static_cast<uint64_t>(v)));
   } else if constexpr (sizeof(signed long) != 4) {
@@ -109,10 +109,10 @@ constexpr signed long bswap(signed long v) {
   return static_cast<signed long>(swap32(static_cast<uint32_t>(v)));
 }
 
-constexpr unsigned long long bswap(unsigned long long v) {
+unsigned long long bswap(unsigned long long v) {
   return static_cast<unsigned long long>(swap64(static_cast<uint64_t>(v)));
 }
-constexpr signed long long bswap(signed long long v) {
+signed long long bswap(signed long long v) {
   return static_cast<signed long long>(swap64(static_cast<uint64_t>(v)));
 }
 
@@ -132,7 +132,7 @@ template <typename T> inline T ntohs(T v) {
   return bswap(v);
 }
 
-template <typename T> constexpr T swaple(T i) {
+template <typename T> T swaple(T i) {
   static_assert(std::is_integral<T>::value, "Integral required.");
   if constexpr (IsBigEndianHost) {
     return bswap(i);
@@ -140,7 +140,7 @@ template <typename T> constexpr T swaple(T i) {
   return i;
 }
 
-template <typename T> constexpr T swapbe(T i) {
+template <typename T> T swapbe(T i) {
   static_assert(std::is_integral<T>::value, "Integral required.");
   if constexpr (IsBigEndianHost) {
     return i;

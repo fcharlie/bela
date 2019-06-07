@@ -54,7 +54,7 @@ bool CUnescapeInternal(std::wstring_view source, bool leave_nulls_escaped,
 
   // Small optimization for case where source = dest and there's no escaping
   while (p == d && p < end && *p != '\\')
-    p++, d++;
+    static_cast<void>(p++), d++;
 
   while (p < end) {
     if (*p != '\\') {

@@ -24,7 +24,7 @@ std::wstring ExpandEnv(std::wstring_view sv) {
     return std::wstring(sv);
   }
   auto pos2 = sv.find(L'%', pos + 1);
-  if (pos == std::wstring_view::npos) {
+  if (pos2 == std::wstring_view::npos) {
     return std::wstring(sv);
   }
   std::wstring buf;

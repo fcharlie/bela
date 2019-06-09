@@ -42,6 +42,7 @@ include_directories(
 
 add_subdirectory(src/bela)
 add_subdirectory(src/belawin)
+add_subdirectory(src/belashl)
 if(ENABLE_TEST)
   add_subdirectory(test)
 endif()

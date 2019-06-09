@@ -100,8 +100,7 @@ private:
 };
 
 template <typename Class, typename Interface = IUnknown>
-bela::comptr<Class>
-CoCreateInstance(DWORD dwClsContext = CLSCTX_INPROC_SERVER) {
+bela::comptr<Class> CoCreateInstance(DWORD dwClsContext = CLSCTX_INPROC_SERVER) {
   bela::comptr<Class> result;
   ::CoCreateInstance(__uuidof(Class), nullptr, dwClsContext,
                      IID_PPV_ARGS(&result));

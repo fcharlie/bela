@@ -17,3 +17,11 @@ add_executable(unicode_test
 target_link_libraries(unicode_test
   bela
 )
+
+add_executable(ansi_test
+  ansi.cc
+)
+
+target_link_libraries(ansi_test
+  bela
+)

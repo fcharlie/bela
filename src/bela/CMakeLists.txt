@@ -9,6 +9,7 @@ add_library(bela STATIC
   memutil.cc
   numbers.cc
   stdwriter.cc
+  winansi.cc
   str_split.cc
   str_replace.cc
   strcat.cc

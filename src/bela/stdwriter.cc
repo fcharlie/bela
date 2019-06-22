@@ -8,7 +8,7 @@
 #include <io.h>
 
 namespace bela {
-
+ssize_t BelaWriteAnsi(HANDLE hDev, std::wstring_view msg);
 enum class ConsoleMode {
   File, //
   Conhost,
@@ -67,34 +67,34 @@ bool IsCygwinPipe(HANDLE hFile) {
 }
 
 // Remove all color string
-ssize_t WriteToLegacy(HANDLE hConsole, std::wstring_view sv) {
-  // L"\x1b[0mzzz"
-  constexpr const wchar_t sep = 0x1b;
-  std::wstring buf;
-  buf.reserve(sv.size());
-  do {
-    auto pos = sv.find(sep);
-    if (pos == std::wstring_view::npos) {
-      buf.append(sv);
-      break;
-    }
-    buf.append(sv.substr(0, pos));
-    sv.remove_prefix(pos + 1);
-    pos = sv.find('m');
-    if (pos == std::wstring::npos) {
-      buf.push_back(sep);
-      buf.append(sv);
-      break;
-    }
-    sv.remove_prefix(pos + 1);
-  } while (!sv.empty());
-  DWORD dwWrite = 0;
-  if (!WriteConsoleW(hConsole, buf.data(), (DWORD)buf.size(), &dwWrite,
-                     nullptr)) {
-    return -1;
-  }
-  return static_cast<ssize_t>(dwWrite);
-}
+// ssize_t WriteToLegacy(HANDLE hConsole, std::wstring_view sv) {
+//   // L"\x1b[0mzzz"
+//   constexpr const wchar_t sep = 0x1b;
+//   std::wstring buf;
+//   buf.reserve(sv.size());
+//   do {
+//     auto pos = sv.find(sep);
+//     if (pos == std::wstring_view::npos) {
+//       buf.append(sv);
+//       break;
+//     }
+//     buf.append(sv.substr(0, pos));
+//     sv.remove_prefix(pos + 1);
+//     pos = sv.find('m');
+//     if (pos == std::wstring::npos) {
+//       buf.push_back(sep);
+//       buf.append(sv);
+//       break;
+//     }
+//     sv.remove_prefix(pos + 1);
+//   } while (!sv.empty());
+//   DWORD dwWrite = 0;
+//   if (!WriteConsoleW(hConsole, buf.data(), (DWORD)buf.size(), &dwWrite,
+//                      nullptr)) {
+//     return -1;
+//   }
+//   return static_cast<ssize_t>(dwWrite);
+// }
 
 static inline ssize_t WriteToTTY(FILE *out, std::wstring_view sv) {
   auto s = bela::ToNarrow(sv);
@@ -122,7 +122,7 @@ public:
   ssize_t StdWriteConsole(HANDLE hFile, std::wstring_view sv,
                           ConsoleMode cm) const {
     if (cm == ConsoleMode::Conhost) {
-      return WriteToLegacy(hFile, sv);
+      return BelaWriteAnsi(hFile, sv);
     }
     return WriteToConsole(hFile, sv);
   }

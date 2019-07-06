@@ -93,7 +93,8 @@ bool Derivative::SetEnv(std::wstring_view key, std::wstring_view value,
                         bool force) {
   auto it = envblock.find(key);
   if (force) {
-    envblock[key] = value;
+    // envblock[key] = value;
+    envblock.insert_or_assign(key, value);
     return true;
   }
   return envblock.emplace(key, value).second;
@@ -129,7 +130,8 @@ bool DerivativeMT::EraseEnv(std::wstring_view key) {
 bool DerivativeMT::SetEnv(std::wstring_view key, std::wstring_view value,
                           bool force) {
   if (force) {
-    envblock[key] = value;
+    // envblock[key] = value;
+    envblock.insert_or_assign(key, value);
     return true;
   }
   return envblock.emplace(key, value).second;

@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 #include <shared_mutex>
+#include "phmap.hpp"
 #include "base.hpp"
 
 namespace bela {
@@ -46,6 +47,7 @@ public:
   bool ExpandEnv(std::wstring_view raw, std::wstring &w) const;
 
 private:
+  bela::flat_hash_map<std::wstring, std::wstring> envblock;
 };
 
 class DerivativeMT {
@@ -61,7 +63,8 @@ public:
   bool ExpandEnv(std::wstring_view raw, std::wstring &w);
 
 private:
-  std::shared_mutex mtx;
+  //mutable std::shared_mutex mtx;
+  bela::parallel_flat_hash_map<std::wstring, std::wstring> envblock;
 };
 
 } // namespace env

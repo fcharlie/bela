@@ -84,4 +84,78 @@ std::wstring PathUnExpand(std::wstring_view sv) {
   return buf;
 }
 
+namespace env {
+bool Derivative::EraseEnv(std::wstring_view key) {
+  return envblock.erase(key) != 0;
+}
+
+bool Derivative::SetEnv(std::wstring_view key, std::wstring_view value,
+                        bool force) {
+  auto it = envblock.find(key);
+  if (force) {
+    envblock[key] = value;
+    return true;
+  }
+  return envblock.emplace(key, value).second;
+}
+
+bool Derivative::PutEnv(std::wstring_view nv, bool force) {
+  auto pos = nv.find(L'=');
+  if (pos == std::wstring_view::npos) {
+    return SetEnv(nv, L"", force);
+  }
+  return SetEnv(nv.substr(0, pos), nv.substr(pos + 1), force);
+}
+
+std::wstring_view Derivative::GetEnv(std::wstring_view key) const {
+  auto it = envblock.find(key);
+  if (it == envblock.end()) {
+    return L"";
+  }
+  return it->second;
+}
+
+// Expand Env string to normal string only support '${KEY}' ?
+bool Derivative::ExpandEnv(std::wstring_view raw, std::wstring &w) const {
+  //
+  return false;
+}
+
+// DerivativeMT support MultiThreading
+bool DerivativeMT::EraseEnv(std::wstring_view key) {
+  return envblock.erase(key) != 0; /// Internal is thread safe
+}
+
+bool DerivativeMT::SetEnv(std::wstring_view key, std::wstring_view value,
+                          bool force) {
+  if (force) {
+    envblock[key] = value;
+    return true;
+  }
+  return envblock.emplace(key, value).second;
+}
+
+bool DerivativeMT::PutEnv(std::wstring_view nv, bool force) {
+  auto pos = nv.find(L'=');
+  if (pos == std::wstring_view::npos) {
+    return SetEnv(nv, L"", force);
+  }
+  return SetEnv(nv.substr(0, pos), nv.substr(pos + 1), force);
+}
+
+std::wstring DerivativeMT::GetEnv(std::wstring_view key) {
+  auto it = envblock.find(key);
+  if (it == envblock.end()) {
+    return L"";
+  }
+  return it->second;
+}
+
+bool DerivativeMT::ExpandEnv(std::wstring_view raw, std::wstring &w) {
+  //
+  return true;
+}
+
+} // namespace env
+
 } // namespace bela

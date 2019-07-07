@@ -87,8 +87,8 @@ std::wstring PathUnExpand(std::wstring_view sv) {
 namespace env {
 
 inline bool is_shell_specia_var(wchar_t ch) {
-  return (ch == '*' || ch == '#' || ch == '@' || ch == '!' || ch == '?' ||
-          ch == '-' || (ch <= '0' && ch <= '9'));
+  return (ch == '*' || ch == '#' || ch == '$' || ch == '@' || ch == '!' ||
+          ch == '?' || ch == '-' || (ch >= '0' && ch <= '9'));
 }
 
 inline bool is_alphanum(wchar_t ch) {
@@ -187,28 +187,29 @@ bool Derivative::AppendEnv(std::wstring_view key, std::wstring &s) const {
 // Expand Env string to normal string only support  Unix style'${KEY}'
 bool Derivative::ExpandEnv(std::wstring_view raw, std::wstring &w,
                            bool disableos) const {
-  auto s = raw;
-  w.clear();
   w.reserve(raw.size() * 2);
-  while (!s.empty()) {
-    auto pos = s.find('$');
-    if (pos >= s.size() - 1) { // or npos>s.size() always
-      w.append(s);
-      break;
-    }
-    w.append(s.data(), pos);
-    s.remove_prefix(pos + 1);
-    size_t off = 0;
-    auto k = resovle_shell_name(s, off);
-    if (!k.empty()) {
-      if (!AppendEnv(k, w)) {
-        if (!disableos) {
-          os_expand_env(std::wstring(k), w);
+  size_t i = 0;
+  for (size_t j = 0; j < raw.size(); j++) {
+    if (raw[j] == '$' && j + 1 < raw.size()) {
+      w.append(raw.substr(i, j - i));
+      size_t off = 0;
+      auto name = resovle_shell_name(raw.substr(j + 1), off);
+      if (name.empty()) {
+        if (off == 0) {
+          w.push_back(raw[j]);
+        }
+      } else {
+        if (!AppendEnv(name, w)) {
+          if (!disableos) {
+            os_expand_env(std::wstring(name), w);
+          }
         }
       }
+      j += off;
+      i = j + 1;
     }
-    s.remove_prefix(off);
   }
+  w.append(raw.substr(i));
   return true;
 }
 
@@ -254,28 +255,29 @@ bool DerivativeMT::AppendEnv(std::wstring_view key, std::wstring &s) {
 
 bool DerivativeMT::ExpandEnv(std::wstring_view raw, std::wstring &w,
                              bool disableos) {
-  auto s = raw;
-  w.clear();
   w.reserve(raw.size() * 2);
-  while (!s.empty()) {
-    auto pos = s.find('$');
-    if (pos >= s.size() - 1) { // or npos>s.size() always
-      w.append(s);
-      break;
-    }
-    w.append(s.data(), pos);
-    s.remove_prefix(pos + 1);
-    size_t off = 0;
-    auto k = resovle_shell_name(s, off);
-    if (!k.empty()) {
-      if (!AppendEnv(k, w)) {
-        if (!disableos) {
-          os_expand_env(std::wstring(k), w);
+  size_t i = 0;
+  for (size_t j = 0; j < raw.size(); j++) {
+    if (raw[j] == '$' && j + 1 < raw.size()) {
+      w.append(raw.substr(i, j - i));
+      size_t off = 0;
+      auto name = resovle_shell_name(raw.substr(j + 1), off);
+      if (name.empty()) {
+        if (off == 0) {
+          w.push_back(raw[j]);
+        }
+      } else {
+        if (!AppendEnv(name, w)) {
+          if (!disableos) {
+            os_expand_env(std::wstring(name), w);
+          }
         }
       }
+      j += off;
+      i = j + 1;
     }
-    s.remove_prefix(off);
   }
+  w.append(raw.substr(i));
   return true;
 }
 

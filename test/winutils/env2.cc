@@ -18,8 +18,17 @@ int wmain() {
   }
   bela::env::Derivative de;
   de.PutEnv(L"JACK=ROSE");
-  std::wstring s2;
-  de.ExpandEnv(L"SystemRoot ${SystemRoot}, who $JACK ?$$$", s2);
-  bela::FPrintF(stderr, L"%s\n", s2);
+
+  const wchar_t *svv[] = {
+      L"SystemRoot ${SystemRoot}, $ who $JACK ?$$$ |",
+      L"System $|--- $ ???",
+      L"System $|--- $ ???${",
+      L"------->${}"// ------->
+  };
+  for (auto s : svv) {
+    std::wstring s2;
+    de.ExpandEnv(s, s2);
+    bela::FPrintF(stderr, L"%s --> (%s)\n", s, s2);
+  }
   return 0;
 }

@@ -40,6 +40,7 @@ public:
   Derivative() = default;
   Derivative(const Derivative &) = delete;
   Derivative &operator=(const Derivative &) = delete;
+  bool AddBashCompatible(int argc, wchar_t *const *argv);
   bool EraseEnv(std::wstring_view key);
   bool SetEnv(std::wstring_view key, std::wstring_view value,
               bool force = false);
@@ -60,6 +61,7 @@ public:
   DerivativeMT() = default;
   DerivativeMT(const DerivativeMT &) = delete;
   DerivativeMT &operator=(const DerivativeMT &) = delete;
+  bool AddBashCompatible(int argc, wchar_t *const *argv);
   bool EraseEnv(std::wstring_view key);
   bool SetEnv(std::wstring_view key, std::wstring_view value,
               bool force = false);

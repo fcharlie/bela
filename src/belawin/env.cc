@@ -2,6 +2,7 @@
 // bela expand env
 #include <bela/base.hpp>
 #include <bela/env.hpp>
+#include <bela/strcat.hpp>
 
 namespace bela {
 namespace env_internal {
@@ -144,6 +145,15 @@ bool os_expand_env(const std::wstring &key, std::wstring &value) {
   return true;
 }
 
+bool Derivative::AddBashCompatible(int argc, wchar_t *const *argv) {
+  //
+  // $0~$N
+  for (int i = 0; i < argc; i++) {
+    envblock.emplace(bela::AlphaNum(i).Piece(), argv[i]);
+  }
+  return true;
+}
+
 bool Derivative::EraseEnv(std::wstring_view key) {
   return envblock.erase(key) != 0;
 }
@@ -214,6 +224,14 @@ bool Derivative::ExpandEnv(std::wstring_view raw, std::wstring &w,
 }
 
 // DerivativeMT support MultiThreading
+
+bool DerivativeMT::AddBashCompatible(int argc, wchar_t *const *argv) {
+  for (int i = 0; i < argc; i++) {
+    envblock.emplace(bela::AlphaNum(i).Piece(), argv[i]);
+  }
+  return true;
+}
+
 bool DerivativeMT::EraseEnv(std::wstring_view key) {
   return envblock.erase(key) != 0; /// Internal is thread safe
 }

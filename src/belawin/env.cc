@@ -85,6 +85,65 @@ std::wstring PathUnExpand(std::wstring_view sv) {
 }
 
 namespace env {
+
+inline bool is_shell_specia_var(wchar_t ch) {
+  return (ch == '*' || ch == '#' || ch == '@' || ch == '!' || ch == '?' ||
+          ch == '-' || (ch <= '0' && ch <= '9'));
+}
+
+inline bool is_alphanum(wchar_t ch) {
+  return (ch == '_' || (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') ||
+          (ch >= 'A' && ch <= 'Z'));
+}
+
+std::wstring_view resovle_shell_name(std::wstring_view s, size_t &off) {
+  off = 0;
+  if (s.front() == '{') {
+    if (s.size() > 2 && is_shell_specia_var(s[1]) && s[2] == '}') {
+      off = 3;
+      return s.substr(1, 2);
+    }
+    for (size_t i = 1; i < s.size(); i++) {
+      if (s[i] == '}') {
+        if (i == 1) {
+          off = 2;
+          return L"";
+        }
+        off = i + 1;
+        return s.substr(1, i - 1);
+      }
+    }
+    off = 1;
+    return L"";
+  }
+  if (is_shell_specia_var(s[0])) {
+    off = 1;
+    return s.substr(0, 1);
+  }
+  size_t i = 0;
+  for (; i < s.size() && is_alphanum(s[i]); i++) {
+    ;
+  }
+  off = i;
+  return s.substr(0, i);
+}
+
+bool os_expand_env(const std::wstring &key, std::wstring &value) {
+  auto len = GetEnvironmentVariableW(key.data(), nullptr, 0);
+  if (len == 0) {
+    return false;
+  }
+  auto oldsize = value.size();
+  value.resize(oldsize + len);
+  len = GetEnvironmentVariableW(key.data(), value.data() + oldsize, len);
+  if (len == 0) {
+    value.resize(oldsize);
+    return false;
+  }
+  value.resize(oldsize + len);
+  return true;
+}
+
 bool Derivative::EraseEnv(std::wstring_view key) {
   return envblock.erase(key) != 0;
 }
@@ -116,10 +175,41 @@ std::wstring_view Derivative::GetEnv(std::wstring_view key) const {
   return it->second;
 }
 
-// Expand Env string to normal string only support '${KEY}' ?
-bool Derivative::ExpandEnv(std::wstring_view raw, std::wstring &w) const {
-  //
-  return false;
+bool Derivative::AppendEnv(std::wstring_view key, std::wstring &s) const {
+  auto it = envblock.find(key);
+  if (it == envblock.end()) {
+    return false;
+  }
+  s.append(it->second);
+  return true;
+}
+
+// Expand Env string to normal string only support  Unix style'${KEY}'
+bool Derivative::ExpandEnv(std::wstring_view raw, std::wstring &w,
+                           bool disableos) const {
+  auto s = raw;
+  w.clear();
+  w.reserve(raw.size() * 2);
+  while (!s.empty()) {
+    auto pos = s.find('$');
+    if (pos >= s.size() - 1) { // or npos>s.size() always
+      w.append(s);
+      break;
+    }
+    w.append(s.data(), pos);
+    s.remove_prefix(pos + 1);
+    size_t off = 0;
+    auto k = resovle_shell_name(s, off);
+    if (!k.empty()) {
+      if (!AppendEnv(k, w)) {
+        if (!disableos) {
+          os_expand_env(std::wstring(k), w);
+        }
+      }
+    }
+    s.remove_prefix(off);
+  }
+  return true;
 }
 
 // DerivativeMT support MultiThreading
@@ -153,8 +243,39 @@ std::wstring DerivativeMT::GetEnv(std::wstring_view key) {
   return it->second;
 }
 
-bool DerivativeMT::ExpandEnv(std::wstring_view raw, std::wstring &w) {
-  //
+bool DerivativeMT::AppendEnv(std::wstring_view key, std::wstring &s) {
+  auto it = envblock.find(key);
+  if (it == envblock.end()) {
+    return false;
+  }
+  s.append(it->second);
+  return true;
+}
+
+bool DerivativeMT::ExpandEnv(std::wstring_view raw, std::wstring &w,
+                             bool disableos) {
+  auto s = raw;
+  w.clear();
+  w.reserve(raw.size() * 2);
+  while (!s.empty()) {
+    auto pos = s.find('$');
+    if (pos >= s.size() - 1) { // or npos>s.size() always
+      w.append(s);
+      break;
+    }
+    w.append(s.data(), pos);
+    s.remove_prefix(pos + 1);
+    size_t off = 0;
+    auto k = resovle_shell_name(s, off);
+    if (!k.empty()) {
+      if (!AppendEnv(k, w)) {
+        if (!disableos) {
+          os_expand_env(std::wstring(k), w);
+        }
+      }
+    }
+    s.remove_prefix(off);
+  }
   return true;
 }
 

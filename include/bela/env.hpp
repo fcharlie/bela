@@ -34,6 +34,7 @@ std::wstring ExpandEnv(std::wstring_view sv);
 std::wstring PathUnExpand(std::wstring_view sv);
 
 namespace env {
+// Derivative Expand Env buitin. upper
 class Derivative {
 public:
   Derivative() = default;
@@ -44,9 +45,13 @@ public:
               bool force = false);
   bool PutEnv(std::wstring_view nv, bool force = false);
   std::wstring_view GetEnv(std::wstring_view key) const;
-  bool ExpandEnv(std::wstring_view raw, std::wstring &w) const;
+  // ExpandEnv POSIX style ${KEY}. if not enable disableos, use
+  // GetEnvironmentVariableW if key not exists envblock
+  bool ExpandEnv(std::wstring_view raw, std::wstring &w,
+                 bool disableos = false) const;
 
 private:
+  bool AppendEnv(std::wstring_view key, std::wstring &s) const;
   bela::flat_hash_map<std::wstring, std::wstring> envblock;
 };
 
@@ -60,10 +65,11 @@ public:
               bool force = false);
   bool PutEnv(std::wstring_view nv, bool force = false);
   std::wstring GetEnv(std::wstring_view key);
-  bool ExpandEnv(std::wstring_view raw, std::wstring &w);
+  bool ExpandEnv(std::wstring_view raw, std::wstring &w,
+                 bool disableos = false);
 
 private:
-  //mutable std::shared_mutex mtx;
+  bool AppendEnv(std::wstring_view key, std::wstring &s);
   bela::parallel_flat_hash_map<std::wstring, std::wstring> envblock;
 };
 

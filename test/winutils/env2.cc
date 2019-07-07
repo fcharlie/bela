@@ -22,13 +22,15 @@ int wmain(int argc, wchar_t **argv) {
 
   const wchar_t *svv[] = {                                                 //
                           L"SystemRoot ${SystemRoot}, $ who $JACK ?$$$ |", //
-                          L"System $|--- $ ???", L"System $|--- $ ???${",
+                          L"System $|--- $ ???",
+                          L"System $|--- $ ???${",
                           L"------->${}", // ------->
-                          L"App Argv0: $0"};
+                          L"App Argv0: $0 HOME: $HOME",
+                          L"cmdline: $@"};
   for (auto s : svv) {
     std::wstring s2;
     de.ExpandEnv(s, s2);
-    bela::FPrintF(stderr, L"%s --> (%s)\n", s, s2);
+    bela::FPrintF(stderr, L"%s --> [%s]\n", s, s2);
   }
   return 0;
 }

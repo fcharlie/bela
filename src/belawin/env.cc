@@ -146,10 +146,17 @@ bool os_expand_env(const std::wstring &key, std::wstring &value) {
 }
 
 bool Derivative::AddBashCompatible(int argc, wchar_t *const *argv) {
-  //
   // $0~$N
   for (int i = 0; i < argc; i++) {
     envblock.emplace(bela::AlphaNum(i).Piece(), argv[i]);
+  }
+  envblock.emplace(
+      L"$",
+      bela::AlphaNum(GetCurrentProcessId()).Piece()); // current process PID
+  envblock.emplace(L"@", GetCommandLineW());          // $@ -->cmdline
+  std::wstring userprofile;
+  if (os_expand_env(L"USERPROFILE", userprofile)) {
+    envblock.emplace(L"HOME", userprofile);
   }
   return true;
 }
@@ -228,6 +235,14 @@ bool Derivative::ExpandEnv(std::wstring_view raw, std::wstring &w,
 bool DerivativeMT::AddBashCompatible(int argc, wchar_t *const *argv) {
   for (int i = 0; i < argc; i++) {
     envblock.emplace(bela::AlphaNum(i).Piece(), argv[i]);
+  }
+  envblock.emplace(
+      L"$",
+      bela::AlphaNum(GetCurrentProcessId()).Piece()); // $$ --> current PID
+  envblock.emplace(L"@", GetCommandLineW());          // $@ -->cmdline
+  std::wstring userprofile;
+  if (os_expand_env(L"USERPROFILE", userprofile)) {
+    envblock.emplace(L"HOME", userprofile);
   }
   return true;
 }

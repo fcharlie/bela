@@ -167,7 +167,6 @@ bool Derivative::EraseEnv(std::wstring_view key) {
 
 bool Derivative::SetEnv(std::wstring_view key, std::wstring_view value,
                         bool force) {
-  auto it = envblock.find(key);
   if (force) {
     // envblock[key] = value;
     envblock.insert_or_assign(key, value);
@@ -315,5 +314,4 @@ bool DerivativeMT::ExpandEnv(std::wstring_view raw, std::wstring &w,
 }
 
 } // namespace env
-
 } // namespace bela

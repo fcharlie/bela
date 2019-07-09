@@ -45,7 +45,7 @@ public:
   bool SetEnv(std::wstring_view key, std::wstring_view value,
               bool force = false);
   bool PutEnv(std::wstring_view nv, bool force = false);
-  std::wstring_view GetEnv(std::wstring_view key) const;
+  [[nodiscard]] std::wstring_view GetEnv(std::wstring_view key) const;
   // ExpandEnv POSIX style ${KEY}. if not enable disableos, use
   // GetEnvironmentVariableW if key not exists envblock
   bool ExpandEnv(std::wstring_view raw, std::wstring &w,
@@ -66,7 +66,7 @@ public:
   bool SetEnv(std::wstring_view key, std::wstring_view value,
               bool force = false);
   bool PutEnv(std::wstring_view nv, bool force = false);
-  std::wstring GetEnv(std::wstring_view key);
+  [[nodiscard]] std::wstring GetEnv(std::wstring_view key);
   bool ExpandEnv(std::wstring_view raw, std::wstring &w,
                  bool disableos = false);
 

@@ -183,7 +183,8 @@ bool Derivative::PutEnv(std::wstring_view nv, bool force) {
   return SetEnv(nv.substr(0, pos), nv.substr(pos + 1), force);
 }
 
-std::wstring_view Derivative::GetEnv(std::wstring_view key) const {
+[[nodiscard]] std::wstring_view
+Derivative::GetEnv(std::wstring_view key) const {
   auto it = envblock.find(key);
   if (it == envblock.end()) {
     return L"";
@@ -268,7 +269,7 @@ bool DerivativeMT::PutEnv(std::wstring_view nv, bool force) {
   return SetEnv(nv.substr(0, pos), nv.substr(pos + 1), force);
 }
 
-std::wstring DerivativeMT::GetEnv(std::wstring_view key) {
+[[nodiscard]] std::wstring DerivativeMT::GetEnv(std::wstring_view key) {
   auto it = envblock.find(key);
   if (it == envblock.end()) {
     return L"";

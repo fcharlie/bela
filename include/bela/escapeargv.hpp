@@ -16,10 +16,12 @@ inline std::wstring escape_argument(std::wstring_view ac) {
   for (auto c : ac) {
     switch (c) {
     case L'"':
+      [[fallthrough]];
     case L'\\':
       n++;
       break;
     case ' ':
+      [[fallthrough]];
     case '\t':
       hasspace = true;
       break;
@@ -67,6 +69,7 @@ inline std::wstring escape_argument(std::wstring_view ac) {
   return buf;
 }
 } // namespace argv_internal
+
 class EscapeArgv {
 public:
   EscapeArgv() = default;

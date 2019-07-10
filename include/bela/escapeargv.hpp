@@ -31,9 +31,10 @@ inline std::wstring escape_argument(std::wstring_view ac) {
     n += 2;
   }
   if (n == ac.size()) {
-    return std::wstring(ac.data(), ac.size());
+    return std::wstring(ac);
   }
   std::wstring buf;
+  buf.reserve(n+1);
   if (hasspace) {
     buf.push_back(L'"');
   }

@@ -52,6 +52,7 @@ PathCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
       {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(),
        static_cast<const AlphaNum &>(args).Piece()...});
 }
+std::vector<std::wstring_view> SplitPath(std::wstring_view sv);
 
 enum class FileAttribute : DWORD {
   None = 0, //

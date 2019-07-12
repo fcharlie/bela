@@ -44,8 +44,9 @@ inline bool PathStripDriveLatter(std::wstring_view &sv, wchar_t &dl) {
 
   return false;
 }
-using container_t = std::vector<std::wstring_view>;
-bool PathSplit(std::wstring_view sv, container_t &output) {
+
+bool SplitPathInternal(std::wstring_view sv,
+                       std::vector<std::wstring_view> &output) {
   constexpr std::wstring_view dotdot = L"..";
   constexpr std::wstring_view dot = L".";
   size_t first = 0;
@@ -68,6 +69,14 @@ bool PathSplit(std::wstring_view sv, container_t &output) {
     first = second + 1;
   }
   return true;
+}
+
+std::vector<std::wstring_view> SplitPath(std::wstring_view sv) {
+  std::vector<std::wstring_view> pv;
+  if (!SplitPathInternal(sv, pv)) {
+    pv.clear();
+  }
+  return pv;
 }
 
 namespace path_internal {
@@ -98,12 +107,12 @@ std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
   auto isextend = PathStripExtended(p0, exch);
   wchar_t latter = 0;
   auto haslatter = PathStripDriveLatter(p0, latter);
-  container_t pv;
-  if (!PathSplit(p0, pv)) {
+  std::vector<std::wstring_view> pv;
+  if (!SplitPathInternal(p0, pv)) {
     return L"";
   }
   for (size_t i = 1; i < pieces.size(); i++) {
-    if (!PathSplit(pieces[i], pv)) {
+    if (!SplitPathInternal(pieces[i], pv)) {
       return L"";
     }
   }

@@ -53,6 +53,7 @@ bld/
 *.pidb
 *.svclog
 *.scc
+*.out
 
 
 # Visual C++ cache files

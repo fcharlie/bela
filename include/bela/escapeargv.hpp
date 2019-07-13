@@ -2,6 +2,7 @@
 #ifndef BELA_ESCAPE_ARGV_HPP
 #define BELA_ESCAPE_ARGV_HPP
 #include <string_view>
+#include <vector>
 #include "span.hpp"
 
 namespace bela {
@@ -28,7 +29,7 @@ public:
   basic_escape_argv(const basic_escape_argv &) = delete;
   basic_escape_argv &operator=(const basic_escape_argv &) = delete;
   // AssignFull
-  basic_escape_argv &AssignFull(bela::Span<string_view_t> args) {
+  basic_escape_argv &AssignFull(const bela::Span<string_view_t> args) {
     struct arg_status {
       unsigned len{0};
       bool hasspace{false};
@@ -89,7 +90,7 @@ public:
           slashes++;
           saver += '\\';
           break;
-        case L'"': {
+        case '"': {
           for (; slashes > 0; slashes--) {
             saver += '\\';
           }

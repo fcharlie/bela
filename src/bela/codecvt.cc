@@ -406,8 +406,7 @@ std::wstring EscapeNonBMP(std::wstring_view sv) {
       {reinterpret_cast<const char16_t *>(sv.data()), sv.size()});
 }
 std::u16string EscapeNonBMP(std::u16string_view sv) {
-  return EscapeNonBMPInternal<char16_t>(
-      {reinterpret_cast<const char16_t *>(sv.data()), sv.size()});
+  return EscapeNonBMPInternal<char16_t>(sv);
 }
 
 } // namespace bela

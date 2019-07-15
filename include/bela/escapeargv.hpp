@@ -15,7 +15,13 @@ public:
 };
 template <> class Literal<wchar_t> {
 public:
+#ifdef _MSC_VER
   static constexpr std::wstring_view Empty = L"\"\"";
+#else
+  /// libc not impl
+  static constexpr std::wstring_view Empty{L"\"\"",
+                                           sizeof(L"\"\"") - sizeof(wchar_t)};
+#endif
 };
 
 } // namespace argv_internal

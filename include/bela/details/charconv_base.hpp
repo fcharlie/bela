@@ -42,9 +42,9 @@ _Integer_to_chars(wchar_t *_First, wchar_t *const _Last,
 
   constexpr size_t _Buff_size =
       sizeof(_Unsigned) * CHAR_BIT; // enough for base 2
-  char _Buff[_Buff_size];
-  char *const _Buff_end = _Buff + _Buff_size;
-  char *_RNext = _Buff_end;
+  wchar_t _Buff[_Buff_size];
+  wchar_t *const _Buff_end = _Buff + _Buff_size;
+  wchar_t *_RNext = _Buff_end;
 
   switch (_Base) {
   case 10: { // Derived from _UIntegral_to_buff()
@@ -2124,7 +2124,7 @@ _Ordinary_floating_from_chars(const wchar_t *const _First,
     return {_First, std::errc::invalid_argument};
   }
 
-  const wchar_t _Exponent_prefix{_Is_hexadecimal ? 'p' : 'e'};
+  const wchar_t _Exponent_prefix{_Is_hexadecimal ? L'p' : L'e'};
 
   bool _Exponent_is_negative = false;
   int _Exponent = 0;
@@ -2506,7 +2506,7 @@ _Floating_to_chars_hex_precision(wchar_t *_First, wchar_t *const _Last,
   // double.
 
   // * Decompose _Unbiased_exponent into _Sign_character and _Absolute_exponent.
-  char _Sign_character;
+  wchar_t _Sign_character;
   uint32_t _Absolute_exponent;
 
   if (_Unbiased_exponent < 0) {
@@ -2628,7 +2628,7 @@ _Floating_to_chars_hex_precision(wchar_t *_First, wchar_t *const _Last,
     const uint32_t _Nibble =
         static_cast<uint32_t>(_Adjusted_mantissa >> _Adjusted_explicit_bits);
     assert(_Nibble < 3);
-    const char _Leading_hexit = static_cast<char>('0' + _Nibble);
+    const wchar_t _Leading_hexit = static_cast<char>('0' + _Nibble);
 
     *_First++ = _Leading_hexit;
 
@@ -2655,7 +2655,7 @@ _Floating_to_chars_hex_precision(wchar_t *_First, wchar_t *const _Last,
       const uint32_t _Nibble = static_cast<uint32_t>(_Adjusted_mantissa >>
                                                      _Number_of_bits_remaining);
       assert(_Nibble < 16);
-      const char _Hexit = _Charconv_digits[_Nibble];
+      const wchar_t _Hexit = _Charconv_digits[_Nibble];
 
       *_First++ = _Hexit;
 
@@ -2736,7 +2736,7 @@ template <class _Floating>
   const int32_t _Ieee_exponent =
       static_cast<int32_t>(_Uint_value >> _Traits::_Exponent_shift);
 
-  char _Leading_hexit; // implicit bit
+  wchar_t _Leading_hexit; // implicit bit
   int32_t _Unbiased_exponent;
 
   if (_Ieee_exponent == 0) { // subnormal
@@ -2798,7 +2798,7 @@ template <class _Floating>
       const uint32_t _Nibble = static_cast<uint32_t>(_Adjusted_mantissa >>
                                                      _Number_of_bits_remaining);
       assert(_Nibble < 16);
-      const char _Hexit = _Charconv_digits[_Nibble];
+      const wchar_t _Hexit = _Charconv_digits[_Nibble];
 
       if (_First == _Last) {
         return {_Last, std::errc::value_too_large};

@@ -172,9 +172,9 @@ inline constexpr int __DOUBLE_POW5_BITCOUNT = 121;
   return __pLo;
 }
 
-[[nodiscard]] inline uint64_t __ryu_shiftright128(const uint64_t __lo,
-                                                  const uint64_t __hi,
-                                                  const uint32_t __dist) {
+    [[nodiscard]] inline uint64_t
+    __ryu_shiftright128(const uint64_t __lo, const uint64_t __hi,
+                        const uint32_t __dist) {
   // We don't need to handle the case __dist >= 64 here (see above).
   assert(__dist < 64);
 #ifdef _WIN64
@@ -412,7 +412,7 @@ inline void __append_n_digits(const uint32_t __olength, uint32_t __digits,
     const uint32_t __c = __digits << 1;
     ArrayCopy(__result + __olength - __i - 2, __DIGIT_TABLE + __c, 2);
   } else {
-    __result[0] = static_cast<char>('0' + __digits);
+    __result[0] = static_cast<wchar_t>('0' + __digits);
   }
 }
 
@@ -445,7 +445,7 @@ inline void __append_d_digits(const uint32_t __olength, uint32_t __digits,
     __result[0] = __DIGIT_TABLE[__c];
   } else {
     __result[1] = '.';
-    __result[0] = static_cast<char>('0' + __digits);
+    __result[0] = static_cast<wchar_t>('0' + __digits);
   }
 }
 
@@ -458,7 +458,7 @@ inline void __append_c_digits(const uint32_t __count, uint32_t __digits,
     ArrayCopy(__result + __count - __i - 2, __DIGIT_TABLE + __c, 2);
   }
   if (__i < __count) {
-    const char __c = static_cast<char>('0' + (__digits % 10));
+    const wchar_t __c = static_cast<wchar_t>('0' + (__digits % 10));
     __result[__count - __i - 1] = __c;
   }
 }
@@ -793,7 +793,7 @@ __d2fixed_buffered_n(wchar_t *_First, wchar_t *const _Last, const double __d,
           if (_First == _Last) {
             return {_Last, std::errc::value_too_large};
           }
-          *_First++ = static_cast<char>('0' + __digits);
+          *_First++ = static_cast<wchar_t>('0' + __digits);
         }
         __printedDigits = __availableDigits;
         __availableDigits = 0;
@@ -2441,7 +2441,7 @@ __d2d(const uint64_t __ieeeMantissa, const uint32_t __ieeeExponent) {
     const int32_t __c = _Scientific_exponent % 10;
     ArrayCopy(__result + __index,
               __DIGIT_TABLE + 2 * (_Scientific_exponent / 10), 2);
-    __result[__index + 2] = static_cast<char>('0' + __c);
+    __result[__index + 2] = static_cast<wchar_t>('0' + __c);
     __index += 3;
   } else {
     ArrayCopy(__result + __index, __DIGIT_TABLE + 2 * _Scientific_exponent, 2);

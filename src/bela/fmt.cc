@@ -187,7 +187,7 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
         size_t off = 0;
         auto val = args[ca].ToInteger(&sign);
         if (sign) {
-          pc = ' ';
+          pc = ' '; /// when sign ignore '0
         }
         auto p = Decimal(val, digits + off, sign);
         w.Append(p, dend - p + off, width, pc, left);

@@ -36,6 +36,13 @@ int wmain(int argc, wchar_t **argv) {
   bela::FPrintF(stderr, L"[%-10d]\n", n);
   bela::FPrintF(stderr, L"[%10d]\n", n);
   bela::FPrintF(stderr, L"[%010d]\n", n);
+  bela::FPrintF(stderr, L"[%-60d]\n", n);
+  bela::FPrintF(stderr, L"[%60d]\n", n);
+  bela::FPrintF(stderr, L"[%060d]\n", n);
+  int n2 = 2999;
+  bela::FPrintF(stderr, L"[%-10d]\n", n2);
+  bela::FPrintF(stderr, L"[%10d]\n", n2);
+  bela::FPrintF(stderr, L"[%010d]\n", n2);
   double ddd = 000192.15777411;
   bela::FPrintF(stderr, L"[%08.7f]\n", ddd);
   long xl = 18256444;

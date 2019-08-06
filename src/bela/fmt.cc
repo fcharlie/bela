@@ -20,6 +20,64 @@ size_t memsearch(const wchar_t *begin, const wchar_t *end, int ch) {
   return npos;
 }
 
+const wchar_t *Decimal(uint64_t value, wchar_t *digits, bool sign) {
+  wchar_t *const end = digits + kFastToBufferSize;
+  wchar_t *writer = end;
+  constexpr const wchar_t dec[] = L"0123456789";
+  do {
+    *--writer = dec[value % 10];
+    value = value / 10;
+  } while (value != 0);
+  if (sign) {
+    *--writer = L'-';
+  }
+  return writer;
+}
+
+const wchar_t *AlphaNum(uint64_t value, wchar_t *digits, size_t width, int base,
+                        wchar_t fill, bool u) {
+  wchar_t *const end = digits + kFastToBufferSize;
+  wchar_t *writer = end;
+  constexpr const wchar_t hex[] = L"0123456789abcdef";
+  constexpr const wchar_t uhex[] = L"0123456789ABCDEF";
+  auto w = (std::min)(width, kFastToBufferSize);
+  switch (base) {
+  case 8:
+    do {
+      *--writer = static_cast<wchar_t>('0' + (value & 0x7));
+      value >>= 3;
+    } while (value != 0);
+    break;
+  case 16:
+    if (u) {
+      do {
+        *--writer = uhex[value & 0xF];
+        value >>= 4;
+      } while (value != 0);
+    } else {
+      do {
+        *--writer = hex[value & 0xF];
+        value >>= 4;
+      } while (value != 0);
+    }
+    break;
+  default:
+    do {
+      *--writer = hex[value % 10];
+      value = value / 10;
+    } while (value != 0);
+    break;
+  }
+  wchar_t *beg;
+  if ((size_t)(end - writer) < w) {
+    beg = end - w;
+    std::fill_n(beg, writer - beg, fill);
+  } else {
+    beg = writer;
+  }
+  return beg;
+}
+
 using StringWriter = Writer<std::wstring>;
 using BufferWriter = Writer<buffer>;
 
@@ -126,12 +184,13 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       if (args[ca].at != ArgType::STRING) {
         bool sign = false;
+        size_t off = 0;
         auto val = args[ca].ToInteger(&sign);
-        auto p = AlphaNum(val, digits, width, 10, pc);
         if (sign) {
-          w.Add('-');
+          pc = ' ';
         }
-        w.Append(p, dend - p);
+        auto p = Decimal(val, digits + off, sign);
+        w.Append(p, dend - p + off, width, pc, left);
       }
       ca++;
       break;
@@ -141,8 +200,8 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       if (args[ca].at != ArgType::STRING) {
         auto val = args[ca].ToInteger();
-        auto p = AlphaNum(val, digits, width, 8, pc);
-        w.Append(p, dend - p);
+        auto p = AlphaNum(val, digits, 0, 8);
+        w.Append(p, dend - p, width, pc, left);
       }
       ca++;
       break;
@@ -152,8 +211,8 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       if (args[ca].at != ArgType::STRING) {
         auto val = args[ca].ToInteger();
-        auto p = AlphaNum(val, digits, width, 16, pc);
-        w.Append(p, dend - p);
+        auto p = AlphaNum(val, digits, 0, 16);
+        w.Append(p, dend - p, width, pc, left);
       }
       ca++;
       break;
@@ -163,8 +222,8 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       if (args[ca].at != ArgType::STRING) {
         auto val = args[ca].ToInteger();
-        auto p = AlphaNum(val, digits, width, 16, pc, true);
-        w.Append(p, dend - p);
+        auto p = AlphaNum(val, digits, 0, 16, ' ', true);
+        w.Append(p, dend - p, width, pc, left);
       }
       ca++;
       break;
@@ -204,8 +263,8 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
           uint64_t i;
         } x;
         x.d = args[ca].floating.d;
-        auto p = AlphaNum(x.i, digits, width, 16, pc, true);
-        w.Append(p, dend - p);
+        auto p = AlphaNum(x.i, digits, 0, 16);
+        w.Append(p, dend - p, width, pc, left);
       }
       ca++;
       break;
@@ -215,7 +274,8 @@ bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args,
       }
       if (args[ca].at == ArgType::POINTER) {
         auto ptr = reinterpret_cast<ptrdiff_t>(args[ca].ptr);
-        auto p = AlphaNum(ptr, digits, width, 16, pc, true);
+        constexpr auto plen = sizeof(intptr_t) * 2;
+        auto p = AlphaNum(ptr, digits, plen, 16, '0', true);
         w.Append(L"0x", 2);    /// Force append 0x to pointer
         w.Append(p, dend - p); // 0xffff00000;
       }

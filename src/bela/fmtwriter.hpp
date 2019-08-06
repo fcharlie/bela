@@ -55,49 +55,8 @@ private:
 };
 
 constexpr const size_t kFastToBufferSize = 32;
-inline const wchar_t *AlphaNum(uint64_t value, wchar_t *digits, size_t width,
-                               int base, char fill, bool u = false) {
-  wchar_t *const end = digits + kFastToBufferSize;
-  wchar_t *writer = end;
-  constexpr const wchar_t hex[] = L"0123456789abcdef";
-  constexpr const wchar_t uhex[] = L"0123456789ABCDEF";
-  auto w = (std::min)(width, kFastToBufferSize);
-  switch (base) {
-  case 8:
-    do {
-      *--writer = static_cast<wchar_t>('0' + (value & 0x7));
-      value >>= 3;
-    } while (value != 0);
-    break;
-  case 16:
-    if (u) {
-      do {
-        *--writer = uhex[value & 0xF];
-        value >>= 4;
-      } while (value != 0);
-    } else {
-      do {
-        *--writer = hex[value & 0xF];
-        value >>= 4;
-      } while (value != 0);
-    }
-    break;
-  default:
-    do {
-      *--writer = hex[value % 10];
-      value = value / 10;
-    } while (value != 0);
-    break;
-  }
-  wchar_t *beg;
-  if ((size_t)(end - writer) < w) {
-    beg = end - w;
-    std::fill_n(beg, writer - beg, fill);
-  } else {
-    beg = writer;
-  }
-  return beg;
-}
+const wchar_t *AlphaNum(uint64_t value, wchar_t *digits, size_t width, int base,
+                        wchar_t fill = ' ', bool u = false);
 
 template <typename C = std::wstring> class Writer {
 public:

@@ -1,6 +1,7 @@
 ///
 #include <bela/strcat.hpp>
 #include <bela/stdwriter.hpp>
+#include <bela/codecvt.hpp>
 
 int wmain(int argc, wchar_t **argv) {
   const auto ux =
@@ -23,6 +24,9 @@ int wmain(int argc, wchar_t **argv) {
                            bela::AlphaNum(bela::Hex(em)));
   bela::FPrintF(stderr, L"emoji %c %c %c %c %U %U %s P: %p\n", em, sh,
                 blueheart, se, em, em2, s, &em);
+  bela::FPrintF(stderr, L"Unicode %c Width: %d \\u2600 %d 中 %d\n", em,
+                bela::CalculateWidth(em), bela::CalculateWidth(0x2600),
+                bela::CalculateWidth(L'中'));
   bela::FPrintF(stderr, L"hStderr Mode:    %s.\nhStdin Mode:     %s.\n",
                 bela::FileTypeName(stderr), bela::FileTypeName(stdin));
   auto es = bela::EscapeNonBMP(wx);

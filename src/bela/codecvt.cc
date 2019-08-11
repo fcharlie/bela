@@ -3,6 +3,7 @@
 // https://github.com/llvm-mirror/llvm/blob/master/lib/Support/ConvertUTF.cpp
 //
 #include <bela/codecvt.hpp>
+#include "unicodewidth.hpp"
 /* Some fundamental constants */
 #define UNI_REPLACEMENT_CHAR (char32_t)0x0000FFFD
 #define UNI_MAX_BMP (char32_t)0x0000FFFF
@@ -21,6 +22,32 @@
 
 namespace bela {
 
+namespace codecvt_internal {
+template <typename T> class Literal;
+template <> class Literal<char> {
+public:
+  static constexpr std::string_view Empty = "\"\"";
+  static constexpr std::string_view UnicodePrefix = "\\U";
+};
+template <> class Literal<wchar_t> {
+public:
+#if defined(_MSC_VER) || defined(_LIBCPP_VERSION)
+  static constexpr std::wstring_view Empty = L"\"\"";
+  static constexpr std::wstring_view UnicodePrefix = L"\\U";
+#else
+  // libstdc++ call wcslen is bad
+  static constexpr std::wstring_view Empty{L"\"\"", sizeof("\"\"") - 1};
+  static constexpr std::wstring_view UnicodePrefix = {L"\\U",
+                                                      sizeof("\\U") - 1};
+#endif
+};
+template <> class Literal<char16_t> {
+public:
+  static constexpr std::u16string_view Empty = u"\"\"";
+  static constexpr std::u16string_view UnicodePrefix = u"\\U";
+};
+} // namespace codecvt_internal
+
 /*
  * Index into the table below with the first byte of a UTF-8 sequence to
  * get the number of trailing bytes that are supposed to follow it.
@@ -29,16 +56,16 @@ namespace bela {
  * allowed in earlier algorithms.
  */
 // clang-format off
-    static const char trailingbytesu8[256] = {
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
-    };
+static const char trailingbytesu8[256] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
+};
 // clang-format on
 constexpr const char32_t offsetfromu8[6] = {0x00000000UL, 0x00003080UL,
                                             0x000E2080UL, 0x03C82080UL,
@@ -192,6 +219,36 @@ std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
   return s;
 }
 
+inline char32_t AnnexU8(const uint8_t *it, int nb) {
+  char32_t ch = 0;
+  switch (nb) {
+  case 5:
+    ch += *it++;
+    ch <<= 6; /* remember, illegal UTF-8 */
+    [[fallthrough]];
+  case 4:
+    ch += *it++;
+    ch <<= 6; /* remember, illegal UTF-8 */
+    [[fallthrough]];
+  case 3:
+    ch += *it++;
+    ch <<= 6;
+    [[fallthrough]];
+  case 2:
+    ch += *it++;
+    ch <<= 6;
+    [[fallthrough]];
+  case 1:
+    ch += *it++;
+    ch <<= 6;
+    [[fallthrough]];
+  case 0:
+    ch += *it++;
+  }
+  ch -= offsetfromu8[nb];
+  return ch;
+}
+
 template <typename T, typename Allocator>
 bool mbrtoc16(const unsigned char *s, size_t len,
               std::basic_string<T, std::char_traits<T>, Allocator> &container,
@@ -200,11 +257,9 @@ bool mbrtoc16(const unsigned char *s, size_t len,
     return false;
   }
   container.reserve(len);
-
   auto it = reinterpret_cast<const unsigned char *>(s);
   auto end = it + len;
   while (it < end) {
-    char32_t ch = 0;
     unsigned short nb = trailingbytesu8[*it];
     if (nb >= end - it) {
       return false;
@@ -213,31 +268,8 @@ bool mbrtoc16(const unsigned char *s, size_t len,
       return false;
     }
     // https://docs.microsoft.com/en-us/cpp/cpp/attributes?view=vs-2019
-    switch (nb) {
-    case 5:
-      ch += *it++;
-      ch <<= 6; /* remember, illegal UTF-8 */
-      [[fallthrough]];
-    case 4:
-      ch += *it++;
-      ch <<= 6; /* remember, illegal UTF-8 */
-      [[fallthrough]];
-    case 3:
-      ch += *it++;
-      ch <<= 6;
-      [[fallthrough]];
-    case 2:
-      ch += *it++;
-      ch <<= 6;
-      [[fallthrough]];
-    case 1:
-      ch += *it++;
-      ch <<= 6;
-      [[fallthrough]];
-    case 0:
-      ch += *it++;
-    }
-    ch -= offsetfromu8[nb];
+    auto ch = AnnexU8(it, nb);
+    it += nb + 1;
     if (ch <= UNI_MAX_BMP) {
       if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
         if (skipillegal) {
@@ -312,7 +344,6 @@ std::string EscapeNonBMP(std::string_view sv) {
   auto len = sv.size();
   auto it = reinterpret_cast<const unsigned char *>(sv.data());
   auto end = it + len;
-
   while (it < end) {
     auto c = *it;
     if (c == '\\') {
@@ -325,42 +356,19 @@ std::string EscapeNonBMP(std::string_view sv) {
       it++;
       continue;
     }
-    char32_t ch = 0;
     unsigned short nb = trailingbytesu8[*it];
     if (nb >= end - it) {
       return s;
     }
-    auto cb = it;
-    switch (nb) {
-    case 5:
-      ch += *it++;
-      ch <<= 6; /* remember, illegal UTF-8 */
-      [[fallthrough]];
-    case 4:
-      ch += *it++;
-      ch <<= 6; /* remember, illegal UTF-8 */
-      [[fallthrough]];
-    case 3:
-      ch += *it++;
-      ch <<= 6;
-      [[fallthrough]];
-    case 2:
-      ch += *it++;
-      ch <<= 6;
-      [[fallthrough]];
-    case 1:
-      ch += *it++;
-      ch <<= 6;
-      [[fallthrough]];
-    case 0:
-      ch += *it++;
-    }
-    ch -= offsetfromu8[nb];
+    auto ch = AnnexU8(it, nb);
     if (ch <= UNI_MAX_BMP) {
-      s.append(reinterpret_cast<const char *>(cb), nb + 1);
+      s.append(reinterpret_cast<const char *>(it), nb + 1);
+      it += nb + 1;
       continue;
     }
-    s.append("\\U").append(EncodeUnicode(ub, ch));
+    s.append(codecvt_internal::Literal<char>::UnicodePrefix)
+        .append(EncodeUnicode(ub, ch));
+    it += nb + 1;
   }
   return s;
 }
@@ -379,23 +387,19 @@ std::basic_string<T> EscapeNonBMPInternal(std::u16string_view sv) {
         return s;
       }
       char32_t ch2 = *it;
-      if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
-        ch = ((ch - UNI_SUR_HIGH_START) << halfShift) +
-             (ch2 - UNI_SUR_LOW_START) + halfBase;
-        ++it;
+      if (ch2 < UNI_SUR_LOW_START || ch2 > UNI_SUR_LOW_END) {
+        break;
       }
+      ch = ((ch - UNI_SUR_HIGH_START) << halfShift) +
+           (ch2 - UNI_SUR_LOW_START) + halfBase;
+      ++it;
     }
     if (ch < UNI_MAX_BMP) {
-      if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
-        s += static_cast<T>(UNI_REPLACEMENT_CHAR);
-        continue;
-      }
       s += static_cast<T>(ch);
       continue;
     }
-    s.push_back('\\');
-    s.push_back('U');
-    s.append(EncodeUnicode(buffer, ch));
+    s.append(codecvt_internal::Literal<T>::UnicodePrefix)
+        .append(EncodeUnicode(buffer, ch));
   }
   return s;
 }
@@ -407,6 +411,83 @@ std::wstring EscapeNonBMP(std::wstring_view sv) {
 }
 std::u16string EscapeNonBMP(std::u16string_view sv) {
   return EscapeNonBMPInternal<char16_t>(sv);
+}
+
+// CalculateLength calculate unicode codepoint display width
+// http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
+// http://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
+size_t CalculateWidth(char32_t ch) {
+  return codecvt_internal::CalculateWidthInternal(ch);
+}
+
+// https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+// https://vt100.net/
+
+// Calculate UTF-8 string display width
+size_t StringWidth(std::string_view str) {
+  size_t width = 0;
+  auto it = reinterpret_cast<const unsigned char *>(str.data());
+  auto end = it + str.size();
+  while (it < end) {
+    if (*it == 0x1b) {
+      while (it < end) {
+        // We only support strip ANSI color
+        if (*it == 'm') {
+          it++;
+          break;
+        }
+        it++;
+      }
+      if (it >= end) {
+        break;
+      }
+    }
+    unsigned short nb = trailingbytesu8[*it];
+    if (nb >= end - it) {
+      break;
+    }
+    auto ch = AnnexU8(it, nb);
+    it += nb + 1;
+    width += CalculateWidth(ch);
+  }
+  return 0;
+}
+
+// Calculate UTF-16 string display width
+size_t StringWidth(std::u16string_view str) {
+  size_t width = 0;
+  auto it = str.data();
+  auto end = it + str.size();
+  while (it < end) {
+    if (*it == 0x1b) {
+      while (it < end) {
+        // We only support strip ANSI color
+        if (*it == L'm') {
+          it++;
+          break;
+        }
+        it++;
+      }
+      if (it >= end) {
+        break;
+      }
+    }
+    char32_t ch = *it++;
+    if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+      if (it >= end) {
+        break;
+      }
+      char32_t ch2 = *it;
+      if (ch2 < UNI_SUR_LOW_START || ch2 > UNI_SUR_LOW_END) {
+        break;
+      }
+      ch = ((ch - UNI_SUR_HIGH_START) << halfShift) +
+           (ch2 - UNI_SUR_LOW_START) + halfBase;
+      ++it;
+    }
+    width += CalculateWidth(ch);
+  }
+  return width;
 }
 
 } // namespace bela

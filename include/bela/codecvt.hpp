@@ -40,6 +40,18 @@ inline std::wstring ToWide(std::string_view sv) {
 std::string EscapeNonBMP(std::string_view sv);
 std::wstring EscapeNonBMP(std::wstring_view sv);
 std::u16string EscapeNonBMP(std::u16string_view sv);
+
+// CalculateLength calculate unicode codepoint display width
+size_t CalculateWidth(char32_t ch);
+// Calculate UTF-8 string display width
+size_t StringWidth(std::string_view str);
+// Calculate UTF-16 string display width
+size_t StringWidth(std::u16string_view str);
+// Calculate UTF-16 string display width (Windows)
+inline size_t StringWidth(std::wstring_view str) {
+  return StringWidth(std::u16string_view{
+      reinterpret_cast<const char16_t *>(str.data()), str.size()});
+}
 } // namespace bela
 
 #endif

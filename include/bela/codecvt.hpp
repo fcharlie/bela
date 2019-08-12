@@ -9,11 +9,9 @@ namespace bela {
 size_t char32tochar16(char16_t *buf, size_t n, char32_t ch);
 // Buffer size is at least 4
 size_t char32tochar8(char *buf, size_t n, char32_t ch);
-std::string c16tomb(const char16_t *data, size_t len, bool skipillegal = false);
-std::wstring mbrtowc(const unsigned char *str, size_t len,
-                     bool skipillegal = false);
-std::u16string mbrtoc16(const unsigned char *str, size_t len,
-                        bool skipillegal = false);
+std::string c16tomb(const char16_t *data, size_t len);
+std::wstring mbrtowc(const unsigned char *str, size_t len);
+std::u16string mbrtoc16(const unsigned char *str, size_t len);
 //// Narrow wchar_t std::wstring_view
 inline std::string ToNarrow(std::wstring_view uw) {
   return c16tomb(reinterpret_cast<const char16_t *>(uw.data()), uw.size());

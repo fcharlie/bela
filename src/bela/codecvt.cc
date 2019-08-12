@@ -4,21 +4,6 @@
 //
 #include <bela/codecvt.hpp>
 #include "unicodewidth.hpp"
-/* Some fundamental constants */
-#define UNI_REPLACEMENT_CHAR (char32_t)0x0000FFFD
-#define UNI_MAX_BMP (char32_t)0x0000FFFF
-#define UNI_MAX_UTF16 (char32_t)0x0010FFFF
-#define UNI_MAX_UTF32 (char32_t)0x7FFFFFFF
-#define UNI_MAX_LEGAL_UTF32 (char32_t)0x0010FFFF
-
-#define UNI_MAX_UTF8_BYTES_PER_CODE_POINT 4
-
-#define UNI_UTF16_BYTE_ORDER_MARK_NATIVE 0xFEFF
-#define UNI_UTF16_BYTE_ORDER_MARK_SWAPPED 0xFFFE
-#define UNI_SUR_HIGH_START (char32_t)0xD800
-#define UNI_SUR_HIGH_END (char32_t)0xDBFF
-#define UNI_SUR_LOW_START (char32_t)0xDC00
-#define UNI_SUR_LOW_END (char32_t)0xDFFF
 
 namespace bela {
 
@@ -70,88 +55,25 @@ static const char trailingbytesu8[256] = {
 constexpr const char32_t offsetfromu8[6] = {0x00000000UL, 0x00003080UL,
                                             0x000E2080UL, 0x03C82080UL,
                                             0xFA082080UL, 0x82082080UL};
-constexpr const char32_t halfBase = 0x0010000UL;
-constexpr const char32_t halfMask = 0x3FFUL;
-constexpr const int halfShift = 10; /* used for shifting by 10 bits */
-constexpr const size_t kMaxEncodedUTF8Size = 4;
 
+// char32_t - type for UTF-32 character representation, required to be large
+// enough to represent any UTF-32 code unit (32 bits). It has the same size,
+// signedness, and alignment as std::uint_least32_t, but is a distinct type.
 size_t char32tochar16(char16_t *buf, size_t n, char32_t ch) {
-  if (n < 2) {
-    return 0;
-  }
-  if (ch <= UNI_MAX_BMP) {
-    if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_LOW_END) {
-      buf[0] = static_cast<char16_t>(UNI_REPLACEMENT_CHAR);
-      return 1;
+  if (ch <= 0xFFFF) {
+    if (n < 1) {
+      return 0;
     }
     buf[0] = static_cast<char16_t>(ch);
     return 1;
   }
-  if (ch > UNI_MAX_LEGAL_UTF32) {
-    buf[0] = static_cast<char16_t>(UNI_REPLACEMENT_CHAR);
-    return 1;
+  if (n >= 2) {
+    ch -= 0x10000;
+    buf[0] = static_cast<char16_t>(0xD800 + (ch >> 10));
+    buf[1] = static_cast<char16_t>(0xDC00 + (ch & 0x3FF));
+    return 2;
   }
-  ch -= halfBase;
-  buf[0] = static_cast<char16_t>((ch >> halfShift) + UNI_SUR_HIGH_START);
-  buf[1] = static_cast<char16_t>((ch & halfMask) + UNI_SUR_LOW_START);
-  return 2;
-}
-
-bool islegau8(const uint8_t *source, int length) {
-  uint16_t a;
-  const uint8_t *srcptr = source + length;
-  switch (length) {
-  default:
-    return false;
-    /* Everything else falls through when "true"... */
-  case 4:
-    if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
-      return false;
-    }
-    [[fallthrough]];
-  case 3:
-    if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
-      return false;
-    }
-    [[fallthrough]];
-  case 2:
-    if ((a = (*--srcptr)) < 0x80 || a > 0xBF) {
-      return false;
-    }
-    switch (*source) {
-    /* no fall-through in this inner switch */
-    case 0xE0:
-      if (a < 0xA0) {
-        return false;
-      }
-      break;
-    case 0xED:
-      if (a > 0x9F) {
-        return false;
-      }
-      break;
-    case 0xF0:
-      if (a < 0x90) {
-        return false;
-      }
-      break;
-    case 0xF4:
-      if (a > 0x8F) {
-        return false;
-      }
-      break;
-    default:
-      if (a < 0x80) {
-        return false;
-      }
-    }
-    [[fallthrough]];
-  case 1:
-    if (*source >= 0x80 && *source < 0xC2) {
-      return false;
-    }
-  }
-  return *source <= 0xF4;
+  return 0;
 }
 
 static inline size_t char32tochar8_internal(char *buffer, char32_t ch) {
@@ -184,13 +106,14 @@ static inline size_t char32tochar8_internal(char *buffer, char32_t ch) {
 }
 
 size_t char32tochar8(char *buf, size_t n, char32_t ch) {
+  constexpr const size_t kMaxEncodedUTF8Size = 4;
   if (n < kMaxEncodedUTF8Size) {
     return 0;
   }
   return char32tochar8_internal(buf, ch);
 }
 
-std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
+std::string c16tomb(const char16_t *data, size_t len) {
   std::string s;
   s.reserve(len);
   auto it = data;
@@ -198,20 +121,16 @@ std::string c16tomb(const char16_t *data, size_t len, bool skipillegal) {
   char buffer[8] = {0};
   while (it < end) {
     char32_t ch = *it++;
-    if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+    if (ch >= 0xD800 && ch <= 0xDBFF) {
       if (it >= end) {
-        // parse skip
         return s;
       }
       char32_t ch2 = *it;
-      if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
-        ch = ((ch - UNI_SUR_HIGH_START) << halfShift) +
-             (ch2 - UNI_SUR_LOW_START) + halfBase;
-        ++it;
-      } else if (skipillegal) {
-        /* We don't have the 16 bits following the high surrogate. */
-        return s;
+      if (ch2 < 0xDC00 || ch2 > 0xDFFF) {
+        break;
       }
+      ch = ((ch - 0xD800) << 10) + (ch2 - 0xDC00) + 0x10000U;
+      ++it;
     }
     auto bw = char32tochar8_internal(buffer, ch);
     s.append(reinterpret_cast<const char *>(buffer), bw);
@@ -251,8 +170,7 @@ inline char32_t AnnexU8(const uint8_t *it, int nb) {
 
 template <typename T, typename Allocator>
 bool mbrtoc16(const unsigned char *s, size_t len,
-              std::basic_string<T, std::char_traits<T>, Allocator> &container,
-              bool skipillegal) {
+              std::basic_string<T, std::char_traits<T>, Allocator> &container) {
   if (s == nullptr || len == 0) {
     return false;
   }
@@ -264,49 +182,39 @@ bool mbrtoc16(const unsigned char *s, size_t len,
     if (nb >= end - it) {
       return false;
     }
-    if (!islegau8(it, nb + 1)) {
-      return false;
-    }
     // https://docs.microsoft.com/en-us/cpp/cpp/attributes?view=vs-2019
     auto ch = AnnexU8(it, nb);
     it += nb + 1;
-    if (ch <= UNI_MAX_BMP) {
-      if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
-        if (skipillegal) {
-          return false;
-        }
-        container += static_cast<T>(UNI_REPLACEMENT_CHAR);
+    if (ch <= 0xFFFF) {
+      if (ch >= 0xD800 && ch <= 0xDBFF) {
+        container += static_cast<T>(0xFFFD);
         continue;
       }
       container += static_cast<T>(ch);
       continue;
     }
-    if (ch > UNI_MAX_UTF16) {
-      if (skipillegal) {
-        return false;
-      }
-      container += static_cast<T>(UNI_REPLACEMENT_CHAR);
+    if (ch > 0x10FFFF) {
+      container += static_cast<T>(0xFFFD);
       continue;
     }
-    ch -= halfBase;
-    container += static_cast<T>((ch >> halfShift) + UNI_SUR_HIGH_START);
-    container += static_cast<T>((ch & halfMask) + UNI_SUR_LOW_START);
+    ch -= 0x10000U;
+    container += static_cast<T>((ch >> 10) + 0xD800);
+    container += static_cast<T>((ch & 0x3FF) + 0xDC00);
   }
   //
   return true;
 }
 
-std::wstring mbrtowc(const unsigned char *str, size_t len, bool skipillegal) {
+std::wstring mbrtowc(const unsigned char *str, size_t len) {
   std::wstring s;
-  if (!mbrtoc16(str, len, s, skipillegal)) {
+  if (!mbrtoc16(str, len, s)) {
     s.clear();
   }
   return s;
 }
-std::u16string mbrtoc16(const unsigned char *str, size_t len,
-                        bool skipillegal) {
+std::u16string mbrtoc16(const unsigned char *str, size_t len) {
   std::u16string s;
-  if (!mbrtoc16(str, len, s, skipillegal)) {
+  if (!mbrtoc16(str, len, s)) {
     s.clear();
   }
   return s;
@@ -361,7 +269,7 @@ std::string EscapeNonBMP(std::string_view sv) {
       return s;
     }
     auto ch = AnnexU8(it, nb);
-    if (ch <= UNI_MAX_BMP) {
+    if (ch <= 0xFFFF) {
       s.append(reinterpret_cast<const char *>(it), nb + 1);
       it += nb + 1;
       continue;
@@ -382,19 +290,18 @@ std::basic_string<T> EscapeNonBMPInternal(std::u16string_view sv) {
   T buffer[10] = {0};
   while (it < end) {
     char32_t ch = *it++;
-    if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+    if (ch >= 0xD800 && ch <= 0xDBFF) {
       if (it >= end) {
         return s;
       }
       char32_t ch2 = *it;
-      if (ch2 < UNI_SUR_LOW_START || ch2 > UNI_SUR_LOW_END) {
+      if (ch2 < 0xDC00 || ch2 > 0xDFFF) {
         break;
       }
-      ch = ((ch - UNI_SUR_HIGH_START) << halfShift) +
-           (ch2 - UNI_SUR_LOW_START) + halfBase;
+      ch = ((ch - 0xD800) << 10) + (ch2 - 0xDC00) + 0x10000U;
       ++it;
     }
-    if (ch < UNI_MAX_BMP) {
+    if (ch < 0xFFFF) {
       s += static_cast<T>(ch);
       continue;
     }
@@ -473,16 +380,15 @@ size_t StringWidth(std::u16string_view str) {
       }
     }
     char32_t ch = *it++;
-    if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+    if (ch >= 0xD800 && ch <= 0xDBFF) {
       if (it >= end) {
         break;
       }
       char32_t ch2 = *it;
-      if (ch2 < UNI_SUR_LOW_START || ch2 > UNI_SUR_LOW_END) {
+      if (ch2 < 0xDC00 || ch2 > 0xDFFF) {
         break;
       }
-      ch = ((ch - UNI_SUR_HIGH_START) << halfShift) +
-           (ch2 - UNI_SUR_LOW_START) + halfBase;
+      ch = ((ch - 0xD800) << 10) + (ch2 - 0xDC00) + 0x10000U;
       ++it;
     }
     width += CalculateWidth(ch);

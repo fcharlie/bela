@@ -59,58 +59,63 @@ constexpr const char32_t offsetfromu8[6] = {0x00000000UL, 0x00003080UL,
 // char32_t - type for UTF-32 character representation, required to be large
 // enough to represent any UTF-32 code unit (32 bits). It has the same size,
 // signedness, and alignment as std::uint_least32_t, but is a distinct type.
-size_t char32tochar16(char16_t *buf, size_t n, char32_t ch) {
-  if (ch <= 0xFFFF) {
-    if (n < 1) {
-      return 0;
-    }
-    buf[0] = static_cast<char16_t>(ch);
+
+inline constexpr bool IsSurrogate(char32_t rune) {
+  return (rune >= 0xD800 && rune <= 0xDFFF);
+}
+
+size_t char32tochar16(char32_t rune, char16_t *dest, size_t dlen) {
+  if (dlen == 0 || dest == nullptr) {
+    return 0;
+  }
+  if (rune <= 0xFFFF) {
+    dest[0] = IsSurrogate(rune) ? 0xFFFD : static_cast<char16_t>(rune);
     return 1;
   }
-  if (n >= 2) {
-    ch -= 0x10000;
-    buf[0] = static_cast<char16_t>(0xD800 + (ch >> 10));
-    buf[1] = static_cast<char16_t>(0xDC00 + (ch & 0x3FF));
+  if (rune > 0x0010FFFF) {
+    dest[0] = 0xFFFD;
+    return 1;
+  }
+  if (dlen < 2) {
+    return 0;
+  }
+  dest[0] = static_cast<char16_t>(0xD7C0 + (rune >> 10));
+  dest[1] = static_cast<char16_t>(0xDC00 + (rune & 0x3FF));
+  return 2;
+}
+
+static inline size_t char32tochar8_internal(char32_t rune, char *dest) {
+  if (rune <= 0x7F) {
+    dest[0] = static_cast<char>(rune);
+    return 1;
+  }
+  if (rune <= 0x7FF) {
+    dest[0] = static_cast<char>(0xC0 | ((rune >> 6) & 0x1F));
+    dest[1] = static_cast<char>(0x80 | (rune & 0x3F));
     return 2;
+  }
+  if (rune <= 0xFFFF) {
+    dest[0] = static_cast<char>(0xE0 | ((rune >> 12) & 0x0F));
+    dest[1] = static_cast<char>(0x80 | ((rune >> 6) & 0x3F));
+    dest[2] = static_cast<char>(0x80 | (rune & 0x3F));
+    return 3;
+  }
+  if (rune <= 0x10FFFF) {
+    dest[0] = static_cast<char>(0xF0 | ((rune >> 18) & 0x07));
+    dest[1] = static_cast<char>(0x80 | ((rune >> 12) & 0x3F));
+    dest[2] = static_cast<char>(0x80 | ((rune >> 6) & 0x3F));
+    dest[3] = static_cast<char>(0x80 | (rune & 0x3F));
+    return 4;
   }
   return 0;
 }
 
-static inline size_t char32tochar8_internal(char *buffer, char32_t ch) {
-  if (ch < (char32_t)0x80) {
-    *buffer = static_cast<char>(ch);
-    return 1;
-  }
-  if (ch < (char32_t)0x800) {
-    buffer[1] = static_cast<char>(0x80 | (ch & 0x3F));
-    ch >>= 6;
-    buffer[0] = static_cast<char>(0xc0 | ch);
-    return 2;
-  }
-  if (ch < (char32_t)0x10000) {
-    buffer[2] = static_cast<char>(0x80 | (ch & 0x3F));
-    ch >>= 6;
-    buffer[1] = static_cast<char>(0x80 | (ch & 0x3F));
-    ch >>= 6;
-    buffer[0] = static_cast<char>(0xE0 | ch);
-    return 3;
-  }
-  buffer[3] = static_cast<char>(0x80 | (ch & 0x3F));
-  ch >>= 6;
-  buffer[2] = static_cast<char>(0x80 | (ch & 0x3F));
-  ch >>= 6;
-  buffer[1] = static_cast<char>(0x80 | (ch & 0x3F));
-  ch >>= 6;
-  buffer[0] = static_cast<char>(0xF0 | ch);
-  return 4;
-}
-
-size_t char32tochar8(char *buf, size_t n, char32_t ch) {
+size_t char32tochar8(char32_t rune, char *dest, size_t dlen) {
   constexpr const size_t kMaxEncodedUTF8Size = 4;
-  if (n < kMaxEncodedUTF8Size) {
+  if (dlen < kMaxEncodedUTF8Size) {
     return 0;
   }
-  return char32tochar8_internal(buf, ch);
+  return char32tochar8_internal(rune, dest);
 }
 
 std::string c16tomb(const char16_t *data, size_t len) {
@@ -132,7 +137,7 @@ std::string c16tomb(const char16_t *data, size_t len) {
       ch = ((ch - 0xD800) << 10) + (ch2 - 0xDC00) + 0x10000U;
       ++it;
     }
-    auto bw = char32tochar8_internal(buffer, ch);
+    auto bw = char32tochar8_internal(ch, buffer);
     s.append(reinterpret_cast<const char *>(buffer), bw);
   }
   return s;

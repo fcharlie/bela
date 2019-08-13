@@ -7,11 +7,11 @@ namespace bela {
 constexpr wchar_t uhc[] = L"0123456789ABCDEF";
 // 0xFFFF
 inline void char16encodehex(uint16_t ch, std::wstring &dest) {
-  dest.append(L"\\x");
-  dest.push_back(uhc[ch / 4096]);
-  dest.push_back(uhc[(ch % 4096) / 256]);
-  dest.push_back(uhc[(ch % 256) / 16]);
-  dest.push_back(uhc[ch % 16]);
+  dest += L"\\x";
+  dest += uhc[ch / 4096];
+  dest += uhc[(ch % 4096) / 256];
+  dest += uhc[(ch % 256) / 16];
+  dest += uhc[ch % 16];
 }
 
 inline bool is_octal_digit(wchar_t c) { return (L'0' <= c) && (c <= L'7'); }

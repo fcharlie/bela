@@ -5,10 +5,8 @@
 #include <vector>
 
 namespace bela {
-// Buffer size is at least 2
-size_t char32tochar16(char16_t *buf, size_t n, char32_t ch);
-// Buffer size is at least 4
-size_t char32tochar8(char *buf, size_t n, char32_t ch);
+size_t char32tochar16(char32_t rune, char16_t *dest, size_t dlen);
+size_t char32tochar8(char32_t rune, char *dest, size_t dlen);
 // UTF-8/UTF-16 codecvt
 std::string c16tomb(const char16_t *data, size_t len);
 std::wstring mbrtowc(const unsigned char *str, size_t len);

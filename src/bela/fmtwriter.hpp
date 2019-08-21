@@ -99,7 +99,7 @@ public:
       return Append(digits, 1, width, kc, la);
     }
     auto n = char32tochar16(ch, reinterpret_cast<char16_t *>(digits),
-                            kFastToBufferSize);
+                            kMaxEncodedUTF16Size + 2);
 
     return Append(digits, n, width, kc, la);
   }

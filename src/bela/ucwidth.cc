@@ -201,7 +201,7 @@ bool bisearch(char32_t rune, const interval *table, size_t max) {
   while (max >= min) {
     mid = (min + max) / 2;
     if (rune > table[mid].last) {
-      mid = mid + 1;
+      min = mid + 1;
       continue;
     }
     if (rune < table[mid].first) {

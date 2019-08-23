@@ -3,7 +3,6 @@
 // https://github.com/llvm-mirror/llvm/blob/master/lib/Support/ConvertUTF.cpp
 //
 #include <bela/codecvt.hpp>
-#include "unicodewidth.hpp"
 
 namespace bela {
 
@@ -323,13 +322,6 @@ std::wstring EscapeNonBMP(std::wstring_view sv) {
 }
 std::u16string EscapeNonBMP(std::u16string_view sv) {
   return EscapeNonBMPInternal<char16_t>(sv);
-}
-
-// CalculateLength calculate unicode codepoint display width
-// http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
-// http://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
-size_t CalculateWidth(char32_t ch) {
-  return codecvt_internal::CalculateWidthInternal(ch);
 }
 
 // https://invisible-island.net/xterm/ctlseqs/ctlseqs.html

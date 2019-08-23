@@ -3,6 +3,7 @@
 #define BELA_CODECVT_HPP
 #include <string>
 #include <vector>
+#include "ucwidth.hpp"
 
 namespace bela {
 size_t char32tochar16(char32_t rune, char16_t *dest, size_t dlen);
@@ -41,8 +42,6 @@ std::string EscapeNonBMP(std::string_view sv);
 std::wstring EscapeNonBMP(std::wstring_view sv);
 std::u16string EscapeNonBMP(std::u16string_view sv);
 
-// CalculateLength calculate unicode codepoint display width
-size_t CalculateWidth(char32_t ch);
 // Calculate UTF-8 string display width
 size_t StringWidth(std::string_view str);
 // Calculate UTF-16 string display width

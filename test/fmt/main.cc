@@ -2,14 +2,14 @@
 #include <bela/strcat.hpp>
 #include <bela/stdwriter.hpp>
 #include <bela/codecvt.hpp>
-#include "../../src/bela/ucwidth.hpp"
+#include "ucwidth-wt.hpp"
 
 int wmain(int argc, wchar_t **argv) {
   const auto ux =
       "\xf0\x9f\x98\x81 UTF-8 text \xE3\x8D\xA4 --> \xF0\xA0\x83\xA3 \x41 "
       "\xE7\xA0\xB4 \xE6\x99\x93"; // force encode UTF-8
-  const wchar_t wx[] =
-      L"Engine (\xD83D\xDEE0) 中国 \U0001F496 \x0041 \x7834 \x6653 \xD840\xDCE3";
+  const wchar_t wx[] = L"Engine (\xD83D\xDEE0) 中国 \U0001F496 \x0041 \x7834 "
+                       L"\x6653 \xD840\xDCE3";
   constexpr auto iscpp17 = __cplusplus >= 201703L;
   bela::FPrintF(stderr,
                 L"Argc: %d Arg0: \x1b[32m%s\x1b[0m W: %s UTF-8: %s "

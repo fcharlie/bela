@@ -1,5 +1,8 @@
 // xcharconv_ryu.h internal header
 
+// Copyright (c) Microsoft Corporation.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 
 // Copyright 2018 Ulf Adams
 // Copyright (c) Microsoft Corporation. All rights reserved.
@@ -2326,7 +2329,7 @@ _NODISCARD inline to_chars_result __d2s_buffered_n(char* const _First, char* con
 
 template <class _Floating>
 _NODISCARD to_chars_result _Floating_to_chars_ryu(
-    char* const _First, char* const _Last, const _Floating _Value, const chars_format _Fmt) noexcept { // strengthened
+    char* const _First, char* const _Last, const _Floating _Value, const chars_format _Fmt) noexcept {
     if constexpr (is_same_v<_Floating, float>) {
         return __f2s_buffered_n(_First, _Last, _Value, _Fmt);
     } else {
@@ -2336,7 +2339,7 @@ _NODISCARD to_chars_result _Floating_to_chars_ryu(
 
 template <class _Floating>
 _NODISCARD to_chars_result _Floating_to_chars_scientific_precision(
-    char* const _First, char* const _Last, const _Floating _Value, int _Precision) noexcept { // strengthened
+    char* const _First, char* const _Last, const _Floating _Value, int _Precision) noexcept {
 
     // C11 7.21.6.1 "The fprintf function"/5:
     // "A negative precision argument is taken as if the precision were omitted."
@@ -2344,7 +2347,7 @@ _NODISCARD to_chars_result _Floating_to_chars_scientific_precision(
 
     if (_Precision < 0) {
         _Precision = 6;
-    } else if (_Precision < 1'000'000'000) { // ' TRANSITION, OS#21524983
+    } else if (_Precision < 1'000'000'000) {
         // _Precision is ok.
     } else {
         // Avoid integer overflow.
@@ -2357,7 +2360,7 @@ _NODISCARD to_chars_result _Floating_to_chars_scientific_precision(
 
 template <class _Floating>
 _NODISCARD to_chars_result _Floating_to_chars_fixed_precision(
-    char* const _First, char* const _Last, const _Floating _Value, int _Precision) noexcept { // strengthened
+    char* const _First, char* const _Last, const _Floating _Value, int _Precision) noexcept {
 
     // C11 7.21.6.1 "The fprintf function"/5:
     // "A negative precision argument is taken as if the precision were omitted."
@@ -2365,7 +2368,7 @@ _NODISCARD to_chars_result _Floating_to_chars_fixed_precision(
 
     if (_Precision < 0) {
         _Precision = 6;
-    } else if (_Precision < 1'000'000'000) { // ' TRANSITION, OS#21524983
+    } else if (_Precision < 1'000'000'000) {
         // _Precision is ok.
     } else {
         // Avoid integer overflow.

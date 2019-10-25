@@ -13,6 +13,7 @@
 #include <string>
 #include <string_view>
 #include "strcat.hpp"
+#include "narrow/strcat.hpp"
 
 // Allow to disable exceptions.
 #if (defined(__cpp_exceptions) || defined(__EXCEPTIONS) ||                     \
@@ -185,12 +186,9 @@ struct alignas(1) version {
   }
 
   std::string to_string() const {
-    auto str = std::to_string(major)
-                   .append(".")
-                   .append(std::to_string(minor))
-                   .append(".")
-                   .append(std::to_string(patch));
-
+    auto str = bela::narrow::StringCat(static_cast<int>(major), ".",
+                                       static_cast<int>(minor), ".",
+                                       static_cast<int>(patch));
     switch (prerelease_type) {
     case prerelease::alpha:
       str.append(detail::Literal<char>::Alpha);
@@ -208,7 +206,7 @@ struct alignas(1) version {
     }
 
     if (prerelease_number > 0) {
-      str.append(".").append(std::to_string(prerelease_number));
+      bela::narrow::StrAppend(&str, ".", static_cast<int>(prerelease_number));
     }
 
     return str;

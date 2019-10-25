@@ -78,7 +78,8 @@ constexpr std::uint8_t char_to_digit(char c) noexcept { return c - '0'; }
 template <typename T, typename I>
 constexpr bool read_uint(std::basic_string_view<T> str, std::size_t &i,
                          I &d) noexcept {
-  if (std::uint32_t t = 0; i < str.length() && is_digit(str[i])) {
+  if (std::uint32_t t = 0;
+      i < str.length() && is_digit(static_cast<char>(str[i]))) {
     for (std::size_t p = i, s = 0; p < str.length() && s < 3; ++p, ++s) {
       auto c = static_cast<char>(str[p]);
       if (is_digit(c)) {
@@ -147,11 +148,16 @@ struct alignas(1) version {
                                                   ? static_cast<std::uint8_t>(0)
                                                   : prerelease_number} {}
 
-  template <typename T>
-  constexpr version(std::basic_string_view<T> str)
+  constexpr version(std::string_view str)
       : version(0, 0, 0, prerelease::none, 0) {
     from_string(str);
   }
+
+  constexpr version(std::wstring_view str)
+      : version(0, 0, 0, prerelease::none, 0) {
+    from_string(str);
+  }
+
   constexpr version() = default;
   // https://semver.org/#how-should-i-deal-with-revisions-in-the-0yz-initial-development-phase
   constexpr version(const version &) = default;
@@ -204,15 +210,14 @@ struct alignas(1) version {
     default:
       SEMVER_THROW(std::invalid_argument{"invalid version"});
     }
-
     if (prerelease_number > 0) {
       bela::narrow::StrAppend(&str, ".", static_cast<int>(prerelease_number));
     }
-
     return str;
   }
   template <typename T>
-  constexpr bool from_string_noexcept(std::basic_string_view<T> str) noexcept {
+  constexpr bool
+  from_string_noexcept_t(std::basic_string_view<T> str) noexcept {
     if (std::size_t i = 0;
         detail::read_uint(str, i, major) && detail::read_dot(str, i) &&
         detail::read_uint(str, i, minor) && detail::read_dot(str, i) &&
@@ -233,9 +238,23 @@ struct alignas(1) version {
     *this = version{0, 0, 0};
     return false;
   }
-  template <typename T>
-  constexpr void from_string(std::basic_string_view<T> str) {
-    if (!from_string_noexcept(str)) {
+
+  constexpr bool from_string_noexcept(std::string_view str) noexcept {
+    return from_string_noexcept_t(str);
+  }
+  
+  constexpr bool from_string_noexcept(std::wstring_view str) noexcept {
+    return from_string_noexcept_t(str);
+  }
+
+  constexpr void from_string(std::string_view str) {
+    if (!from_string_noexcept_t(str)) {
+      SEMVER_THROW(std::invalid_argument{"invalid version"});
+    }
+  }
+
+  constexpr void from_string(std::wstring_view str) {
+    if (!from_string_noexcept_t(str)) {
       SEMVER_THROW(std::invalid_argument{"invalid version"});
     }
   }
@@ -296,19 +315,22 @@ constexpr version operator""_version(const char *str, std::size_t size) {
 inline std::string to_string(const version &v) { return v.to_string(); }
 inline std::wstring to_wstring(const version &v) { return v.to_wstring(); }
 
-template <typename T>
 constexpr std::optional<version>
-from_string_noexcept(std::basic_string_view<T> str) noexcept {
-  if (version v{0, 0, 0}; v.from_string_noexcept(str)) {
+from_string_noexcept(std::string_view str) noexcept {
+  if (version v{0, 0, 0}; v.from_string_noexcept_t(str)) {
     return v;
   }
   return std::nullopt;
 }
-
-template <typename T>
-constexpr version from_string(std::basic_string_view<T> str) {
-  return version{str};
+constexpr std::optional<version>
+from_string_noexcept(std::wstring_view str) noexcept {
+  if (version v{0, 0, 0}; v.from_string_noexcept_t(str)) {
+    return v;
+  }
+  return std::nullopt;
 }
+constexpr version from_string(std::string_view str) { return version{str}; }
+constexpr version from_string(std::wstring_view str) { return version{str}; }
 
 } // namespace bela::semver
 

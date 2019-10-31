@@ -187,57 +187,8 @@ public:
     piece_ = std::string_view(digits_, l);
   }
   // NOLINT(runtime/explicit)
-  AlphaNum(Hex hex) {
-    char *const end = &digits_[kFastToBufferSize];
-    char *writer = end;
-    uint64_t value = hex.value;
-    static const char hexdigits[] = "0123456789abcdef";
-    do {
-      *--writer = hexdigits[value & 0xF];
-      value >>= 4;
-    } while (value != 0);
-
-    char *beg;
-    if (end - writer < hex.width) {
-      beg = end - hex.width;
-      std::fill_n(beg, writer - beg, hex.fill);
-    } else {
-      beg = writer;
-    }
-
-    piece_ = std::string_view(beg, end - beg);
-  }
-  AlphaNum(Dec dec) {
-    char *const end = &digits_[kFastToBufferSize];
-    char *const minfill = end - dec.width;
-    char *writer = end;
-    uint64_t value = dec.value;
-    bool neg = dec.neg;
-    while (value > 9) {
-      *--writer = static_cast<char>(L'0' + (value % 10));
-      value /= 10;
-    }
-    *--writer = static_cast<char>(L'0' + value);
-    if (neg)
-      *--writer = '-';
-
-    ptrdiff_t fillers = writer - minfill;
-    if (fillers > 0) {
-      // Tricky: if the fill character is ' ', then it's <fill><+/-><digits>
-      // But...: if the fill character is '0', then it's <+/-><fill><digits>
-      bool add_sign_again = false;
-      if (neg && dec.fill == L'0') { // If filling with '0',
-        ++writer;                    // ignore the sign we just added
-        add_sign_again = true;       // and re-add the sign later.
-      }
-      writer -= fillers;
-      std::fill_n(writer, fillers, dec.fill);
-      if (add_sign_again)
-        *--writer = L'-';
-    }
-
-    piece_ = std::string_view(writer, end - writer);
-  }
+  AlphaNum(Hex hex);
+  AlphaNum(Dec dec);
 
   template <size_t size>
   AlphaNum( // NOLINT(runtime/explicit)
@@ -261,8 +212,8 @@ private:
   std::string_view piece_;
   char digits_[kFastToBufferSize];
 };
-namespace strings_internal {
 
+namespace strings_internal {
 // Do not call directly - this is not part of the public API.
 std::string CatPieces(std::initializer_list<std::string_view> pieces);
 void AppendPieces(std::string *dest,

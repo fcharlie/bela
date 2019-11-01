@@ -69,19 +69,16 @@ static bool AppExecLink(const ReparseBuffer *buf, facv_t &av,
     return false;
   }
   LPWSTR szString = (LPWSTR)buf->AppExecLinkReparseBuffer.StringList;
-  std::vector<LPWSTR> strv;
-  for (ULONG i = 0; i < buf->AppExecLinkReparseBuffer.StringCount; i++) {
-    strv.push_back(szString);
-    szString += wcslen(szString) + 1;
-  }
   av.emplace_back(L"Description", L"AppExecLink");
-  av.emplace_back(L"PackageID", strv[0]);
-  av.emplace_back(L"AppUserID", strv[1]);
-  if (strv.size() >= 2) {
-    av.emplace_back(L"Target", strv[2]);
-    return true;
+  /// push_back
+  const std::wstring_view attrnames[] = {L"PackageID", L"AppUserID", L"Target"};
+  for (ULONG i = 0; i < buf->AppExecLinkReparseBuffer.StringCount; i++) {
+    auto szlen = wcslen(szString);
+    if (i < 3) {
+      av.emplace_back(attrnames[i], std::wstring_view(szString, szlen));
+    }
+    szString += szlen + 1;
   }
-  // -->
   return true;
 }
 

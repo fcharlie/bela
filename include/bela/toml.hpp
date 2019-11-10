@@ -2512,22 +2512,37 @@ private:
   std::size_t line_number_ = 0;
 };
 
+inline std::shared_ptr<table> parse_file_fs(std::ifstream &input) {
+  // If buffer exists bom skip seekg else we need
+  char buffer[4];
+  constexpr std::string_view bom = "\xEF\xBB\xBF";
+  if (!input.read(buffer, 3) || memcmp(buffer, bom.data, bom.size()) != 0) {
+    input.seekg(0);
+  }
+  parser p{input};
+  return p.parse();
+}
+
+inline std::shared_ptr<table> parse_file(const std::wstring &filename) {
+  std::ifstream file(filename, std::ios::in | std::ios::binary);
+  if (!file.is_open()) {
+    throw parse_exception{bela::narrow::StringCat(
+        bela::ToNarrow(filename), " could not be opened for parsing")};
+  }
+  return parse_file_fs(file);
+}
+
 /**
  * Utility function to parse a file as a TOML file. Returns the root table.
  * Throws a parse_exception if the file cannot be opened.
  */
 inline std::shared_ptr<table> parse_file(const std::string &filename) {
-#if defined(BOOST_NOWIDE_FSTREAM_INCLUDED_HPP)
-  boost::nowide::ifstream file{filename.c_str()};
-#elif defined(NOWIDE_FSTREAM_INCLUDED_HPP)
-  nowide::ifstream file{filename.c_str()};
-#else
   std::ifstream file{filename};
-#endif
-  if (!file.is_open())
-    throw parse_exception{filename + " could not be opened for parsing"};
-  parser p{file};
-  return p.parse();
+  if (!file.is_open()) {
+    throw parse_exception{
+        bela::narrow::StringCat(filename, " could not be opened for parsing")};
+  }
+  return parse_file_fs(file);
 }
 
 template <class... Ts> struct value_accept;

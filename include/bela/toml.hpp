@@ -2542,7 +2542,7 @@ inline std::shared_ptr<table> parse_file_fs(std::ifstream &input) {
   // If buffer exists bom skip seekg else we need
   char buffer[4];
   constexpr std::string_view bom = "\xEF\xBB\xBF";
-  if (!input.read(buffer, 3) || memcmp(buffer, bom.data, bom.size()) != 0) {
+  if (!input.read(buffer, 3) || memcmp(buffer, bom.data(), bom.size()) != 0) {
     input.seekg(0);
   }
   parser p{input};
@@ -2667,9 +2667,9 @@ public:
     for (unsigned int i = 0; i < tables.size(); ++i) {
       path_.push_back(tables[i]);
 
-      if (values.size() > 0 || i > 0)
+      if (values.size() > 0 || i > 0) {
         endline();
-
+      }
       write_table_item_header(*t.get(tables[i]));
       t.get(tables[i])->accept(*this, false);
       path_.pop_back();
@@ -2685,8 +2685,9 @@ public:
     write("[");
 
     for (unsigned int i = 0; i < a.get().size(); ++i) {
-      if (i > 0)
+      if (i > 0) {
         write(", ");
+      }
 
       if (a.get()[i]->is_array()) {
         a.get()[i]->as_array()->accept(*this, true);
@@ -2703,8 +2704,9 @@ public:
    */
   void visit(const table_array &t, bool = false) {
     for (unsigned int j = 0; j < t.get().size(); ++j) {
-      if (j > 0)
+      if (j > 0) {
         endline();
+      }
 
       t.get()[j]->accept(*this, true);
     }

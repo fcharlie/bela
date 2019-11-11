@@ -30,6 +30,15 @@
 #include "codecvt.hpp"
 #include "narrow/strcat.hpp"
 
+#ifndef _WIN32
+error_t _get_timezone(long *tz) {
+  static std::once_flag flag;
+  std::call_once(flag, [] { tzset(); });
+  *tz = timezone;
+  return 0;
+}
+#endif
+
 namespace bela::toml {
 class writer; // forward declaration
 class base;   // forward declaration
@@ -66,10 +75,10 @@ struct offset_datetime : local_datetime, zone_offset {
     dt.minute = t.tm_min;
     dt.second = t.tm_sec;
 
-    long tzoffset_ = 0;
-    if (_get_timezone(&tzoffset_) == 0) {
-      dt.hour_offset = tzoffset_ / 3600;
-      dt.minute_offset = tzoffset_ % 60;
+    long offset = 0;
+    if (_get_timezone(&offset) == 0) {
+      dt.hour_offset = -offset / 3600;
+      dt.minute_offset = -offset % 60;
     }
     return dt;
   }
@@ -460,17 +469,19 @@ std::shared_ptr<typename value_traits<T>::type> make_value(T &&val) {
 }
 
 template <class T> inline std::shared_ptr<value<T>> base::as() {
-  if (type() == base_type_traits<T>::type)
+  if (type() == base_type_traits<T>::type) {
     return std::static_pointer_cast<value<T>>(shared_from_this());
-  else
-    return nullptr;
+  }
+
+  return nullptr;
 }
 
 // special case value<double> to allow getting an integer parameter as a
 // double value
 template <> inline std::shared_ptr<value<double>> base::as() {
-  if (type() == base_type::FLOAT)
+  if (type() == base_type::FLOAT) {
     return std::static_pointer_cast<value<double>>(shared_from_this());
+  }
 
   if (type() == base_type::INT) {
     auto v = std::static_pointer_cast<value<int64_t>>(shared_from_this());
@@ -480,17 +491,19 @@ template <> inline std::shared_ptr<value<double>> base::as() {
 }
 
 template <class T> inline std::shared_ptr<const value<T>> base::as() const {
-  if (type() == base_type_traits<T>::type)
+  if (type() == base_type_traits<T>::type) {
     return std::static_pointer_cast<const value<T>>(shared_from_this());
-  else
-    return nullptr;
+  }
+
+  return nullptr;
 }
 
 // special case value<double> to allow getting an integer parameter as a
 // double value
 template <> inline std::shared_ptr<const value<double>> base::as() const {
-  if (type() == base_type::FLOAT)
+  if (type() == base_type::FLOAT) {
     return std::static_pointer_cast<const value<double>>(shared_from_this());
+  }
 
   if (type() == base_type::INT) {
     auto v = as<int64_t>();
@@ -600,9 +613,9 @@ public:
   template <class T> void push_back(const std::shared_ptr<value<T>> &val) {
     if (values_.empty() || values_[0]->as<T>()) {
       values_.push_back(val);
-    } else {
-      throw array_exception{"Arrays must be homogenous."};
+      return;
     }
+    throw array_exception{"Arrays must be homogenous."};
   }
 
   /**
@@ -611,9 +624,9 @@ public:
   void push_back(const std::shared_ptr<array> &val) {
     if (values_.empty() || values_[0]->is_array()) {
       values_.push_back(val);
-    } else {
-      throw array_exception{"Arrays must be homogenous."};
+      return;
     }
+    throw array_exception{"Arrays must be homogenous."};
   }
 
   /**
@@ -632,9 +645,8 @@ public:
   iterator insert(iterator position, const std::shared_ptr<value<T>> &value) {
     if (values_.empty() || values_[0]->as<T>()) {
       return values_.insert(position, value);
-    } else {
-      throw array_exception{"Arrays must be homogenous."};
     }
+    throw array_exception{"Arrays must be homogenous."};
   }
 
   /**
@@ -643,9 +655,8 @@ public:
   iterator insert(iterator position, const std::shared_ptr<array> &value) {
     if (values_.empty() || values_[0]->is_array()) {
       return values_.insert(position, value);
-    } else {
-      throw array_exception{"Arrays must be homogenous."};
     }
+    throw array_exception{"Arrays must be homogenous."};
   }
 
   /**
@@ -711,13 +722,14 @@ array::get_array_of<array>() const {
   result.reserve(values_.size());
 
   for (const auto &val : values_) {
-    if (auto v = val->as_array())
-      result.push_back(v);
-    else
-      return {};
+    auto v = val->as_array();
+    if (!v) {
+      return std::nullopt;
+    }
+    result.push_back(v);
   }
 
-  return {std::move(result)};
+  return std::make_optional(std::move(result));
 }
 
 class table;
@@ -1236,23 +1248,26 @@ template <class T> std::shared_ptr<base> value<T>::clone() const {
 inline std::shared_ptr<base> array::clone() const {
   auto result = make_array();
   result->reserve(values_.size());
-  for (const auto &ptr : values_)
+  for (const auto &ptr : values_) {
     result->values_.push_back(ptr->clone());
+  }
   return result;
 }
 
 inline std::shared_ptr<base> table_array::clone() const {
   auto result = make_table_array(is_inline());
   result->reserve(array_.size());
-  for (const auto &ptr : array_)
+  for (const auto &ptr : array_) {
     result->array_.push_back(ptr->clone()->as_table());
+  }
   return result;
 }
 
 inline std::shared_ptr<base> table::clone() const {
   auto result = make_table();
-  for (const auto &pr : map_)
+  for (const auto &pr : map_) {
     result->insert(pr.first, pr.second->clone());
+  }
   return result;
 }
 
@@ -1297,16 +1312,18 @@ public:
   }
 
   void eat_or(char a, char b) {
-    if (it_ == end_ || (*it_ != a && *it_ != b))
+    if (it_ == end_ || (*it_ != a && *it_ != b)) {
       on_error_();
+    }
     ++it_;
   }
 
   int eat_digits(int len) {
     int val = 0;
     for (int i = 0; i < len; ++i) {
-      if (!is_number(*it_) || it_ == end_)
+      if (!is_number(*it_) || it_ == end_) {
         on_error_();
+      }
       val = 10 * val + (*it_++ - '0');
     }
     return val;
@@ -1339,8 +1356,9 @@ inline std::istream &getline(std::istream &input, std::string &line) {
   while (true) {
     auto c = sb->sbumpc();
     if (c == '\r') {
-      if (sb->sgetc() == '\n')
+      if (sb->sgetc() == '\n') {
         c = sb->sbumpc();
+      }
     }
 
     if (c == '\n') {
@@ -2442,21 +2460,26 @@ private:
 
   void consume_whitespace(std::string::iterator &it,
                           const std::string::iterator &end) {
-    while (it != end && (*it == ' ' || *it == '\t'))
+    while (it != end && (*it == ' ' || *it == '\t')) {
       ++it;
+    }
   }
 
   void consume_backwards_whitespace(std::string::iterator &back,
                                     const std::string::iterator &front) {
-    while (back != front && (*back == ' ' || *back == '\t'))
+    while (back != front && (*back == ' ' || *back == '\t')) {
       --back;
+    }
   }
 
   void eol_or_comment(const std::string::iterator &it,
                       const std::string::iterator &end) {
-    if (it != end && *it != '#')
-      throw_parse_exception("Unidentified trailing character '" +
-                            std::string{*it} + "'---did you forget a '#'?");
+    if (it != end && *it != '#') {
+      char ch = *it;
+      throw_parse_exception(bela::narrow::StringCat(
+          "Unidentified trailing character '", std::string_view(&ch, 1),
+          "'---did you forget a '#'?"));
+    }
   }
 
   bool is_time(const std::string::iterator &it,
@@ -2464,14 +2487,17 @@ private:
     auto time_end = find_end_of_time(it, end);
     auto len = std::distance(it, time_end);
 
-    if (len < 8)
+    if (len < 8) {
       return false;
+    }
 
-    if (it[2] != ':' || it[5] != ':')
+    if (it[2] != ':' || it[5] != ':') {
       return false;
+    }
 
-    if (len > 8)
+    if (len > 8) {
       return it[8] == '.' && len > 9;
+    }
 
     return true;
   }
@@ -2523,6 +2549,7 @@ inline std::shared_ptr<table> parse_file_fs(std::ifstream &input) {
   return p.parse();
 }
 
+#ifdef _WIN32
 inline std::shared_ptr<table> parse_file(const std::wstring &filename) {
   std::ifstream file(filename, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
@@ -2531,7 +2558,7 @@ inline std::shared_ptr<table> parse_file(const std::wstring &filename) {
   }
   return parse_file_fs(file);
 }
-
+#endif
 /**
  * Utility function to parse a file as a TOML file. Returns the root table.
  * Throws a parse_exception if the file cannot be opened.

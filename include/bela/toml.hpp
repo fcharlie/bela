@@ -111,21 +111,16 @@ private:
 inline std::ostream &operator<<(std::ostream &os, const local_date &dt) {
   fill_guard g{os};
   os.fill('0');
-
-  using std::setw;
-  os << setw(4) << dt.year << "-" << setw(2) << dt.month << "-" << setw(2)
-     << dt.day;
-
+  os << std::setw(4) << dt.year << "-" << std::setw(2) << dt.month << "-"
+     << std::setw(2) << dt.day;
   return os;
 }
 
 inline std::ostream &operator<<(std::ostream &os, const local_time &ltime) {
   fill_guard g{os};
   os.fill('0');
-
-  using std::setw;
-  os << setw(2) << ltime.hour << ":" << setw(2) << ltime.minute << ":"
-     << setw(2) << ltime.second;
+  os << std::setw(2) << ltime.hour << ":" << std::setw(2) << ltime.minute << ":"
+     << std::setw(2) << ltime.second;
 
   if (ltime.microsecond > 0) {
     os << ".";
@@ -223,15 +218,14 @@ struct value_traits<
   using type = value<int64_t>;
 
   static value_type construct(T &&val) {
-    if (val < (std::numeric_limits<int64_t>::min)())
-      throw std::underflow_error{"constructed value cannot be "
-                                 "represented by a 64-bit signed "
-                                 "integer"};
-
-    if (val > (std::numeric_limits<int64_t>::max)())
-      throw std::overflow_error{"constructed value cannot be represented "
-                                "by a 64-bit signed integer"};
-
+    if (val < (std::numeric_limits<int64_t>::min)()) {
+      throw std::underflow_error{
+          "constructed value cannot be represented by a 64-bit signed integer"};
+    }
+    if (val > (std::numeric_limits<int64_t>::max)()) {
+      throw std::overflow_error{
+          "constructed value cannot be represented by a 64-bit signed integer"};
+    }
     return static_cast<int64_t>(val);
   }
 };
@@ -246,10 +240,10 @@ struct value_traits<
   using type = value<int64_t>;
 
   static value_type construct(T &&val) {
-    if (val > static_cast<uint64_t>((std::numeric_limits<int64_t>::max)()))
-      throw std::overflow_error{"constructed value cannot be represented "
-                                "by a 64-bit signed integer"};
-
+    if (val > static_cast<uint64_t>((std::numeric_limits<int64_t>::max)())) {
+      throw std::overflow_error{
+          "constructed value cannot be represented by a 64-bit signed integer"};
+    }
     return static_cast<int64_t>(val);
   }
 };
@@ -363,8 +357,9 @@ public:
    * Converts the TOML element into a table.
    */
   std::shared_ptr<table> as_table() {
-    if (is_table())
+    if (is_table()) {
       return std::static_pointer_cast<table>(shared_from_this());
+    }
     return nullptr;
   }
   /**
@@ -376,8 +371,9 @@ public:
    * Converts the TOML element to an array.
    */
   std::shared_ptr<array> as_array() {
-    if (is_array())
+    if (is_array()) {
       return std::static_pointer_cast<array>(shared_from_this());
+    }
     return nullptr;
   }
 
@@ -390,8 +386,9 @@ public:
    * Converts the TOML element into a table array.
    */
   std::shared_ptr<table_array> as_table_array() {
-    if (is_table_array())
+    if (is_table_array()) {
       return std::static_pointer_cast<table_array>(shared_from_this());
+    }
     return nullptr;
   }
 
@@ -599,8 +596,9 @@ public:
 
     std::transform(values_.begin(), values_.end(), result.begin(),
                    [&](std::shared_ptr<base> v) -> std::shared_ptr<array> {
-                     if (v->is_array())
+                     if (v->is_array()) {
                        return std::static_pointer_cast<array>(v);
+                     }
                      return std::shared_ptr<array>{};
                    });
 
@@ -1153,15 +1151,15 @@ private:
     auto cur_table = this;
     for (const auto &part : parts) {
       cur_table = cur_table->get_table(part).get();
-      if (!cur_table) {
-        if (!p) {
+      if (cur_table != nullptr) {
+        if (p != nullptr) {
           return false;
         }
         throw std::out_of_range{
             bela::narrow::StringCat(key, " is not a valid key")};
       }
     }
-    if (!p) {
+    if (p != nullptr) {
       return cur_table->map_.count(last_key) != 0;
     }
     *p = cur_table->map_.at(last_key);
@@ -1301,8 +1299,9 @@ public:
   }
 
   void operator()(char c) {
-    if (it_ == end_ || *it_ != c)
+    if (it_ == end_ || *it_ != c) {
       on_error_();
+    }
     ++it_;
   }
 
@@ -1357,7 +1356,9 @@ inline std::istream &getline(std::istream &input, std::string &line) {
     auto c = sb->sbumpc();
     if (c == '\r') {
       if (sb->sgetc() == '\n') {
-        c = sb->sbumpc();
+        {
+          c = sb->sbumpc();
+        }
       }
     }
 
@@ -1405,16 +1406,17 @@ public:
       auto it = line_.begin();
       auto end = line_.end();
       consume_whitespace(it, end);
-      if (it == end || *it == '#')
+      if (it == end || *it == '#') {
         continue;
+      }
       if (*it == '[') {
         curr_table = root.get();
         parse_table(it, end, curr_table);
-      } else {
-        parse_key_value(it, end, curr_table);
-        consume_whitespace(it, end);
-        eol_or_comment(it, end);
+        continue;
       }
+      parse_key_value(it, end, curr_table);
+      consume_whitespace(it, end);
+      eol_or_comment(it, end);
     }
     return root;
   }
@@ -1433,9 +1435,9 @@ private:
     }
     if (*it == '[') {
       parse_table_array(it, end, curr_table);
-    } else {
-      parse_single_table(it, end, curr_table);
+      return;
     }
+    parse_single_table(it, end, curr_table);
   }
 
   void parse_single_table(std::string::iterator &it,
@@ -1675,11 +1677,10 @@ private:
 
     if (*it == '"' || *it == '\'') {
       return string_literal(it, end, *it);
-    } else {
-      auto bke = std::find_if(
-          it, end, [](char c) { return c == '.' || c == '=' || c == ']'; });
-      return parse_bare_key(it, bke);
     }
+    auto bke = std::find_if(
+        it, end, [](char c) { return c == '.' || c == '=' || c == ']'; });
+    return parse_bare_key(it, bke);
   }
 
   std::string parse_bare_key(std::string::iterator &it,
@@ -1716,6 +1717,7 @@ private:
   }
 
   enum class parse_type {
+    NONE = 0,
     STRING = 1,
     LOCAL_TIME,
     LOCAL_DATE,
@@ -1761,21 +1763,27 @@ private:
     }
     if (*it == '"' || *it == '\'') {
       return parse_type::STRING;
-    } else if (is_time(it, end)) {
+    }
+    if (is_time(it, end)) {
       return parse_type::LOCAL_TIME;
-    } else if (auto dtype = date_type(it, end)) {
-      return *dtype;
-    } else if (is_number(*it) || *it == '-' || *it == '+' ||
-               (*it == 'i' && it + 1 != end && it[1] == 'n' && it + 2 != end &&
-                it[2] == 'f') ||
-               (*it == 'n' && it + 1 != end && it[1] == 'a' && it + 2 != end &&
-                it[2] == 'n')) {
+    }
+    if (auto dtype = date_type(it, end); dtype != parse_type::NONE) {
+      return dtype;
+    }
+    if (is_number(*it) || *it == '-' || *it == '+' ||
+        (*it == 'i' && it + 1 != end && it[1] == 'n' && it + 2 != end &&
+         it[2] == 'f') ||
+        (*it == 'n' && it + 1 != end && it[1] == 'a' && it + 2 != end &&
+         it[2] == 'n')) {
       return determine_number_type(it, end);
-    } else if (*it == 't' || *it == 'f') {
+    }
+    if (*it == 't' || *it == 'f') {
       return parse_type::BOOL;
-    } else if (*it == '[') {
+    }
+    if (*it == '[') {
       return parse_type::ARRAY;
-    } else if (*it == '{') {
+    }
+    if (*it == '{') {
       return parse_type::INLINE_TABLE;
     }
     throw_parse_exception("Failed to parse value type");
@@ -1785,8 +1793,9 @@ private:
                                    const std::string::iterator &end) {
     // determine if we are an integer or a float
     auto check_it = it;
-    if (*check_it == '-' || *check_it == '+')
+    if (*check_it == '-' || *check_it == '+') {
       ++check_it;
+    }
 
     if (check_it == end) {
       throw_parse_exception("Malformed number");
@@ -2019,11 +2028,13 @@ private:
                      const std::string::iterator &end, uint32_t place) {
     uint32_t value = 0;
     while (place > 0) {
-      if (it == end)
+      if (it == end) {
         throw_parse_exception("Unexpected end of unicode sequence");
+      }
 
-      if (!is_hex(*it))
+      if (!is_hex(*it)) {
         throw_parse_exception("Invalid unicode escape sequence");
+      }
 
       value += place * hex_to_digit(*it++);
       place /= 16;
@@ -2032,8 +2043,9 @@ private:
   }
 
   uint32_t hex_to_digit(char c) {
-    if (is_number(c))
+    if (is_number(c)) {
       return static_cast<uint32_t>(c - '0');
+    }
     return 10 + static_cast<uint32_t>(c - ((c >= 'a' && c <= 'f') ? 'a' : 'A'));
   }
 
@@ -2043,8 +2055,9 @@ private:
     auto check_end = find_end_of_number(it, end);
 
     auto eat_sign = [&]() {
-      if (check_it != end && (*check_it == '-' || *check_it == '+'))
+      if (check_it != end && (*check_it == '-' || *check_it == '+')) {
         ++check_it;
+      }
     };
 
     auto check_no_leading_zero = [&]() {
@@ -2060,13 +2073,15 @@ private:
         ++check_it;
         if (check_it != end && *check_it == '_') {
           ++check_it;
-          if (check_it == end || !check_char(*check_it))
+          if (check_it == end || !check_char(*check_it)) {
             throw_parse_exception("Malformed number");
+          }
         }
       }
 
-      if (check_it == beg)
+      if (check_it == beg) {
         throw_parse_exception("Malformed number");
+      }
     };
 
     auto eat_hex = [&]() { eat_digits(&is_hex); };
@@ -2081,20 +2096,19 @@ private:
       if (base == 'x') {
         eat_hex();
         return parse_int(it, check_it, 16);
-      } else if (base == 'o') {
+      }
+      if (base == 'o') {
         auto start = check_it;
         eat_numbers();
         auto val = parse_int(start, check_it, 8, "0");
         it = start;
         return val;
-      } else // if (base == 'b')
-      {
-        auto start = check_it;
-        eat_numbers();
-        auto val = parse_int(start, check_it, 2);
-        it = start;
-        return val;
       }
+      auto start = check_it;
+      eat_numbers();
+      auto val = parse_int(start, check_it, 2);
+      it = start;
+      return val;
     }
 
     eat_sign();
@@ -2107,8 +2121,8 @@ private:
           val = -val;
         it = check_it + 3;
         return make_value(val);
-      } else if (check_it[0] == 'n' && check_it[1] == 'a' &&
-                 check_it[2] == 'n') {
+      }
+      if (check_it[0] == 'n' && check_it[1] == 'a' && check_it[2] == 'n') {
         auto val = std::numeric_limits<double>::quiet_NaN();
         if (*it == '-')
           val = -val;
@@ -2124,8 +2138,9 @@ private:
       bool is_exp = *check_it == 'e' || *check_it == 'E';
 
       ++check_it;
-      if (check_it == end)
+      if (check_it == end) {
         throw_parse_exception("Floats must have trailing digits");
+      }
 
       auto eat_exp = [&]() {
         eat_sign();
@@ -2133,21 +2148,20 @@ private:
         eat_numbers();
       };
 
-      if (is_exp)
+      if (is_exp) {
         eat_exp();
-      else
+      } else {
         eat_numbers();
+      }
 
       if (!is_exp && check_it != end &&
           (*check_it == 'e' || *check_it == 'E')) {
         ++check_it;
         eat_exp();
       }
-
       return parse_float(it, check_it);
-    } else {
-      return parse_int(it, check_it);
     }
+    return parse_int(it, check_it);
   }
 
   std::shared_ptr<value<int64_t>> parse_int(std::string::iterator &it,
@@ -2196,7 +2210,8 @@ private:
     if (*it == 't') {
       eat("true");
       return make_value<bool>(true);
-    } else if (*it == 'f') {
+    }
+    if (*it == 'f') {
       eat("false");
       return make_value<bool>(false);
     }
@@ -2225,8 +2240,9 @@ private:
     auto end_of_date =
         std::find_if(it, end, [](char c) { return !is_number(c) && c != '-'; });
     if (end_of_date != end && *end_of_date == ' ' && end_of_date + 1 != end &&
-        is_number(end_of_date[1]))
+        is_number(end_of_date[1])) {
       end_of_date++;
+    }
     return std::find_if(end_of_date, end, [](char c) {
       return !is_number(c) && c != 'T' && c != 'Z' && c != ':' && c != '-' &&
              c != '+' && c != '.';
@@ -2263,8 +2279,9 @@ private:
       }
     }
 
-    if (it != time_end)
+    if (it != time_end) {
       throw_parse_exception("Malformed time");
+    }
 
     return ltime;
   }
@@ -2288,8 +2305,9 @@ private:
     eat('-');
     ldate.day = eat.eat_digits(2);
 
-    if (it == date_end)
+    if (it == date_end) {
       return make_value(ldate);
+    }
 
     eat.eat_or('T', ' ');
 
@@ -2297,8 +2315,9 @@ private:
     static_cast<local_date &>(ldt) = ldate;
     static_cast<local_time &>(ldt) = read_time(it, date_end);
 
-    if (it == date_end)
+    if (it == date_end) {
       return make_value(ldt);
+    }
 
     offset_datetime dt;
     static_cast<local_datetime &>(dt) = ldt;
@@ -2379,18 +2398,21 @@ private:
     auto arr = make_array();
     while (it != end && *it != ']') {
       auto val = parse_value(it, end);
-      if (auto v = val->as<Value>())
+      if (auto v = val->as<Value>()) {
         arr->get().push_back(val);
-      else
+      } else {
         throw_parse_exception("Arrays must be homogeneous");
+      }
       skip_whitespace_and_comments(it, end);
-      if (*it != ',')
+      if (*it != ',') {
         break;
+      }
       ++it;
       skip_whitespace_and_comments(it, end);
     }
-    if (it != end)
+    if (it != end) {
       ++it;
+    }
     return arr;
   }
 
@@ -2401,21 +2423,24 @@ private:
     auto arr = detail::make_element<Object>();
 
     while (it != end && *it != ']') {
-      if (*it != delim)
+      if (*it != delim) {
         throw_parse_exception("Unexpected character in array");
+      }
 
       arr->get().push_back(((*this).*fun)(it, end));
       skip_whitespace_and_comments(it, end);
 
-      if (it == end || *it != ',')
+      if (it == end || *it != ',') {
         break;
+      }
 
       ++it;
       skip_whitespace_and_comments(it, end);
     }
 
-    if (it == end || *it != ']')
+    if (it == end || *it != ']') {
       throw_parse_exception("Unterminated array");
+    }
 
     ++it;
     return arr;
@@ -2426,8 +2451,9 @@ private:
     auto tbl = make_table();
     do {
       ++it;
-      if (it == end)
+      if (it == end) {
         throw_parse_exception("Unterminated inline table");
+      }
 
       consume_whitespace(it, end);
       if (it != end && *it != '}') {
@@ -2436,8 +2462,9 @@ private:
       }
     } while (*it == ',');
 
-    if (it == end || *it != '}')
+    if (it == end || *it != '}') {
       throw_parse_exception("Unterminated inline table");
+    }
 
     ++it;
     consume_whitespace(it, end);
@@ -2449,8 +2476,9 @@ private:
                                     std::string::iterator &end) {
     consume_whitespace(start, end);
     while (start == end || *start == '#') {
-      if (!detail::getline(input_, line_))
+      if (!detail::getline(input_, line_)) {
         throw_parse_exception("Unclosed array");
+      }
       line_number_++;
       start = line_.begin();
       end = line_.end();
@@ -2502,17 +2530,17 @@ private:
     return true;
   }
 
-  std::optional<parse_type> date_type(const std::string::iterator &it,
-                                      const std::string::iterator &end) {
+  parse_type date_type(const std::string::iterator &it,
+                       const std::string::iterator &end) {
     auto date_end = find_end_of_date(it, end);
     auto len = std::distance(it, date_end);
 
     if (len < 10) {
-      return std::nullopt;
+      return parse_type::NONE;
     }
 
     if (it[4] != '-' || it[7] != '-') {
-      return std::nullopt;
+      return parse_type::NONE;
     }
 
     if (len >= 19 && (it[10] == 'T' || it[10] == ' ') &&
@@ -2520,17 +2548,17 @@ private:
       // datetime type
       auto time_end = find_end_of_time(it + 11, date_end);
       if (time_end == date_end) {
-        return std::make_optional(parse_type::LOCAL_DATETIME);
+        return parse_type::LOCAL_DATETIME;
       }
-      return std::make_optional(parse_type::OFFSET_DATETIME);
+      return parse_type::OFFSET_DATETIME;
     }
 
     if (len == 10) {
       // just a regular date
-      return std::make_optional(parse_type::LOCAL_DATE);
+      return parse_type::LOCAL_DATE;
     }
 
-    return std::nullopt;
+    return parse_type::NONE;
   }
 
   std::istream &input_;
@@ -2656,8 +2684,9 @@ public:
     for (unsigned int i = 0; i < values.size(); ++i) {
       path_.push_back(values[i]);
 
-      if (i > 0)
+      if (i > 0) {
         endline();
+      }
 
       write_table_item_header(*t.get(values[i]));
       t.get(values[i])->accept(*this, false);

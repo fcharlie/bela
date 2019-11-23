@@ -1128,13 +1128,16 @@ private:
   std::vector<std::string_view> split(std::string_view value,
                                       char separator) const {
     std::vector<std::string_view> result;
-    std::string_view::size_type p = 0;
-    std::string_view::size_type q;
-    while ((q = value.find(separator, p)) != std::string::npos) {
-      result.emplace_back(value, p, q - p);
-      p = q + 1;
+    size_t first = 0;
+    while (first < value.size()) {
+      const auto second = value.find_first_of(separator, first);
+      auto s = value.substr(first, second - first);
+      result.emplace_back(s);
+      if (second == std::string_view::npos) {
+        break;
+      }
+      first = second + 1;
     }
-    result.emplace_back(value, p);
     return result;
   }
 
@@ -1151,15 +1154,15 @@ private:
     auto cur_table = this;
     for (const auto &part : parts) {
       cur_table = cur_table->get_table(part).get();
-      if (cur_table != nullptr) {
-        if (p != nullptr) {
+      if (cur_table == nullptr) {
+        if (p == nullptr) {
           return false;
         }
         throw std::out_of_range{
             bela::narrow::StringCat(key, " is not a valid key")};
       }
     }
-    if (p != nullptr) {
+    if (p == nullptr) {
       return cur_table->map_.count(last_key) != 0;
     }
     *p = cur_table->map_.at(last_key);
@@ -1356,9 +1359,7 @@ inline std::istream &getline(std::istream &input, std::string &line) {
     auto c = sb->sbumpc();
     if (c == '\r') {
       if (sb->sgetc() == '\n') {
-        {
-          c = sb->sbumpc();
-        }
+        c = sb->sbumpc();
       }
     }
 

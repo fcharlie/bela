@@ -34,6 +34,23 @@
 // limitations under the License.
 // ---------------------------------------------------------------------------
 
+#ifdef _MSC_VER
+    #pragma warning(push)  
+
+    #pragma warning(disable : 4127) // conditional expression is constant
+    #pragma warning(disable : 4324) // structure was padded due to alignment specifier
+    #pragma warning(disable : 4514) // unreferenced inline function has been removed
+    #pragma warning(disable : 4623) // default constructor was implicitly defined as deleted
+    #pragma warning(disable : 4625) // copy constructor was implicitly defined as deleted
+    #pragma warning(disable : 4626) // assignment operator was implicitly defined as deleted
+    #pragma warning(disable : 4710) // function not inlined
+    #pragma warning(disable : 4711) // selected for automatic inline expansion
+    #pragma warning(disable : 4820) // '6' bytes padding added after data member
+    #pragma warning(disable : 4868) // compiler may not enforce left-to-right evaluation order in braced initializer list
+    #pragma warning(disable : 5027) // move assignment operator was implicitly defined as deleted
+    #pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif
+
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -268,7 +285,7 @@ inline size_t H1(size_t hash, const ctrl_t* ) {
 #endif
 
 
-inline ctrl_t H2(size_t hash)          { return hash & 0x7F; }
+inline ctrl_t H2(size_t hash)          { return (ctrl_t)(hash & 0x7F); }
 
 inline bool IsEmpty(ctrl_t c)          { return c == kEmpty; }
 inline bool IsFull(ctrl_t c)           { return c >= 0; }
@@ -276,6 +293,11 @@ inline bool IsDeleted(ctrl_t c)        { return c == kDeleted; }
 inline bool IsEmptyOrDeleted(ctrl_t c) { return c < kSentinel; }
 
 #if PHMAP_HAVE_SSE2
+
+#ifdef _MSC_VER
+    #pragma warning(push)  
+    #pragma warning(disable : 4365) // conversion from 'int' to 'T', signed/unsigned mismatch
+#endif
 
 // --------------------------------------------------------------------------
 // https://github.com/abseil/abseil-cpp/issues/209
@@ -313,7 +335,7 @@ struct GroupSse2Impl
     // Returns a bitmask representing the positions of slots that match hash.
     // ----------------------------------------------------------------------
     BitMask<uint32_t, kWidth> Match(h2_t hash) const {
-        auto match = _mm_set1_epi8(hash);
+        auto match = _mm_set1_epi8((char)hash);
         return BitMask<uint32_t, kWidth>(
             _mm_movemask_epi8(_mm_cmpeq_epi8(match, ctrl)));
     }
@@ -362,6 +384,11 @@ struct GroupSse2Impl
 
     __m128i ctrl;
 };
+
+#ifdef _MSC_VER
+     #pragma warning(pop)  
+#endif
+
 #endif  // PHMAP_HAVE_SSE2
 
 // --------------------------------------------------------------------------
@@ -405,7 +432,7 @@ struct GroupPortableImpl
 
     uint32_t CountLeadingEmptyOrDeleted() const {
         constexpr uint64_t gaps = 0x00FEFEFEFEFEFEFEULL;
-        return (TrailingZeros(((~ctrl & (ctrl >> 7)) | gaps) + 1) + 7) >> 3;
+        return (uint32_t)((TrailingZeros(((~ctrl & (ctrl >> 7)) | gaps) + 1) + 7) >> 3);
     }
 
     void ConvertSpecialToEmptyAndFullToDeleted(ctrl_t* dst) const {
@@ -469,7 +496,7 @@ inline size_t CapacityToGrowth(size_t capacity)
 {
     assert(IsValidCapacity(capacity));
     // `capacity*7/8`
-    if (Group::kWidth == 8 && capacity == 7) {
+    PHMAP_IF_CONSTEXPR (Group::kWidth == 8 && capacity == 7) {
         // x-x/8 does not work when x==7.
         return 6;
     }
@@ -483,7 +510,7 @@ inline size_t CapacityToGrowth(size_t capacity)
 inline size_t GrowthToLowerboundCapacity(size_t growth) 
 {
     // `growth*8/7`
-    if (Group::kWidth == 8 && growth == 7) {
+    PHMAP_IF_CONSTEXPR (Group::kWidth == 8 && growth == 7) {
         // x+(x-1)/7 does not work when x==7.
         return 8;
     }
@@ -1500,7 +1527,7 @@ public:
     //   s.count("abc");
     template <class K = key_type>
     size_t count(const key_arg<K>& key) const {
-        return find(key) == end() ? 0 : 1;
+        return find(key) == end() ? size_t(0) : size_t(1);
     }
 
     // Issues CPU prefetch instructions for the memory needed to find or insert
@@ -1534,11 +1561,11 @@ public:
         auto seq = probe(hash);
         while (true) {
             Group g{ctrl_ + seq.offset()};
-            for (int i : g.Match(H2(hash))) {
+            for (int i : g.Match((h2_t)H2(hash))) {
                 if (PHMAP_PREDICT_TRUE(PolicyTraits::apply(
                                           EqualElement<K>{key, eq_ref()},
-                                          PolicyTraits::element(slots_ + seq.offset(i)))))
-                    return iterator_at(seq.offset(i));
+                                          PolicyTraits::element(slots_ + seq.offset((size_t)i)))))
+                    return iterator_at(seq.offset((size_t)i));
             }
             if (PHMAP_PREDICT_TRUE(g.MatchEmpty())) 
                 return end();
@@ -1709,7 +1736,7 @@ private:
     void erase_meta_only(const_iterator it) {
         assert(IsFull(*it.inner_.ctrl_) && "erasing a dangling iterator");
         --size_;
-        const size_t index = it.inner_.ctrl_ - ctrl_;
+        const size_t index = (size_t)(it.inner_.ctrl_ - ctrl_);
         const size_t index_before = (index - Group::kWidth) & capacity_;
         const auto empty_after = Group(it.inner_.ctrl_).MatchEmpty();
         const auto empty_before = Group(ctrl_ + index_before).MatchEmpty();
@@ -1868,8 +1895,8 @@ private:
         auto seq = probe(hash);
         while (true) {
             Group g{ctrl_ + seq.offset()};
-            for (int i : g.Match(H2(hash))) {
-                if (PHMAP_PREDICT_TRUE(PolicyTraits::element(slots_ + seq.offset(i)) ==
+            for (int i : g.Match((h2_t)H2(hash))) {
+                if (PHMAP_PREDICT_TRUE(PolicyTraits::element(slots_ + seq.offset((size_t)i)) ==
                                       elem))
                     return true;
             }
@@ -1905,7 +1932,7 @@ private:
             Group g{ctrl_ + seq.offset()};
             auto mask = g.MatchEmptyOrDeleted();
             if (mask) {
-                return {seq.offset(mask.LowestBitSet()), seq.index()};
+                return {seq.offset((size_t)mask.LowestBitSet()), seq.index()};
             }
             assert(seq.index() < capacity_ && "full table!");
             seq.next();
@@ -1930,11 +1957,11 @@ protected:
         auto seq = probe(hash);
         while (true) {
             Group g{ctrl_ + seq.offset()};
-            for (int i : g.Match(H2(hash))) {
+            for (int i : g.Match((h2_t)H2(hash))) {
                 if (PHMAP_PREDICT_TRUE(PolicyTraits::apply(
                                           EqualElement<K>{key, eq_ref()},
-                                          PolicyTraits::element(slots_ + seq.offset(i)))))
-                    return {seq.offset(i), false};
+                                          PolicyTraits::element(slots_ + seq.offset((size_t)i)))))
+                    return {seq.offset((size_t)i), false};
             }
             if (PHMAP_PREDICT_TRUE(g.MatchEmpty())) break;
             seq.next();
@@ -3828,7 +3855,7 @@ struct HashtableDebugAccess<Set, phmap::void_t<typename Set::raw_hash_set>>
                 if (Traits::apply(
                         typename Set::template EqualElement<typename Set::key_type>{
                             key, set.eq_ref()},
-                        Traits::element(set.slots_ + seq.offset(i))))
+                        Traits::element(set.slots_ + seq.offset((size_t)i))))
                     return num_probes;
                 ++num_probes;
             }
@@ -4346,5 +4373,10 @@ public:
 };
 
 }  // namespace phmap
+
+#ifdef _MSC_VER
+     #pragma warning(pop)  
+#endif
+
 
 #endif // phmap_h_guard_

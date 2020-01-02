@@ -34,6 +34,26 @@
 #ifndef PHMAP_BTREE_BTREE_CONTAINER_H_
 #define PHMAP_BTREE_BTREE_CONTAINER_H_
 
+#ifdef _MSC_VER
+    #pragma warning(push)  
+
+    #pragma warning(disable : 4127) // conditional expression is constant
+    #pragma warning(disable : 4324) // structure was padded due to alignment specifier
+    #pragma warning(disable : 4355) // 'this': used in base member initializer list
+    #pragma warning(disable : 4365) // conversion from 'int' to 'const unsigned __int64', signed/unsigned mismatch
+    #pragma warning(disable : 4514) // unreferenced inline function has been removed
+    #pragma warning(disable : 4623) // default constructor was implicitly defined as deleted
+    #pragma warning(disable : 4625) // copy constructor was implicitly defined as deleted
+    #pragma warning(disable : 4626) // assignment operator was implicitly defined as deleted
+    #pragma warning(disable : 4710) // function not inlined
+    #pragma warning(disable : 4711) //  selected for automatic inline expansion
+    #pragma warning(disable : 4820) // '6' bytes padding added after data member
+    #pragma warning(disable : 4868) // compiler may not enforce left-to-right evaluation order in braced initializer list
+    #pragma warning(disable : 5026) // move constructor was implicitly defined as deleted
+    #pragma warning(disable : 5027) // move assignment operator was implicitly defined as deleted
+    #pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif
+
 #include <initializer_list>
 #include <iterator>
 #include <utility>
@@ -54,6 +74,7 @@
 #include <initializer_list>
 #include <iterator>
 
+#include "phmap_fwd_decl.h"
 #include "phmap_base.h"
 
 #if PHMAP_HAVE_STD_STRING_VIEW
@@ -65,7 +86,6 @@
 #if defined(_MSC_VER) && !defined(__clang__) && !defined(__GNUC__)
     #define PHMAP_META_INTERNAL_STD_CONSTRUCTION_TRAITS_DONT_CHECK_DESTRUCTION 1
 #endif
-
 
 namespace phmap {
 
@@ -1063,7 +1083,7 @@ namespace container_internal {
         constexpr static size_type Alignment() {
             static_assert(LeafLayout(1).Alignment() == InternalLayout().Alignment(),
                           "Alignment of all nodes must be equal.");
-            return InternalLayout().Alignment();
+            return (size_type)InternalLayout().Alignment();
         }
 
     protected:
@@ -1073,15 +1093,15 @@ namespace container_internal {
         using layout_type = phmap::container_internal::Layout<btree_node *, field_type,
                                                                slot_type, btree_node *>;
         constexpr static size_type SizeWithNValues(size_type n) {
-            return layout_type(/*parent*/ 1,
+            return (size_type)layout_type(/*parent*/ 1,
                                /*position, start, count, max_count*/ 4,
-                               /*values*/ n,
+                               /*values*/ (size_t)n,
                                /*children*/ 0)
                 .AllocSize();
         }
         // A lower bound for the overhead of fields other than values in a leaf node.
         constexpr static size_type MinimumOverhead() {
-            return SizeWithNValues(1) - sizeof(value_type);
+            return (size_type)(SizeWithNValues(1) - sizeof(value_type));
         }
 
         // Compute how many values we can fit onto a leaf node taking into account
@@ -1112,7 +1132,7 @@ namespace container_internal {
         constexpr static layout_type LeafLayout(const int max_values = kNodeValues) {
             return layout_type(/*parent*/ 1,
                                /*position, start, count, max_count*/ 4,
-                               /*values*/ max_values,
+                               /*values*/ (size_t)max_values,
                                /*children*/ 0);
         }
         constexpr static layout_type InternalLayout() {
@@ -1122,10 +1142,10 @@ namespace container_internal {
                                /*children*/ kNodeValues + 1);
         }
         constexpr static size_type LeafSize(const int max_values = kNodeValues) {
-            return LeafLayout(max_values).AllocSize();
+            return (size_type)LeafLayout(max_values).AllocSize();
         }
         constexpr static size_type InternalSize() {
-            return InternalLayout().AllocSize();
+            return (size_type)InternalLayout().AllocSize();
         }
 
         // N is the index of the type in the Layout definition.
@@ -1197,10 +1217,10 @@ namespace container_internal {
         void clear_child(size_type i) {
             phmap::container_internal::SanitizerPoisonObject(&mutable_child(i));
         }
-        void set_child(int i, btree_node *c) {
+        void set_child(size_type i, btree_node *c) {
             phmap::container_internal::SanitizerUnpoisonObject(&mutable_child(i));
             mutable_child(i) = c;
-            c->set_position(i);
+            c->set_position((field_type)i);
         }
         void init_child(int i, btree_node *c) {
             set_child(i, c);
@@ -1337,7 +1357,7 @@ namespace container_internal {
 
         // Removes the values at positions [i, i + to_erase), shifting all values
         // after that range to the left by to_erase. Does not change children at all.
-        void remove_values_ignore_children(int i, int to_erase,
+        void remove_values_ignore_children(int i, size_type to_erase,
                                            allocator_type *alloc);
 
         // Rebalances a node with its right sibling.
@@ -1363,7 +1383,7 @@ namespace container_internal {
             n->set_position(0);
             n->set_start(0);
             n->set_count(0);
-            n->set_max_count(max_count);
+            n->set_max_count((field_type)max_count);
             phmap::container_internal::SanitizerPoisonMemoryRegion(
                 n->slot(0), max_count * sizeof(slot_type));
             return n;
@@ -1951,7 +1971,7 @@ namespace container_internal {
         node_type *allocate(const size_type size) {
             return reinterpret_cast<node_type *>(
                 phmap::container_internal::Allocate<node_type::Alignment()>(
-                    mutable_allocator(), size));
+                    mutable_allocator(), (size_t)size));
         }
 
         // Node creation/deletion routines.
@@ -1976,7 +1996,7 @@ namespace container_internal {
         // Deallocates a node of a certain size in bytes using the allocator.
         void deallocate(const size_type size, node_type *node) {
             phmap::container_internal::Deallocate<node_type::Alignment()>(
-                mutable_allocator(), node, size);
+                mutable_allocator(), node, (size_t)size);
         }
 
         void delete_internal_node(node_type *node) {
@@ -2116,7 +2136,7 @@ namespace container_internal {
             value_destroy(i, alloc);
         }
         value_init(i, alloc, std::forward<Args>(args)...);
-        set_count(count() + 1);
+        set_count((field_type)(count() + 1));
 
         if (!leaf() && count() > i + 1) {
             for (int j = count(); j > i + 1; --j) {
@@ -2141,10 +2161,10 @@ namespace container_internal {
 
     template <typename P>
     inline void btree_node<P>::remove_values_ignore_children(
-        const int i, const int to_erase, allocator_type *alloc) {
+        int i, size_type to_erase, allocator_type *alloc) {
         params_type::move(alloc, slot(i + to_erase), slot(count()), slot(i));
         value_destroy_n(count() - to_erase, to_erase, alloc);
-        set_count(count() - to_erase);
+        set_count((field_type)(count() - to_erase));
     }
 
     template <typename P>
@@ -2187,8 +2207,8 @@ namespace container_internal {
         }
 
         // Fixup the counts on the left and right nodes.
-        set_count(count() + to_move);
-        right->set_count(right->count() - to_move);
+        set_count((field_type)(count() + to_move));
+        right->set_count((field_type)(right->count() - to_move));
     }
 
     template <typename P>
@@ -2266,8 +2286,8 @@ namespace container_internal {
         }
 
         // Fixup the counts on the left and right nodes.
-        set_count(count() - to_move);
-        right->set_count(right->count() + to_move);
+        set_count((field_type)(count() - to_move));
+        right->set_count((field_type)(right->count() + to_move));
     }
 
     template <typename P>
@@ -2281,13 +2301,13 @@ namespace container_internal {
         // more values on the right node. If we're inserting at the end of the
         // right node then bias the split to put more values on the left node.
         if (insert_position == 0) {
-            dest->set_count(count() - 1);
+            dest->set_count((field_type)(count() - 1));
         } else if (insert_position == kNodeValues) {
             dest->set_count(0);
         } else {
-            dest->set_count(count() / 2);
+            dest->set_count((field_type)(count() / 2));
         }
-        set_count(count() - dest->count());
+        set_count((field_type)(count() - dest->count()));
         assert(count() >= 1);
 
         // Move values from the left sibling to the right sibling.
@@ -2297,7 +2317,7 @@ namespace container_internal {
         value_destroy_n(count(), dest->count(), alloc);
 
         // The split key is the largest value in the left sibling.
-        set_count(count() - 1);
+        set_count((field_type)(count() - 1));
         parent()->emplace_value(position(), alloc, slot(count()));
         value_destroy(count(), alloc);
         parent()->init_child(position() + 1, dest);
@@ -2334,7 +2354,7 @@ namespace container_internal {
         }
 
         // Fixup the counts on the src and dest nodes.
-        set_count(1 + count() + src->count());
+        set_count((field_type)(1 + count() + src->count()));
         src->set_count(0);
 
         // Remove the value on the parent node.
@@ -3790,8 +3810,9 @@ namespace container_internal {
 
 
     // ----------------------------------------------------------------------
-    template <typename Key, typename Compare = std::less<Key>,
-              typename Alloc = std::allocator<Key>>
+    //  btree_set - default values in phmap_fwd_decl.h
+    // ----------------------------------------------------------------------
+    template <typename Key, typename Compare, typename Alloc>
     class btree_set : public container_internal::btree_set_container<
         container_internal::btree<container_internal::set_params<
             Key, Compare, Alloc, /*TargetNodeSize=*/ 256, /*Multi=*/ false>>> 
@@ -3846,8 +3867,9 @@ namespace container_internal {
     }
 
     // ----------------------------------------------------------------------
-    template <typename Key, typename Compare = std::less<Key>,
-              typename Alloc = std::allocator<Key>>
+    //  btree_multiset - default values in phmap_fwd_decl.h
+    // ----------------------------------------------------------------------
+    template <typename Key, typename Compare,  typename Alloc>
         class btree_multiset : public container_internal::btree_multiset_container<
         container_internal::btree<container_internal::set_params<
              Key, Compare, Alloc, /*TargetNodeSize=*/ 256, /*Multi=*/ true>>> 
@@ -3903,8 +3925,9 @@ namespace container_internal {
 
 
     // ----------------------------------------------------------------------
-    template <typename Key, typename Value, typename Compare = std::less<Key>,
-              typename Alloc = std::allocator<std::pair<const Key, Value>>>
+    //  btree_map - default values in phmap_fwd_decl.h
+    // ----------------------------------------------------------------------
+    template <typename Key, typename Value, typename Compare,  typename Alloc>
         class btree_map : public container_internal::btree_map_container<
         container_internal::btree<container_internal::map_params<
              Key, Value, Compare, Alloc, /*TargetNodeSize=*/ 256, /*Multi=*/ false>>> 
@@ -3961,8 +3984,9 @@ namespace container_internal {
     }
 
     // ----------------------------------------------------------------------
-    template <typename Key, typename Value, typename Compare = std::less<Key>,
-              typename Alloc = std::allocator<std::pair<const Key, Value>>>
+    //  btree_multimap - default values in phmap_fwd_decl.h
+    // ----------------------------------------------------------------------
+    template <typename Key, typename Value, typename Compare, typename Alloc>
         class btree_multimap : public container_internal::btree_multimap_container<
         container_internal::btree<container_internal::map_params<
               Key, Value, Compare, Alloc, /*TargetNodeSize=*/ 256, /*Multi=*/ true>>> 
@@ -4018,5 +4042,10 @@ namespace container_internal {
 
 
 }  // namespace btree
+
+#ifdef _MSC_VER
+     #pragma warning(pop)  
+#endif
+
 
 #endif  // PHMAP_BTREE_BTREE_CONTAINER_H_

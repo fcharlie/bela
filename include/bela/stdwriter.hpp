@@ -23,6 +23,8 @@ inline ssize_t FPrintF(FILE *out, const wchar_t *fmt) {
   return StdWrite(out, str);
 }
 std::wstring FileTypeName(FILE *file);
+bool IsTerminal(FILE *file);
+uint32_t TerminalWidth();
 } // namespace bela
 
 #endif

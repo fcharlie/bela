@@ -65,6 +65,38 @@ bool IsCygwinPipe(HANDLE hFile) {
   return true;
 }
 
+inline bool EnableVirtualTerminal(HANDLE hFile) {
+  DWORD dwMode = 0;
+  if (!GetConsoleMode(hFile, &dwMode)) {
+    return false;
+  }
+  dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+  if (!SetConsoleMode(hFile, dwMode)) {
+    return false;
+  }
+  return true;
+}
+
+ConsoleMode GetConsoleModeEx(HANDLE hFile) {
+  if (hFile == nullptr || hFile == INVALID_HANDLE_VALUE) {
+    return ConsoleMode::File;
+  }
+  auto ft = GetFileType(hFile);
+  if (ft == FILE_TYPE_DISK) {
+    return ConsoleMode::File;
+  }
+  if (ft != FILE_TYPE_CHAR) {
+    if (IsCygwinPipe(hFile)) {
+      ConsoleMode::PTY; // cygwin is pipe
+    }
+    return ConsoleMode::File; // cygwin is pipe
+  }
+  if (EnableVirtualTerminal(hFile)) {
+    return ConsoleMode::ConPTY;
+  }
+  return ConsoleMode::Conhost;
+}
+
 static inline ssize_t WriteToTTY(FILE *out, std::wstring_view sv) {
   auto s = bela::ToNarrow(sv);
   return static_cast<ssize_t>(fwrite(s.data(), 1, s.size(), out));
@@ -92,6 +124,7 @@ public:
     return a;
   }
   std::wstring FileTypeName(FILE *file) const;
+  bool IsTerminal(FILE *file) const;
   ssize_t StdWriteConsole(HANDLE hFile, std::wstring_view sv,
                           ConsoleMode cm) const {
     if (cm == ConsoleMode::Conhost) {
@@ -108,6 +141,8 @@ public:
     }
     return WriteToTTY(out, sv);
   }
+  HANDLE Stdout() const { return hStdout; }
+  HANDLE Stderr() const { return hStderr; }
 
 private:
   ConsoleMode om;
@@ -118,37 +153,38 @@ private:
   Adapter() { Initialize(); }
 };
 
-inline bool EnableVirtualTerminal(HANDLE hFile) {
-  DWORD dwMode = 0;
-  if (!GetConsoleMode(hFile, &dwMode)) {
-    return false;
+uint32_t TerminalWidth() {
+  switch (GetConsoleModeEx(Adapter::instance().Stderr())) {
+  case ConsoleMode::Conhost:
+    [[fallthrough]];
+  case ConsoleMode::ConPTY: {
+    CONSOLE_SCREEN_BUFFER_INFO bi;
+    if (GetConsoleScreenBufferInfo(Adapter::instance().Stderr(), &bi) != TRUE) {
+      return 80;
+    }
+    return bi.dwSize.X;
   }
-  dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-  if (!SetConsoleMode(hFile, dwMode)) {
-    return false;
+  case ConsoleMode::File:
+    return 80;
+  default:
+    break;
   }
-  return true;
+  // FIXME: cannot detect mintty terminal width (not cygwin process)
+  // https://wiki.archlinux.org/index.php/working_with_the_serial_console#Resizing_a_terminal
+  // write escape string detect col
+  // result like ';120R'
+  return 80;
 }
 
-ConsoleMode GetConsoleModeEx(HANDLE hFile) {
-  //
-  if (hFile == nullptr || hFile == INVALID_HANDLE_VALUE) {
-    return ConsoleMode::File;
+bool Adapter::IsTerminal(FILE *file) const {
+  if (file == stdout) {
+    return om != ConsoleMode::File;
   }
-  auto ft = GetFileType(hFile);
-  if (ft == FILE_TYPE_DISK) {
-    return ConsoleMode::File;
+  if (file == stderr) {
+    return om != ConsoleMode::File;
   }
-  if (ft != FILE_TYPE_CHAR) {
-    if (IsCygwinPipe(hFile)) {
-      ConsoleMode::PTY; // cygwin is pipe
-    }
-    return ConsoleMode::File; // cygwin is pipe
-  }
-  if (EnableVirtualTerminal(hFile)) {
-    return ConsoleMode::ConPTY;
-  }
-  return ConsoleMode::Conhost;
+  auto hFile = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
+  return GetConsoleModeEx(hFile) != ConsoleMode::File;
 }
 
 void Adapter::Initialize() {
@@ -218,6 +254,11 @@ ssize_t StdWrite(FILE *out, std::wstring_view msg) {
 
 std::wstring FileTypeName(FILE *file) {
   return Adapter::instance().FileTypeName(file);
+}
+
+bool IsTerminal(FILE *file) {
+  // fd IsTerminal
+  return Adapter::instance().IsTerminal(file);
 }
 
 } // namespace bela

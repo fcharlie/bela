@@ -41,13 +41,15 @@ bool IsCygwinPipe(HANDLE hFile) {
   if (pvv.size() < 5) {
     return false;
   }
-  constexpr std::wstring_view cygprefix = L"\\cygwin";
-  constexpr std::wstring_view msysprefix = L"\\msys";
+  constexpr std::wstring_view cyglikeprefix[] = {
+      L"\\msys", L"\\cygwin", L"\\Device\\NamedPipe\\msys",
+      L"\\Device\\NamedPipe\\cygwin"};
   constexpr std::wstring_view ptyprefix = L"pty";
   constexpr std::wstring_view pipeto = L"to";
   constexpr std::wstring_view pipefrom = L"from";
   constexpr std::wstring_view master = L"master";
-  if (pvv[0] != cygprefix && pvv[0] != msysprefix) {
+  if (std::find(std::begin(cyglikeprefix), std::end(cyglikeprefix), pvv[0]) ==
+      std::end(cyglikeprefix)) {
     return false;
   }
   if (pvv[1].empty()) {

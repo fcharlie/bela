@@ -127,19 +127,19 @@ public:
   }
   std::wstring FileTypeName(FILE *file) const;
   bool IsTerminal(FILE *file) const;
-  ssize_t StdWriteConsole(HANDLE hFile, std::wstring_view sv,
+  ssize_t FileWriteConsole(HANDLE hFile, std::wstring_view sv,
                           ConsoleMode cm) const {
     if (cm == ConsoleMode::Conhost) {
       return BelaWriteAnsi(hFile, sv);
     }
     return WriteToConsole(hFile, sv);
   }
-  ssize_t StdWrite(FILE *out, std::wstring_view sv) const {
+  ssize_t FileWrite(FILE *out, std::wstring_view sv) const {
     if (out == stderr && IsToConsole(em)) {
-      return StdWriteConsole(hStderr, sv, em);
+      return FileWriteConsole(hStderr, sv, em);
     }
     if (out == stdout && IsToConsole(om)) {
-      return StdWriteConsole(hStdout, sv, om);
+      return FileWriteConsole(hStdout, sv, om);
     }
     return WriteToTTY(out, sv);
   }
@@ -250,8 +250,8 @@ std::wstring Adapter::FileTypeName(FILE *file) const {
   return FileTypeModeName(file);
 }
 
-ssize_t StdWrite(FILE *out, std::wstring_view msg) {
-  return Adapter::instance().StdWrite(out, msg);
+ssize_t FileWrite(FILE *out, std::wstring_view msg) {
+  return Adapter::instance().FileWrite(out, msg);
 }
 
 std::wstring FileTypeName(FILE *file) {

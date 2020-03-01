@@ -8,7 +8,7 @@ int wmain(int argc, wchar_t **argv) {
     return 1;
   }
   bela::error_code ec;
-  auto pm = bela::PESimpleDetailsAze(argv[1], ec);
+  auto pm = bela::pe::Analyze(argv[1], ec);
   if (!pm) {
     bela::FPrintF(stderr, L"Unable parse pe file: %s\n", ec.message);
     return 1;

@@ -114,7 +114,6 @@ inline std::wstring DllName(MemView mv, LPVOID nh, ULONG nva) {
 
 // TODO resolve PE file resources include 'VersionInfo'
 
-
 inline std::wstring ClrMessage(MemView mv, LPVOID nh, ULONG clrva) {
   auto va = BelaImageRvaToVa((PIMAGE_NT_HEADERS)nh, (LPVOID)mv.data(), clrva,
                              nullptr);
@@ -140,8 +139,8 @@ inline std::wstring ClrMessage(MemView mv, LPVOID nh, ULONG clrva) {
 }
 
 template <typename H = IMAGE_NT_HEADERS64>
-std::optional<Attributes> InternalAze(bela::MemView mv, const H *nh,
-                                      bela::error_code &ec) {
+std::optional<Attributes> ExposeInternal(bela::MemView mv, const H *nh,
+                                         bela::error_code &ec) {
   Attributes pm;
   pm.machine = static_cast<Machine>(bela::swaple(nh->FileHeader.Machine));
   pm.characteristics = bela::swaple(nh->FileHeader.Characteristics);
@@ -212,8 +211,7 @@ std::optional<Attributes> InternalAze(bela::MemView mv, const H *nh,
   return std::make_optional<Attributes>(std::move(pm));
 }
 
-std::optional<Attributes> Analyze(std::wstring_view file,
-                                  bela::error_code &ec) {
+std::optional<Attributes> Expose(std::wstring_view file, bela::error_code &ec) {
   constexpr size_t peminsize =
       sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32);
   bela::MapView mapview;
@@ -237,11 +235,11 @@ std::optional<Attributes> Analyze(std::wstring_view file,
   }
   switch (bela::swaple(nh->OptionalHeader.Magic)) {
   case IMAGE_NT_OPTIONAL_HDR64_MAGIC:
-    return InternalAze(mv, reinterpret_cast<const IMAGE_NT_HEADERS64 *>(nh),
-                       ec);
+    return ExposeInternal(mv, reinterpret_cast<const IMAGE_NT_HEADERS64 *>(nh),
+                          ec);
   case IMAGE_NT_OPTIONAL_HDR32_MAGIC:
-    return InternalAze(mv, reinterpret_cast<const IMAGE_NT_HEADERS32 *>(nh),
-                       ec);
+    return ExposeInternal(mv, reinterpret_cast<const IMAGE_NT_HEADERS32 *>(nh),
+                          ec);
   case IMAGE_ROM_OPTIONAL_HDR_MAGIC: {
     // Not implemented
   } break;

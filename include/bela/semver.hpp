@@ -8,22 +8,10 @@
 #include <cstdint>
 #include <cstddef>
 #include <limits>
-#include <iosfwd>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
-
-// Allow to disable exceptions.
-#if (defined(__cpp_exceptions) || defined(__EXCEPTIONS) ||                     \
-     defined(_CPPUNWIND)) &&                                                   \
-    !defined(SEMVER_NOEXCEPTION)
-#include <stdexcept>
-#define __SEMVER_THROW(exception) throw exception
-#else
-#include <cstdlib>
-#define __SEMVER_THROW(exception) std::abort()
-#endif
 
 namespace bela::semver {
 enum struct prerelease : std::uint8_t {
@@ -210,12 +198,12 @@ struct version {
 
   constexpr version(std::string_view str)
       : version(0, 0, 0, prerelease::none, 0) {
-    from_string(str);
+    from_string_noexcept(str);
   }
 
   constexpr version(std::wstring_view str)
       : version(0, 0, 0, prerelease::none, 0) {
-    from_string(str);
+    from_string_noexcept(str);
   }
 
   constexpr version() = default;
@@ -249,17 +237,15 @@ struct version {
   [[nodiscard]] std::wstring to_wstring() const {
     auto str = std::wstring(chars_length(), '\0');
     if (!to_chars(str.data(), str.data() + str.length())) {
-      __SEMVER_THROW(std::invalid_argument{
-          "semver::version::to_string() invalid version."});
+      return L"";
     }
     return str;
   }
 
-  [[nodiscard]] std::string to_string() const {
+      [[nodiscard]] std::string to_string() const {
     auto str = std::string(chars_length(), '\0');
     if (!to_chars(str.data(), str.data() + str.length())) {
-      __SEMVER_THROW(std::invalid_argument{
-          "semver::version::to_string() invalid version."});
+      return "";
     }
     return str;
   }
@@ -311,18 +297,6 @@ struct version {
 
   constexpr bool from_string_noexcept(std::wstring_view str) noexcept {
     return from_string_noexcept_t(str);
-  }
-
-  constexpr void from_string(std::string_view str) {
-    if (!from_string_noexcept_t(str)) {
-      __SEMVER_THROW(std::invalid_argument{"invalid version"});
-    }
-  }
-
-  constexpr void from_string(std::wstring_view str) {
-    if (!from_string_noexcept_t(str)) {
-      __SEMVER_THROW(std::invalid_argument{"invalid version"});
-    }
   }
 
   [[nodiscard]] constexpr int compare(const version &other) const noexcept {
@@ -386,10 +360,6 @@ constexpr bool operator<=(const version &lhs, const version &rhs) noexcept {
   return lhs.compare(rhs) <= 0;
 }
 
-inline std::ostream &operator<<(std::ostream &os, const version &v) {
-  return os << v.to_string();
-}
-
 constexpr version operator""_version(const char *str, std::size_t size) {
   return version{std::string_view{str, size}};
 }
@@ -411,8 +381,6 @@ from_string_noexcept(std::wstring_view str) noexcept {
   }
   return std::nullopt;
 }
-constexpr version from_string(std::string_view str) { return version{str}; }
-constexpr version from_string(std::wstring_view str) { return version{str}; }
 
 } // namespace bela::semver
 

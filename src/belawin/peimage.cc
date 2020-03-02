@@ -110,6 +110,11 @@ inline std::wstring DllName(MemView mv, LPVOID nh, ULONG nva) {
   return fromascii(name);
 }
 
+// https://docs.microsoft.com/zh-cn/previous-versions/ms809762(v=msdn.10)#pe-file-resources
+
+// TODO resolve PE file resources include 'VersionInfo'
+
+
 inline std::wstring ClrMessage(MemView mv, LPVOID nh, ULONG clrva) {
   auto va = BelaImageRvaToVa((PIMAGE_NT_HEADERS)nh, (LPVOID)mv.data(), clrva,
                              nullptr);
@@ -141,14 +146,14 @@ std::optional<Attributes> InternalAze(bela::MemView mv, const H *nh,
   pm.machine = static_cast<Machine>(bela::swaple(nh->FileHeader.Machine));
   pm.characteristics = bela::swaple(nh->FileHeader.Characteristics);
   pm.dllcharacteristics = bela::swaple(nh->OptionalHeader.DllCharacteristics);
-  pm.osver = {bela::swaple(nh->OptionalHeader.MajorOperatingSystemVersion),
-              bela::swaple(nh->OptionalHeader.MinorOperatingSystemVersion)};
+  pm.osver.Update(nh->OptionalHeader.MajorOperatingSystemVersion,
+                  nh->OptionalHeader.MinorOperatingSystemVersion);
   pm.subsystem =
       static_cast<Subsytem>(bela::swaple(nh->OptionalHeader.Subsystem));
-  pm.linkver = {bela::swaple(nh->OptionalHeader.MajorLinkerVersion),
-                bela::swaple(nh->OptionalHeader.MinorLinkerVersion)};
-  pm.imagever = {bela::swaple(nh->OptionalHeader.MajorImageVersion),
-                 bela::swaple(nh->OptionalHeader.MinorImageVersion)};
+  pm.linkver.Update(nh->OptionalHeader.MajorLinkerVersion,
+                    nh->OptionalHeader.MinorLinkerVersion);
+  pm.imagever.Update(nh->OptionalHeader.MajorImageVersion,
+                     nh->OptionalHeader.MinorImageVersion);
   auto clre =
       &(nh->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER]);
   auto end = mv.data() + mv.size();

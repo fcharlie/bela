@@ -6,6 +6,7 @@
 #include <string>
 #include <optional>
 #include "base.hpp"
+#include "endian.hpp"
 
 namespace bela::pe {
 enum class Machine : uint16_t {
@@ -63,13 +64,37 @@ enum class Subsytem : uint16_t {
 struct VersionPair {
   uint16_t major{0};
   uint16_t minor{0};
-  std::wstring ToString() const { return bela::StringCat(major, L".", minor); }
+  template <typename T> void Update(T major_, T minor_) {
+    major = bela::swaple(major_);
+    minor = bela::swaple(minor_);
+  }
+  std::wstring Str() const { return bela::StringCat(major, L".", minor); }
 };
+
+// https://docs.microsoft.com/en-us/windows/win32/api/winver/nf-winver-getfileversioninfoexw
+// https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-getfileversioninfosizeexw
+// https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-verqueryvaluew
+// version.lib
+struct VersionInfo {
+  std::wstring CompanyName;
+  std::wstring FileDescription;
+  std::wstring FileVersion;
+  std::wstring InternalName;
+  std::wstring Language;
+  std::wstring LegalCopyright;
+  std::wstring LegalTrademarks;
+  std::wstring OriginalFilename;
+  std::wstring ProductVersion;
+};
+
+std::optional<VersionInfo> LookupVersionInfo(std::wstring_view file,
+                                             bela::error_code &ec);
 
 struct Attributes {
   std::wstring clrmsg;
   std::vector<std::wstring> depends; // depends dll
   std::vector<std::wstring> delays;  // delay load library
+  std::optional<VersionInfo> version;
   VersionPair osver;
   VersionPair linkver;
   VersionPair imagever;

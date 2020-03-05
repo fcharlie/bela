@@ -17,6 +17,72 @@ size_t memsearch(const wchar_t *begin, const wchar_t *end, int ch) {
   return npos;
 }
 
+constexpr std::wstring_view env_wstrings[] = {
+    L"ALLUSERSPROFILE",
+    L"APPDATA",
+    L"CommonProgramFiles",
+    L"CommonProgramFiles(x86)",
+    L"CommonProgramW6432",
+    L"COMPUTERNAME",
+    L"ComSpec",
+    L"HOMEDRIVE",
+    L"HOMEPATH",
+    L"LOCALAPPDATA",
+    L"LOGONSERVER",
+    L"NUMBER_OF_PROCESSORS",
+    L"OS",
+    L"PATHEXT",
+    L"PROCESSOR_ARCHITECTURE",
+    L"PROCESSOR_ARCHITEW6432",
+    L"PROCESSOR_IDENTIFIER",
+    L"PROCESSOR_LEVEL",
+    L"PROCESSOR_REVISION",
+    L"ProgramData",
+    L"ProgramFiles",
+    L"ProgramFiles(x86)",
+    L"ProgramW6432",
+    L"PROMPT",
+    L"PSModulePath",
+    L"PUBLIC",
+    L"SystemDrive",
+    L"SystemRoot",
+    L"TEMP",
+    L"TMP",
+    L"USERDNSDOMAIN",
+    L"USERDOMAIN",
+    L"USERDOMAIN_ROAMINGPROFILE",
+    L"USERNAME",
+    L"USERPROFILE",
+    L"windir",
+    // Enables proxy information to be passed to Curl, the underlying download
+    // library in cmake.exe
+    L"http_proxy",
+    L"https_proxy",
+    // Enables find_package(CUDA) and enable_language(CUDA) in CMake
+    L"CUDA_PATH",
+    L"CUDA_PATH_V9_0",
+    L"CUDA_PATH_V9_1",
+    L"CUDA_PATH_V10_0",
+    L"CUDA_PATH_V10_1",
+    L"CUDA_TOOLKIT_ROOT_DIR",
+    // Environmental variable generated automatically by CUDA after installation
+    L"NVCUDASAMPLES_ROOT",
+    // Enables find_package(Vulkan) in CMake. Environmental variable generated
+    // by Vulkan SDK installer
+    L"VULKAN_SDK",
+    // Enable targeted Android NDK
+    L"ANDROID_NDK_HOME",
+};
+
+inline bool ExistsEnv(std::wstring_view k) {
+  for (const auto s : env_wstrings) {
+    if (bela::EqualsIgnoreCase(s, k)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace env_internal
 
 // https://docs.microsoft.com/en-us/windows/desktop/api/processenv/nf-processenv-expandenvironmentstringsw
@@ -261,6 +327,11 @@ std::wstring Derivator::Encode() const {
   }
   ne.push_back('\0');
   return ne;
+}
+
+std::wstring Derivator::CleanupEnv(std::wstring_view prependpath) const {
+  //
+  return L"";
 }
 
 // DerivatorMT support MultiThreading

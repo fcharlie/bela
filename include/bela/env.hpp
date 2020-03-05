@@ -147,6 +147,8 @@ public:
   // ExpandEnv
   bool ExpandEnv(std::wstring_view raw, std::wstring &w, bool strict = false);
   std::wstring Encode();
+  // CleanupEnv create cleanup env. you can use bela::env::JoinEnv create it.
+  std::wstring CleanupEnv(std::wstring_view prependpath) const;
 
 private:
   bool AppendEnv(std::wstring_view key, std::wstring &s);

@@ -330,8 +330,50 @@ std::wstring Derivator::Encode() const {
 }
 
 std::wstring Derivator::CleanupEnv(std::wstring_view prependpath) const {
-  //
-  return L"";
+  LPWCH envs{nullptr};
+  auto deleter = bela::finally([&] {
+    if (envs) {
+      FreeEnvironmentStringsW(envs);
+      envs = nullptr;
+    }
+  });
+  envs = ::GetEnvironmentStringsW();
+  if (envs == nullptr) {
+    return L"";
+  }
+  auto systemroot = bela::GetEnv(L"SystemRoot");
+  auto newpath = bela::StringCat(
+      L"Path=", prependpath, L";", systemroot, L"\\System32;", systemroot, L";",
+      systemroot, L"\\Wbem;", systemroot, L"\\WindowsPowerShell\\v1.0\\");
+  std::wstring ne;
+  for (wchar_t const *lastch{envs}; *lastch != '\0'; ++lastch) {
+    const auto len = ::wcslen(lastch);
+    const std::wstring_view entry{lastch, len};
+    const auto pos = entry.find(L'=');
+    if (pos == std::wstring_view::npos) {
+      lastch += len;
+      continue;
+    }
+    auto key = entry.substr(0, pos);
+    if (!env_internal::ExistsEnv(key)) {
+      continue;
+    }
+    if (auto it = envb.find(key); it == envb.end()) {
+      ne.append(lastch).push_back(L'\0');
+    }
+    lastch += len;
+  }
+  for (const auto &[name, value] : envb) {
+    if (bela::EqualsIgnoreCase(name, L"Path")) {
+      bela::StrAppend(&newpath, L";", value);
+      continue;
+    }
+    ne.append(name).push_back(L'=');
+    ne.append(value).push_back(L'\0');
+  }
+  ne.append(newpath).push_back(L'\0');
+  ne.push_back('\0');
+  return ne;
 }
 
 // DerivatorMT support MultiThreading
@@ -449,6 +491,53 @@ std::wstring DerivatorMT::Encode() {
     ne.append(name).push_back(L'=');
     ne.append(value).push_back(L'\0');
   }
+  ne.push_back('\0');
+  return ne;
+}
+
+std::wstring DerivatorMT::CleanupEnv(std::wstring_view prependpath) const {
+  LPWCH envs{nullptr};
+  auto deleter = bela::finally([&] {
+    if (envs) {
+      FreeEnvironmentStringsW(envs);
+      envs = nullptr;
+    }
+  });
+  envs = ::GetEnvironmentStringsW();
+  if (envs == nullptr) {
+    return L"";
+  }
+  auto systemroot = bela::GetEnv(L"SystemRoot");
+  auto newpath = bela::StringCat(
+      L"Path=", prependpath, L";", systemroot, L"\\System32;", systemroot, L";",
+      systemroot, L"\\Wbem;", systemroot, L"\\WindowsPowerShell\\v1.0\\");
+  std::wstring ne;
+  for (wchar_t const *lastch{envs}; *lastch != '\0'; ++lastch) {
+    const auto len = ::wcslen(lastch);
+    const std::wstring_view entry{lastch, len};
+    const auto pos = entry.find(L'=');
+    if (pos == std::wstring_view::npos) {
+      lastch += len;
+      continue;
+    }
+    auto key = entry.substr(0, pos);
+    if (!env_internal::ExistsEnv(key)) {
+      continue;
+    }
+    if (auto it = envb.find(key); it == envb.end()) {
+      ne.append(lastch).push_back(L'\0');
+    }
+    lastch += len;
+  }
+  for (const auto &[name, value] : envb) {
+    if (bela::EqualsIgnoreCase(name, L"Path")) {
+      bela::StrAppend(&newpath, L";", value);
+      continue;
+    }
+    ne.append(name).push_back(L'=');
+    ne.append(value).push_back(L'\0');
+  }
+  ne.append(newpath).push_back(L'\0');
   ne.push_back('\0');
   return ne;
 }

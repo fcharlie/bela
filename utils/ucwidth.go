@@ -17,7 +17,7 @@ type rrange struct {
 }
 
 func generate(out io.Writer, v string, arr []rrange) {
-	fmt.Fprintf(out, "constexpr const interval %s[] = {\n\t", v)
+	fmt.Fprintf(out, "[[maybe_unused]] constexpr const interval %s[] = {\n\t", v)
 	for i := 0; i < len(arr); i++ {
 		fmt.Fprintf(out, "{0x%04X, 0x%04X},", arr[i].lo, arr[i].hi)
 		if i < len(arr)-1 {
@@ -174,7 +174,7 @@ namespace bela::runewidth {
 struct interval {
 	char32_t first;
 	char32_t last;
-  };
+};
 
 `
 
@@ -186,7 +186,7 @@ func main() {
 	defer f.Close()
 
 	fmt.Fprint(f, header)
-
+	fmt.Fprintf(f, "// clang-format off\n")
 	resp, err := http.Get("https://unicode.org/Public/13.0.0/ucd/EastAsianWidth.txt")
 	if err != nil {
 		log.Fatal(err)
@@ -202,5 +202,5 @@ func main() {
 	defer resp.Body.Close()
 
 	emoji(f, resp.Body)
-	fmt.Fprintf(f, "\n} // namespace bela::runewidth\n")
+	fmt.Fprintf(f, "\n}\n// clang-format on\n// namespace bela::runewidth\n")
 }

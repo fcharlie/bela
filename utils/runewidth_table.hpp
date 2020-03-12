@@ -1,11 +1,12 @@
 // ------------ codegen by ucwidth.go ------------
 namespace bela::runewidth {
 struct interval {
-	char32_t first;
-	char32_t last;
-  };
+  char32_t first;
+  char32_t last;
+};
 
-constexpr const interval combining[] = {
+// clang-format off
+[[maybe_unused]] constexpr const interval combining[] = {
 	{0x0300, 0x036F}, {0x0483, 0x0489}, {0x07EB, 0x07F3},
 	{0x0C00, 0x0C00}, {0x0C04, 0x0C04}, {0x0D00, 0x0D01},
 	{0x135D, 0x135F}, {0x1A7F, 0x1A7F}, {0x1AB0, 0x1AC0},
@@ -23,7 +24,7 @@ constexpr const interval combining[] = {
 	{0x1E8D0, 0x1E8D6},
 };
 
-constexpr const interval doublewidth[] = {
+[[maybe_unused]] constexpr const interval doublewidth[] = {
 	{0x1100, 0x115F}, {0x231A, 0x231B}, {0x2329, 0x232A},
 	{0x23E9, 0x23EC}, {0x23F0, 0x23F0}, {0x23F3, 0x23F3},
 	{0x25FD, 0x25FE}, {0x2614, 0x2615}, {0x2648, 0x2653},
@@ -65,7 +66,7 @@ constexpr const interval doublewidth[] = {
 	{0x20000, 0x2FFFD}, {0x30000, 0x3FFFD},
 };
 
-constexpr const interval ambiguous[] = {
+[[maybe_unused]] constexpr const interval ambiguous[] = {
 	{0x00A1, 0x00A1}, {0x00A4, 0x00A4}, {0x00A7, 0x00A8},
 	{0x00AA, 0x00AA}, {0x00AD, 0x00AE}, {0x00B0, 0x00B4},
 	{0x00B6, 0x00BA}, {0x00BC, 0x00BF}, {0x00C6, 0x00C6},
@@ -127,11 +128,11 @@ constexpr const interval ambiguous[] = {
 	{0x1F18F, 0x1F190}, {0x1F19B, 0x1F1AC}, {0xE0100, 0xE01EF},
 	{0xF0000, 0xFFFFD}, {0x100000, 0x10FFFD},
 };
-constexpr const interval notassigned[] = {
+[[maybe_unused]] constexpr const interval notassigned[] = {
 	{0x27E6, 0x27ED}, {0x2985, 0x2986},
 };
 
-constexpr const interval neutral[] = {
+[[maybe_unused]] constexpr const interval neutral[] = {
 	{0x0000, 0x001F}, {0x007F, 0x00A0}, {0x00A9, 0x00A9},
 	{0x00AB, 0x00AB}, {0x00B5, 0x00B5}, {0x00BB, 0x00BB},
 	{0x00C0, 0x00C5}, {0x00C7, 0x00CF}, {0x00D1, 0x00D6},
@@ -410,7 +411,7 @@ constexpr const interval neutral[] = {
 	{0xE0001, 0xE0001}, {0xE0020, 0xE007F},
 };
 
-constexpr const interval emoji[] = {
+[[maybe_unused]] constexpr const interval emoji[] = {
 	{0x203C, 0x203C}, {0x2049, 0x2049}, {0x2122, 0x2122},
 	{0x2139, 0x2139}, {0x2194, 0x2199}, {0x21A9, 0x21AA},
 	{0x231A, 0x231B}, {0x2328, 0x2328}, {0x2388, 0x2388},
@@ -439,4 +440,6 @@ constexpr const interval emoji[] = {
 	{0x1FC00, 0x1FFFD},
 };
 
-} // namespace bela::runewidth
+}
+// clang-format on
+// namespace bela::runewidth

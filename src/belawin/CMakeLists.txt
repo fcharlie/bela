@@ -2,6 +2,7 @@
 
 add_library(belawin STATIC
   env.cc
+  io.cc
   path.cc
   realpath.cc
   reparsepoint.cc

@@ -48,3 +48,12 @@ target_link_libraries(env2
 target_link_libraries(envps
   belawin
 )
+
+
+add_executable(writefile_test
+  writefile.cc
+)
+
+target_link_libraries(writefile_test
+  belawin
+)

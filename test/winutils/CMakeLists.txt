@@ -57,3 +57,11 @@ add_executable(writefile_test
 target_link_libraries(writefile_test
   belawin
 )
+
+add_executable(process_test
+  process.cc
+)
+
+target_link_libraries(process_test
+  belawin
+)

@@ -10,6 +10,31 @@ namespace bela {
 using facv_t = std::vector<FileAttributePair>;
 using ReparseBuffer = REPARSE_DATA_BUFFER;
 
+bool FileReparser::FileDeviceLookup(std::wstring_view file,
+                                    bela::error_code &ec) {
+  if (buffer = reinterpret_cast<REPARSE_DATA_BUFFER *>(
+          HeapAlloc(GetProcessHeap(), 0, MAXIMUM_REPARSE_DATA_BUFFER_SIZE));
+      buffer == nullptr) {
+    ec = bela::make_system_error_code();
+    return false;
+  }
+  if (FileHandle = CreateFileW(
+          src.data(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+          nullptr, OPEN_EXISTING,
+          FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
+      FileHandle == INVALID_HANDLE_VALUE) {
+    ec = bela::make_system_error_code();
+    return false;
+  }
+  if (DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, nullptr, 0, buffer,
+                      MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &len,
+                      nullptr) != TRUE) {
+    ec = bela::make_system_error_code();
+    return false;
+  }
+  return true;
+}
+
 struct Distributor {
   DWORD tag;
   bool (*imp)(const ReparseBuffer *, facv_t &, bela::error_code &);
@@ -179,6 +204,50 @@ bool ReparsePoint::Analyze(std::wstring_view file, bela::error_code &ec) {
       L"TAG", bela::StringCat(L"0x", bela::Hex(tagvalue, bela::kZeroPad8)));
   values.emplace_back(L"Description", L"UNKNOWN");
   return true;
+}
+
+bool LookupAppExecLinkTarget(std::wstring_view src, AppExecTarget &ae) {
+  FileReparser reparser;
+  bela::error_code ec;
+  if (!reparser.FileDeviceLookup(file, ec)) {
+    return false;
+  }
+  if (reparser.buffer->ReparseTag != IO_REPARSE_TAG_APPEXECLINK) {
+    return false;
+  }
+  LPWSTR szString =
+      (LPWSTR)reparser.buffer->AppExecLinkReparseBuffer.StringList;
+  std::vector<LPWSTR> strv;
+  for (ULONG i = 0; i < reparser.buffer->AppExecLinkReparseBuffer.StringCount;
+       i++) {
+    strv.push_back(szString);
+    szString += wcslen(szString) + 1;
+  }
+  if (!strv.empty()) {
+    ae.pkid = strv[0];
+  }
+  if (strv.size() > 1) {
+    ae.appuserid = strv[1];
+  }
+  if (strv.size() > 2) {
+    ae.target = strv[2];
+  }
+  return true;
+}
+
+std::optional<std::wstring> RealPathEx(std::wstring_view src,
+                                       bela::error_code &ec) {
+  FileReparser reparser;
+  if (!reparser.FileDeviceLookup(file, ec)) {
+    return std::nullopt;
+  }
+  switch (reparser.buffer->ReparseTag) {
+  case IO_REPARSE_TAG_APPEXECLINK:
+    break;
+  default:
+    break;
+  }
+  return std::nullopt;
 }
 
 } // namespace bela

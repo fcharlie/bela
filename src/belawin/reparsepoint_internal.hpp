@@ -238,7 +238,7 @@
 // #define FSCTL_GET_REPARSE_POINT_EX                                             \
 //   CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 260, METHOD_BUFFERED,                      \
 //            FILE_SPECIAL_ACCESS) // REPARSE_DATA_BUFFER_EX
-#endif                          /* (_WIN32_WINNT >= _WIN32_WINNT_WIN10_RS1) */
+#endif /* (_WIN32_WINNT >= _WIN32_WINNT_WIN10_RS1) */
 
 typedef struct _REPARSE_DATA_BUFFER {
   ULONG ReparseTag;         // Reparse tag type
@@ -386,5 +386,23 @@ typedef struct _REPARSE_DATA_BUFFER_EX {
 
 #define REPARSE_DATA_BUFFER_HEADER_SIZE                                        \
   FIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer)
+
+struct FileReparser {
+  FileReparser() = default;
+  FileReparser(const FileReparser &) = delete;
+  FileReparser &operator=(const FileReparser &) = delete;
+  ~FileReparser() {
+    if (FileHandle != INVALID_HANDLE_VALUE) {
+      CloseHandle(FileHandle);
+    }
+    if (buffer != nullptr) {
+      HeapFree(GetProcessHeap(), 0, buffer);
+    }
+  }
+  REPARSE_DATA_BUFFER *buffer{nullptr};
+  HANDLE FileHandle{INVALID_HANDLE_VALUE};
+  DWORD len{0};
+  bool FileDeviceLookup(std::wstring_view file, bela::error_code &ec);
+};
 
 #endif

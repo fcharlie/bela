@@ -120,8 +120,12 @@ enum class FileAttribute : DWORD {
 // std::wstring_view ::data() must Null-terminated string
 bool PathExists(std::wstring_view src, FileAttribute fa = FileAttribute::None);
 bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe);
+// Use GetFinalPathNameByHandleW
 std::optional<std::wstring> RealPath(std::wstring_view src,
                                      bela::error_code &ec);
+// RealPathEx parse reparsepoint
+std::optional<std::wstring> RealPathEx(std::wstring_view src,
+                                       bela::error_code &ec);
 struct AppExecTarget {
   std::wstring pkid;
   std::wstring appuserid;

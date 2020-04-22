@@ -131,7 +131,7 @@ struct AppExecTarget {
   std::wstring appuserid;
   std::wstring target;
 };
-bool LookupAppExecLinkTarget(std::wstring_view src, AppExecTarget &ae);
+bool LookupAppExecLinkTarget(std::wstring_view src, AppExecTarget &target);
 std::optional<std::wstring> Executable(bela::error_code &ec);
 inline std::optional<std::wstring> ExecutableParent(bela::error_code &ec) {
   auto exe = bela::Executable(ec);

@@ -9,6 +9,8 @@
 #include <windows.h>
 #endif
 
+// protocol
+// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/c8e77b37-3909-4fe6-a4ea-2b9d423b1ee4
 #ifndef IO_REPARSE_TAG_MOUNT_POINT
 #define IO_REPARSE_TAG_MOUNT_POINT (0xA0000003L) // winnt
 #endif
@@ -170,6 +172,8 @@
 #endif
 
 #ifndef IO_REPARSE_TAG_LX_SYMLINK
+// Used by the Windows Subsystem for Linux (WSL) to represent a UNIX symbolic
+// link. Server-side interpretation only, not meaningful over the wire.
 #define IO_REPARSE_TAG_LX_SYMLINK (0xA000001DL) // Linux subsystem symbolic link
 #endif
 
@@ -190,23 +194,46 @@
 #endif
 
 #ifndef IO_REPARSE_TAG_PROJFS_TOMBSTONE
+// Used by the Windows Projected File System filter, for files managed by a user
+// mode provider such as VFS for Git. Server-side interpretation only, not
+// meaningful over the wire.
 #define IO_REPARSE_TAG_PROJFS_TOMBSTONE (0xA0000022L) // winnt
 #endif
 
-#ifndef IO_REPARSE_TAG_AF_UNIX               // AF_UNIX
+#ifndef IO_REPARSE_TAG_AF_UNIX // AF_UNIX
+// Used by the Windows Subsystem for Linux (WSL) to represent a UNIX domain
+// socket. Server-side interpretation only, not meaningful over the wire.
 #define IO_REPARSE_TAG_AF_UNIX (0x80000023L) // winnt
 #endif
 
 #ifndef IO_REPARSE_TAG_LX_FIFO
+// Used by the Windows Subsystem for Linux (WSL) to represent a UNIX FIFO (named
+// pipe). Server-side interpretation only, not meaningful over the wire.
 #define IO_REPARSE_TAG_LX_FIFO (0x80000024L) // Linux subsystem FIFO
 #endif
 
 #ifndef IO_REPARSE_TAG_LX_CHR
+// Used by the Windows Subsystem for Linux (WSL) to represent a UNIX character
+// special file. Server-side interpretation only, not meaningful over the wire.
 #define IO_REPARSE_TAG_LX_CHR (0x80000025L) // Linux  subsystem character device
 #endif
 
 #ifndef IO_REPARSE_TAG_LX_BLK
+// Used by the Windows Subsystem for Linux (WSL) to represent a UNIX block
+// special file. Server-side interpretation only, not meaningful over the wire.
 #define IO_REPARSE_TAG_LX_BLK (0x80000026L) // Linux Subsystem block device
+#endif
+
+#ifndef IO_REPARSE_TAG_WCI_LINK
+// Used by the Windows Container Isolation filter. Server-side interpretation
+// only, not meaningful over the wire.
+#define IO_REPARSE_TAG_WCI_LINK (0xA0000027L)
+#endif
+
+#ifndef IO_REPARSE_TAG_WCI_LINK_1
+// Used by the Windows Container Isolation filter. Server-side interpretation
+// only, not meaningful over the wire.
+#define IO_REPARSE_TAG_WCI_LINK_1 (0xA0001027L)
 #endif
 
 // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ntifs/ns-ntifs-_reparse_data_buffer
@@ -387,6 +414,7 @@ typedef struct _REPARSE_DATA_BUFFER_EX {
 #define REPARSE_DATA_BUFFER_HEADER_SIZE                                        \
   FIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer)
 
+namespace bela {
 struct FileReparser {
   FileReparser() = default;
   FileReparser(const FileReparser &) = delete;
@@ -404,5 +432,5 @@ struct FileReparser {
   DWORD len{0};
   bool FileDeviceLookup(std::wstring_view file, bela::error_code &ec);
 };
-
+} // namespace bela
 #endif

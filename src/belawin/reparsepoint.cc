@@ -3,6 +3,7 @@
 #include <bela/path.hpp>
 #include <bela/repasepoint.hpp>
 #include <bela/strcat.hpp>
+#include <bela/match.hpp>
 #include <winioctl.h>
 #include "reparsepoint_internal.hpp"
 

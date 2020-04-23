@@ -11,6 +11,24 @@ namespace bela {
 using facv_t = std::vector<FileAttributePair>;
 using ReparseBuffer = REPARSE_DATA_BUFFER;
 
+struct FileReparser {
+  FileReparser() = default;
+  FileReparser(const FileReparser &) = delete;
+  FileReparser &operator=(const FileReparser &) = delete;
+  ~FileReparser() {
+    if (FileHandle != INVALID_HANDLE_VALUE) {
+      CloseHandle(FileHandle);
+    }
+    if (buffer != nullptr) {
+      HeapFree(GetProcessHeap(), 0, buffer);
+    }
+  }
+  REPARSE_DATA_BUFFER *buffer{nullptr};
+  HANDLE FileHandle{INVALID_HANDLE_VALUE};
+  DWORD len{0};
+  bool FileDeviceLookup(std::wstring_view file, bela::error_code &ec);
+};
+
 bool FileReparser::FileDeviceLookup(std::wstring_view file,
                                     bela::error_code &ec) {
   if (buffer = reinterpret_cast<REPARSE_DATA_BUFFER *>(
@@ -36,39 +54,6 @@ bool FileReparser::FileDeviceLookup(std::wstring_view file,
     }
     return false;
   }
-  return true;
-}
-
-bool FileReparser::FileFinalPath(std::wstring &path, bela::error_code &ec) {
-  if (FileHandle == INVALID_HANDLE_VALUE) {
-    ec = bela::make_error_code(1, L"file not opened");
-    return false;
-  }
-  auto len = GetFinalPathNameByHandleW(FileHandle, nullptr, 0, VOLUME_NAME_DOS);
-  if (len == 0) {
-    ec = bela::make_system_error_code();
-    return false;
-  }
-  std::wstring buf;
-  buf.resize(len);
-  if (len = GetFinalPathNameByHandleW(FileHandle, buf.data(), len,
-                                      VOLUME_NAME_DOS);
-      len == 0) {
-    ec = bela::make_system_error_code();
-    return false;
-  }
-  buf.resize(len);
-  constexpr std::wstring_view uncprefix = L"\\\\?\\UNC\\";
-  constexpr std::wstring_view longprefix = L"\\\\?\\";
-  if (bela::StartsWithIgnoreCase(buf, uncprefix)) {
-    path.assign(buf.substr(uncprefix.size()));
-    return true;
-  }
-  if (bela::StartsWith(buf, longprefix)) {
-    path.assign(buf.substr(longprefix.size()));
-    return true;
-  }
-  path.assign(std::move(buf));
   return true;
 }
 
@@ -308,10 +293,11 @@ std::optional<std::wstring> RealPathEx(std::wstring_view src,
     ec = bela::make_error_code(1, L"BAD: unable decode AppLinkExec");
     return std::nullopt;
   case IO_REPARSE_TAG_SYMLINK:
-    if (std::wstring target; DecodeSymbolicLink(reparser.buffer, target)) {
-      return std::make_optional(std::move(target));
+    CloseHandle(reparser.FileHandle);
+    reparser.FileHandle = INVALID_HANDLE_VALUE;
+    if (auto target = bela::RealPath(src, ec); target) {
+      return std::make_optional(std::move(*target));
     }
-    ec = bela::make_error_code(1, L"BAD: unable decode SymbolicLink");
     return std::nullopt;
   case IO_REPARSE_TAG_GLOBAL_REPARSE:
     if (std::wstring target; DecodeSymbolicLink(reparser.buffer, target)) {

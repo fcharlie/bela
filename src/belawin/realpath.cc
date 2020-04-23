@@ -89,27 +89,20 @@ std::optional<std::wstring> RealPath(std::wstring_view src,
 std::optional<std::wstring> Executable(bela::error_code &ec) {
   std::wstring buffer;
   buffer.resize(MAX_PATH);
-  auto X = GetModuleFileNameW(nullptr, buffer.data(), MAX_PATH);
-  if (X == 0) {
-    ec = bela::make_system_error_code();
-    return std::nullopt;
+  for (;;) {
+    const auto blen = buffer.size();
+    auto n =
+        GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(blen));
+    if (n == 0) {
+      ec = bela::make_system_error_code();
+      return std::nullopt;
+    }
+    buffer.resize(n);
+    if (n < static_cast<DWORD>(blen)) {
+      break;
+    }
   }
-  if (X <= MAX_PATH) {
-    buffer.resize(X);
-    return std::make_optional(std::move(buffer));
-  }
-  buffer.resize(X);
-  auto Y = GetModuleFileNameW(nullptr, buffer.data(), X);
-  if (Y == 0) {
-    ec = bela::make_system_error_code();
-    return std::nullopt;
-  }
-  if (Y <= X) {
-    buffer.resize(Y);
-    return std::make_optional(std::move(buffer));
-  }
-  ec = bela::make_error_code(-1, L"Executable unable allocate more buffer");
-  return std::nullopt;
+  return std::make_optional(std::move(buffer));
 }
 
 std::optional<std::wstring> ExecutableFinalPath(bela::error_code &ec) {

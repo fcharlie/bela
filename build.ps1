@@ -68,6 +68,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Test code
-cmd /c mklink hello.exe "$workdir\test\appexeclink\appexeclink_test.exe"
-./hello.exe test 2>&1
-./hello.exe test\appexeclink\appexeclink_test.exe 2>&1
+# cmd /c mklink hello.exe "$workdir\test\appexeclink\appexeclink_test.exe"
+# ./hello.exe test 2>&1
+# ./hello.exe test\appexeclink\appexeclink_test.exe 2>&1

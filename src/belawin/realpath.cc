@@ -32,11 +32,13 @@ std::optional<std::wstring> RealPath(std::wstring_view src,
     return std::nullopt;
   }
   buf.resize(len);
-  if (bela::StartsWith(buf, L"\\\\?\\UNC\\")) {
-    return std::make_optional(buf.substr(7));
+  constexpr std::wstring_view uncprefix = L"\\\\?\\UNC\\";
+  constexpr std::wstring_view longprefix = L"\\\\?\\";
+  if (bela::StartsWithIgnoreCase(buf, uncprefix)) {
+    return std::make_optional(buf.substr(uncprefix.size()));
   }
-  if (bela::StartsWith(buf, L"\\\\?\\")) {
-    return std::make_optional(buf.substr(4));
+  if (bela::StartsWith(buf, longprefix)) {
+    return std::make_optional(buf.substr(longprefix.size()));
   }
   return std::make_optional(std::move(buf));
 }

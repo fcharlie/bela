@@ -38,6 +38,39 @@ bool FileReparser::FileDeviceLookup(std::wstring_view file,
   return true;
 }
 
+bool FileReparser::FileFinalPath(std::wstring &path, bela::error_code &ec) {
+  if (FileHandle == INVALID_HANDLE_VALUE) {
+    ec = bela::make_error_code(1, L"file not opened");
+    return false;
+  }
+  auto len = GetFinalPathNameByHandleW(FileHandle, nullptr, 0, VOLUME_NAME_DOS);
+  if (len == 0) {
+    ec = bela::make_system_error_code();
+    return false;
+  }
+  std::wstring buf;
+  buf.resize(len);
+  if (len = GetFinalPathNameByHandleW(FileHandle, buf.data(), len,
+                                      VOLUME_NAME_DOS);
+      len == 0) {
+    ec = bela::make_system_error_code();
+    return false;
+  }
+  buf.resize(len);
+  constexpr std::wstring_view uncprefix = L"\\\\?\\UNC\\";
+  constexpr std::wstring_view longprefix = L"\\\\?\\";
+  if (bela::StartsWithIgnoreCase(buf, uncprefix)) {
+    path.assign(buf.substr(uncprefix.size()));
+    return true;
+  }
+  if (bela::StartsWith(buf, longprefix)) {
+    path.assign(buf.substr(longprefix.size()));
+    return true;
+  }
+  path.assign(std::move(buf));
+  return true;
+}
+
 inline bool DecodeAppLink(const REPARSE_DATA_BUFFER *buffer,
                           AppExecTarget &target) {
   LPWSTR szString = (LPWSTR)buffer->AppExecLinkReparseBuffer.StringList;

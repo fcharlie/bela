@@ -414,6 +414,8 @@ typedef struct _REPARSE_DATA_BUFFER_EX {
 #define REPARSE_DATA_BUFFER_HEADER_SIZE                                        \
   FIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer)
 
+#include <bela/base.hpp>
+
 namespace bela {
 struct FileReparser {
   FileReparser() = default;
@@ -431,6 +433,7 @@ struct FileReparser {
   HANDLE FileHandle{INVALID_HANDLE_VALUE};
   DWORD len{0};
   bool FileDeviceLookup(std::wstring_view file, bela::error_code &ec);
+  bool FileFinalPath(std::wstring &path, bela::error_code &ec);
 };
 } // namespace bela
 #endif

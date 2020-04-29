@@ -8,8 +8,8 @@
 // Official repository: https://github.com/boostorg/static_string
 //
 
-#ifndef BELA_STATIC_STRING_STATIC_STRING_HPP
-#define BELA_STATIC_STRING_STATIC_STRING_HPP
+#ifndef BELA_STATIC_STRING_HPP
+#define BELA_STATIC_STRING_HPP
 
 // Can we have deduction guides?
 #if __cpp_deduction_guides >= 201703L
@@ -35,46 +35,11 @@
 #define BELA_STATIC_STRING_IS_CONST_EVAL std::is_constant_evaluated()
 #elif BELA_STATIC_STRING_HAS_BUILTIN(__builtin_is_constant_evaluated)
 #define BELA_STATIC_STRING_IS_CONST_EVAL __builtin_is_constant_evaluated()
-#else
-#define BELA_STATIC_STRING_IS_CONST_EVAL
-#endif
-
-// Check for an attribute
-#if defined(__has_cpp_attribute)
-#define BELA_STATIC_STRING_CHECK_FOR_ATTR(x) __has_cpp_attribute(x)
-#elif defined(__has_attribute)
-#define BELA_STATIC_STRING_CHECK_FOR_ATTR(x) __has_attribute(x)
-#else
-#define BELA_STATIC_STRING_CHECK_FOR_ATTR(x) 0
-#endif
-
-// Decide which attributes we can use
-#define BELA_STATIC_STRING_UNLIKELY
-#define BELA_STATIC_STRING_NO_NORETURN
-// unlikely
-#if BELA_STATIC_STRING_CHECK_FOR_ATTR(unlikely)
-#undef BELA_STATIC_STRING_UNLIKELY
-#define BELA_STATIC_STRING_UNLIKELY [[unlikely]]
-#endif
-
-// _MSVC_LANG isn't avaliable until after VS2015
-#if defined(_MSC_VER) && _MSC_VER < 1910L
-// The constexpr support in this version is effectively that of
-// c++11, so we treat it as such
-#define BELA_STATIC_STRING_STANDARD_VERSION 201103L
-#elif defined(_MSVC_LANG)
-// MSVC doesn't define __cplusplus by default
-#define BELA_STATIC_STRING_STANDARD_VERSION _MSVC_LANG
-#else
-#define BELA_STATIC_STRING_STANDARD_VERSION __cplusplus
 #endif
 
 // Decide what level of constexpr we can use
-#if BELA_STATIC_STRING_STANDARD_VERSION >= 202002L
-#define BELA_STATIC_STRING_CPP20_CONSTEXPR constexpr
-#define BELA_STATIC_STRING_CPP20
-#else
-#define BELA_STATIC_STRING_CPP20_CONSTEXPR
+#if (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus > 202002L
+#define BELA_LANG_CPP20
 #endif
 
 #include <cassert>
@@ -124,7 +89,7 @@ template <std::size_t N>
 using static_u32string =
     basic_static_string<N, char32_t, std::char_traits<char32_t>>;
 
-#ifdef BELA_STATIC_STRING_CPP20
+#ifdef BELA_LANG_CPP20
 template <std::size_t N>
 using static_u8string =
     basic_static_string<N, char8_t, std::char_traits<char8_t>>;
@@ -295,7 +260,7 @@ public:
   }
 
   size_type size_ = 0;
-#ifdef BELA_STATIC_STRING_CPP20
+#ifdef BELA_LANG_CPP20
   value_type data_[N + 1];
 #else
   value_type data_[N + 1]{};
@@ -788,7 +753,7 @@ public:
       Construct an empty string
   */
   constexpr basic_static_string() noexcept {
-#ifdef BELA_STATIC_STRING_CPP20
+#ifdef BELA_LANG_CPP20
     term();
 #endif
   }

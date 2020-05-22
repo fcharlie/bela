@@ -1,5 +1,5 @@
 #include <bela/process.hpp>
-#include <bela/stdwriter.hpp>
+#include <bela/terminal.hpp>
 
 int wmain(int argc, wchar_t **argv) {
   bela::process::Process p;

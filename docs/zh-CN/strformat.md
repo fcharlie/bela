@@ -59,8 +59,6 @@ int wmain(int argc, wchar_t **argv) {
   auto s = bela::StringCat(L"Look emoji -->", em, L" U: ",
                            static_cast<uint32_t>(em));
   bela::FPrintF(stderr, L"emoji test %c %s\n", em, s);
-  bela::FPrintF(stderr, L"hStderr Mode: %s hStdin Mode: %s\n",
-                bela::FileTypeName(stderr), bela::FileTypeName(stdin));
   return 0;
 }
 

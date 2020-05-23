@@ -95,7 +95,7 @@ bool TerminalSize(HANDLE fd, terminal_size &sz) {
     return false;
   }
   sz.columns = bi.dwSize.X;
-  sz.columns = bi.dwSize.Y;
+  sz.rows = bi.dwSize.Y;
   return true;
 }
 bool TerminalSize(FILE *fd, terminal_size &sz) {

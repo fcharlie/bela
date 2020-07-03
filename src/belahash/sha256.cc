@@ -17,24 +17,24 @@ constexpr const uint32_t k256[64] = {
     //
 };
 
-void hasher::init256() {
+void Hasher::Initialize(HashLength hl_) {
+  hl = hl_;
   static constexpr const uint32_t SHA256_H0[8] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
                                                   0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
-  length = 0;
-  digest_length = sha256_hash_size;
-  memcpy(this->hash, SHA256_H0, sizeof(this->hash));
-}
-
-void hasher::init224() {
   /* Initial values from FIPS 180-3. These words were obtained by taking
    * bits from 33th to 64th of the fractional parts of the square
    * roots of ninth through sixteenth prime numbers. */
   static constexpr const unsigned SHA224_H0[8] = {0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
                                                   0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4};
-
+  if (hl == SHA256) {
+    length = 0;
+    digest_length = sha256_hash_size;
+    memcpy(this->hash, SHA256_H0, sizeof(this->hash));
+    return;
+  }
   length = 0;
   digest_length = sha224_hash_size;
   memcpy(this->hash, SHA224_H0, sizeof(this->hash));
 }
 
-} // namespace bela::hash
+} // namespace bela::hash::sha256

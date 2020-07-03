@@ -51,88 +51,6 @@ void blake3_hasher_finalize_seek(const blake3_hasher *self, uint64_t seek, uint8
 #endif
 
 namespace bela::hash {
-namespace sha256 {
-constexpr auto sha256_block_size = 64;
-constexpr auto sha256_hash_size = 32;
-constexpr auto sha224_hash_size = 28;
-
-struct hasher {
-  uint32_t message[16];   /* 512-bit buffer for leftovers */
-  uint64_t length;        /* number of processed bytes */
-  uint32_t hash[8];       /* 256-bit algorithm internal hashing state */
-  uint32_t digest_length; /* length of the algorithm digest in bytes */
-  void init224();
-  void init256();
-  void update(const void *input, size_t input_len);
-  void finalize(uint8_t *out, size_t out_len);
-};
-} // namespace sha256
-namespace sha512 {
-constexpr auto sha512_block_size = 128;
-constexpr auto sha512_hash_size = 64;
-constexpr auto sha384_hash_size = 48;
-
-struct hasher {
-  uint64_t message[16];   /* 1024-bit buffer for leftovers */
-  uint64_t length;        /* number of processed bytes */
-  uint64_t hash[8];       /* 512-bit algorithm internal hashing state */
-  uint32_t digest_length; /* length of the algorithm digest in bytes */
-  void init384();
-  void init512();
-  void update(const void *input, size_t input_len);
-  void finalize(uint8_t *out, size_t out_len);
-};
-} // namespace sha512
-
-namespace sha3 {
-constexpr auto sha3_224_hash_size = 28;
-constexpr auto sha3_256_hash_size = 32;
-constexpr auto sha3_384_hash_size = 48;
-constexpr auto sha3_512_hash_size = 64;
-constexpr auto sha3_max_permutation_size = 25;
-constexpr auto sha3_max_rate_in_qwords = 24;
-
-struct hasher {
-  /* 1600 bits algorithm hashing state */
-  uint64_t hash[sha3_max_permutation_size];
-  /* 1536-bit buffer for leftovers */
-  uint64_t message[sha3_max_rate_in_qwords];
-  /* count of bytes in the message[] buffer */
-  uint32_t rest;
-  /* size of a message block processed at once */
-  uint32_t block_size;
-  void init224();
-  void init256();
-  void init384();
-  void init512();
-  void update(const void *input, size_t input_len);
-  void finalize(uint8_t *out, size_t out_len);
-};
-} // namespace sha3
-namespace blake3 {
-struct hasher {
-  blake3_hasher h;
-  inline void init() { //
-    blake3_hasher_init(&h);
-  }
-  inline void init_keyed(const uint8_t key[BLAKE3_KEY_LEN]) { //
-    blake3_hasher_init_keyed(&h, key);
-  }
-  inline void init_derive_key(const char *context) { //
-    blake3_hasher_init_derive_key(&h, context);
-  }
-  inline void update(const void *input, size_t input_len) {
-    blake3_hasher_update(&h, input, input_len);
-  }
-  inline void finalize(uint8_t *out, size_t out_len) { //
-    blake3_hasher_finalize(&h, out, out_len);
-  }
-  inline void finalize_seek(uint64_t seek, uint8_t *out, size_t out_len) { //
-    blake3_hasher_finalize_seek(&h, seek, out, out_len);
-  }
-};
-} // namespace blake3
-
 inline void HashEncode(const uint8_t *b, size_t len, std::wstring &hv) {
   hv.resize(len * 2);
   auto p = hv.data();
@@ -143,6 +61,86 @@ inline void HashEncode(const uint8_t *b, size_t len, std::wstring &hv) {
     *p++ = hex[val & 0xf];
   }
 }
+
+namespace sha256 {
+constexpr auto sha256_block_size = 64;
+constexpr auto sha256_hash_size = 32;
+constexpr auto sha224_hash_size = 28;
+enum HashLength { SHA224, SHA256 };
+struct Hasher {
+  uint32_t message[16];   /* 512-bit buffer for leftovers */
+  uint64_t length;        /* number of processed bytes */
+  uint32_t hash[8];       /* 256-bit algorithm internal hashing state */
+  uint32_t digest_length; /* length of the algorithm digest in bytes */
+  HashLength hl;
+  void Initialize(HashLength hl_ = SHA256);
+  void Update(const void *input, size_t input_len);
+  void Finalize(uint8_t *out, size_t out_len);
+};
+} // namespace sha256
+namespace sha512 {
+constexpr auto sha512_block_size = 128;
+constexpr auto sha512_hash_size = 64;
+constexpr auto sha384_hash_size = 48;
+enum HashLength { SHA384, SHA512 };
+struct Hasher {
+  uint64_t message[16];   /* 1024-bit buffer for leftovers */
+  uint64_t length;        /* number of processed bytes */
+  uint64_t hash[8];       /* 512-bit algorithm internal hashing state */
+  uint32_t digest_length; /* length of the algorithm digest in bytes */
+  HashLength hl;
+  void Initialize(HashLength hl_ = SHA512);
+  void Update(const void *input, size_t input_len);
+  void Finalize(uint8_t *out, size_t out_len);
+};
+} // namespace sha512
+
+namespace sha3 {
+constexpr auto sha3_224_hash_size = 28;
+constexpr auto sha3_256_hash_size = 32;
+constexpr auto sha3_384_hash_size = 48;
+constexpr auto sha3_512_hash_size = 64;
+constexpr auto sha3_max_permutation_size = 25;
+constexpr auto sha3_max_rate_in_qwords = 24;
+enum HashLength { SHA3224, SHA3256, SHA3384, SHA3512 };
+struct Hasher {
+  /* 1600 bits algorithm hashing state */
+  uint64_t hash[sha3_max_permutation_size];
+  /* 1536-bit buffer for leftovers */
+  uint64_t message[sha3_max_rate_in_qwords];
+  /* count of bytes in the message[] buffer */
+  uint32_t rest;
+  /* size of a message block processed at once */
+  uint32_t block_size;
+  HashLength hl;
+  void Initialize(HashLength hl_ = SHA3256);
+  void Update(const void *input, size_t input_len);
+  void Finalize(uint8_t *out, size_t out_len);
+};
+} // namespace sha3
+namespace blake3 {
+struct Hasher {
+  blake3_hasher h;
+  inline void Init() { //
+    blake3_hasher_init(&h);
+  }
+  inline void InitKeyed(const uint8_t key[BLAKE3_KEY_LEN]) { //
+    blake3_hasher_init_keyed(&h, key);
+  }
+  inline void InitDeriveKey(const char *context) { //
+    blake3_hasher_init_derive_key(&h, context);
+  }
+  inline void Update(const void *input, size_t input_len) {
+    blake3_hasher_update(&h, input, input_len);
+  }
+  inline void Finalize(uint8_t *out, size_t out_len) { //
+    blake3_hasher_finalize(&h, out, out_len);
+  }
+  inline void FinalizeSeek(uint64_t seek, uint8_t *out, size_t out_len) { //
+    blake3_hasher_finalize_seek(&h, seek, out, out_len);
+  }
+};
+} // namespace blake3
 
 } // namespace bela::hash
 

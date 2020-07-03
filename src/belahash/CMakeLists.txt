@@ -20,4 +20,13 @@ add_library(belahash STATIC
   blake3/blake3.c
   blake3/blake3_dispatch.c
   blake3/blake3_portable.c
-  ${BLAKE3_SIMDSRC})
+  ${BLAKE3_SIMDSRC}
+)
+
+target_link_libraries(belahash
+  bela
+)
+
+if(BELA_ENABLE_LTO)
+  set_property(TARGET belahash PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()

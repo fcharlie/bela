@@ -45,7 +45,6 @@ void blake3_hasher_update(blake3_hasher *self, const void *input, size_t input_l
 void blake3_hasher_finalize(const blake3_hasher *self, uint8_t *out, size_t out_len);
 void blake3_hasher_finalize_seek(const blake3_hasher *self, uint64_t seek, uint8_t *out,
                                  size_t out_len);
-
 #ifdef __cplusplus
 }
 #endif
@@ -66,32 +65,56 @@ namespace sha256 {
 constexpr auto sha256_block_size = 64;
 constexpr auto sha256_hash_size = 32;
 constexpr auto sha224_hash_size = 28;
-enum HashLength { SHA224, SHA256 };
+enum class HashBits { SHA224 = 224, SHA256 = 256 };
 struct Hasher {
   uint32_t message[16];   /* 512-bit buffer for leftovers */
   uint64_t length;        /* number of processed bytes */
   uint32_t hash[8];       /* 256-bit algorithm internal hashing state */
   uint32_t digest_length; /* length of the algorithm digest in bytes */
-  HashLength hl;
-  void Initialize(HashLength hl_ = SHA256);
+  HashBits hb;
+  void Initialize(HashBits hb_ = HashBits::SHA256);
   void Update(const void *input, size_t input_len);
   void Finalize(uint8_t *out, size_t out_len);
+  std::wstring Finalize() {
+    uint8_t buf[sha256_hash_size];
+    std::wstring s;
+    if (hb == HashBits::SHA224) {
+      Finalize(buf, sha224_hash_size);
+      HashEncode(buf, sha224_hash_size, s);
+      return s;
+    }
+    Finalize(buf, sha256_hash_size);
+    HashEncode(buf, sha256_hash_size, s);
+    return s;
+  }
 };
 } // namespace sha256
 namespace sha512 {
 constexpr auto sha512_block_size = 128;
 constexpr auto sha512_hash_size = 64;
 constexpr auto sha384_hash_size = 48;
-enum HashLength { SHA384, SHA512 };
+enum class HashBits { SHA384 = 384, SHA512 = 512 };
 struct Hasher {
   uint64_t message[16];   /* 1024-bit buffer for leftovers */
   uint64_t length;        /* number of processed bytes */
   uint64_t hash[8];       /* 512-bit algorithm internal hashing state */
   uint32_t digest_length; /* length of the algorithm digest in bytes */
-  HashLength hl;
-  void Initialize(HashLength hl_ = SHA512);
+  HashBits hb;
+  void Initialize(HashBits hb_ = HashBits::SHA512);
   void Update(const void *input, size_t input_len);
   void Finalize(uint8_t *out, size_t out_len);
+  std::wstring Finalize() {
+    uint8_t buf[sha512_hash_size];
+    std::wstring s;
+    if (hb == HashBits::SHA384) {
+      Finalize(buf, sha384_hash_size);
+      HashEncode(buf, sha384_hash_size, s);
+      return s;
+    }
+    Finalize(buf, sha512_hash_size);
+    HashEncode(buf, sha512_hash_size, s);
+    return s;
+  }
 };
 } // namespace sha512
 
@@ -102,7 +125,7 @@ constexpr auto sha3_384_hash_size = 48;
 constexpr auto sha3_512_hash_size = 64;
 constexpr auto sha3_max_permutation_size = 25;
 constexpr auto sha3_max_rate_in_qwords = 24;
-enum HashLength { SHA3224, SHA3256, SHA3384, SHA3512 };
+enum class HashBits { SHA3224 = 224, SHA3256 = 256, SHA3384 = 384, SHA3512 = 512 };
 struct Hasher {
   /* 1600 bits algorithm hashing state */
   uint64_t hash[sha3_max_permutation_size];
@@ -112,22 +135,48 @@ struct Hasher {
   uint32_t rest;
   /* size of a message block processed at once */
   uint32_t block_size;
-  HashLength hl;
-  void Initialize(HashLength hl_ = SHA3256);
+  HashBits hb;
+  void Initialize(HashBits hb_ = HashBits::SHA3256);
   void Update(const void *input, size_t input_len);
   void Finalize(uint8_t *out, size_t out_len);
+  std::wstring Finalize() {
+    uint8_t buf[sha3_512_hash_size];
+    std::wstring s;
+    switch (hb) {
+    case HashBits::SHA3224:
+      Finalize(buf, sha3_224_hash_size);
+      HashEncode(buf, sha3_224_hash_size, s);
+      break;
+    case HashBits::SHA3256:
+      Finalize(buf, sha3_256_hash_size);
+      HashEncode(buf, sha3_256_hash_size, s);
+      break;
+    case HashBits::SHA3384:
+      Finalize(buf, sha3_384_hash_size);
+      HashEncode(buf, sha3_384_hash_size, s);
+      break;
+    case HashBits::SHA3512:
+      Finalize(buf, sha3_512_hash_size);
+      HashEncode(buf, sha3_512_hash_size, s);
+      break;
+    default:
+      break;
+    }
+    return s;
+  }
 };
 } // namespace sha3
+
 namespace blake3 {
 struct Hasher {
   blake3_hasher h;
-  inline void Init() { //
+  inline void Initialize() { //
     blake3_hasher_init(&h);
   }
-  inline void InitKeyed(const uint8_t key[BLAKE3_KEY_LEN]) { //
+  inline void InitializeKeyed(const uint8_t key[BLAKE3_KEY_LEN]) { //
     blake3_hasher_init_keyed(&h, key);
   }
-  inline void InitDeriveKey(const char *context) { //
+  inline void InitializeDeriveKey(const char *context) { //
     blake3_hasher_init_derive_key(&h, context);
   }
   inline void Update(const void *input, size_t input_len) {
@@ -138,6 +187,13 @@ struct Hasher {
   }
   inline void FinalizeSeek(uint64_t seek, uint8_t *out, size_t out_len) { //
     blake3_hasher_finalize_seek(&h, seek, out, out_len);
+  }
+  std::wstring Finalize() {
+    uint8_t buf[BLAKE3_OUT_LEN];
+    Finalize(buf, sizeof(buf));
+    std::wstring s;
+    HashEncode(buf, sizeof(buf), s);
+    return s;
   }
 };
 } // namespace blake3

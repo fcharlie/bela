@@ -1,4 +1,6 @@
-/* sha512.c - an implementation of SHA-384/512 hash functions
+/* 
+ *  Port from rhash. origin license:
+ * sha512.c - an implementation of SHA-384/512 hash functions
  * based on FIPS 180-3 (Federal Information Processing Standart).
  *
  * Copyright: 2010-2012 Aleksey Kravchenko <rhash.admin@gmail.com>

@@ -1,4 +1,6 @@
-/* sha256.c - an implementation of SHA-256/224 hash functions
+/* 
+ * Port from rhash. origin license:
+ * sha256.c - an implementation of SHA-256/224 hash functions
  * based on FIPS 180-3 (Federal Information Processing Standart).
  *
  * Copyright: 2010-2012 Aleksey Kravchenko <rhash.admin@gmail.com>

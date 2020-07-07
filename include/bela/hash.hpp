@@ -198,6 +198,29 @@ struct Hasher {
 };
 } // namespace blake3
 
+namespace sm3 {
+constexpr auto sm3_digest_length = 32;
+constexpr auto sm3_cblock = 64;
+constexpr auto sm3_lblock = sm3_cblock / 4;
+struct Hasher {
+  uint32_t A;
+  uint32_t B;
+  uint32_t C;
+  uint32_t D;
+  uint32_t E;
+  uint32_t F;
+  uint32_t G;
+  uint32_t H;
+  uint32_t Nl;
+  uint32_t Nh;
+  uint32_t data[sm3_lblock];
+  uint32_t num;
+  void Initialize();
+  void Update(const void *input, size_t input_len);
+  void Finalize(uint8_t *out, size_t out_len);
+};
+} // namespace sm3
+
 } // namespace bela::hash
 
 #endif

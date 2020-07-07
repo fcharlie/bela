@@ -200,24 +200,22 @@ struct Hasher {
 
 namespace sm3 {
 constexpr auto sm3_digest_length = 32;
-constexpr auto sm3_cblock = 64;
-constexpr auto sm3_lblock = sm3_cblock / 4;
+constexpr auto sm3_block_size = 64;
 struct Hasher {
-  uint32_t A;
-  uint32_t B;
-  uint32_t C;
-  uint32_t D;
-  uint32_t E;
-  uint32_t F;
-  uint32_t G;
-  uint32_t H;
-  uint32_t Nl;
-  uint32_t Nh;
-  uint32_t data[sm3_lblock];
-  uint32_t num;
+  uint32_t Nl{0};
+  uint32_t Nh{0};
+  uint32_t digest[8]; /*!< intermediate digest state  */
+  uint8_t block[64];  /*!< data block being processed */
   void Initialize();
   void Update(const void *input, size_t input_len);
   void Finalize(uint8_t *out, size_t out_len);
+  std::wstring Finalize() {
+    uint8_t buf[sm3_digest_length];
+    Finalize(buf, sizeof(buf));
+    std::wstring s;
+    HashEncode(buf, sizeof(buf), s);
+    return s;
+  }
 };
 } // namespace sm3
 

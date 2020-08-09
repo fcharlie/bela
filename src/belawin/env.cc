@@ -3,6 +3,7 @@
 #include <bela/base.hpp>
 #include <bela/env.hpp>
 #include <bela/strcat.hpp>
+#include <bela/path.hpp>
 
 namespace bela {
 namespace env_internal {
@@ -203,38 +204,32 @@ std::wstring_view resovle_shell_name(std::wstring_view s, size_t &off) {
   return s.substr(0, i);
 }
 
-bool os_expand_env(const std::wstring &key, std::wstring &value) {
-  auto len = GetEnvironmentVariableW(key.data(), nullptr, 0);
-  if (len == 0) {
-    return false;
+// Expand Env string to normal string only support  Unix style'${KEY}'
+bool Derivator::ExpandEnv(std::wstring_view raw, std::wstring &w, bool strict) const {
+  w.reserve(raw.size() * 2);
+  std::wstring osenv_;
+  size_t i = 0;
+  for (size_t j = 0; j < raw.size(); j++) {
+    if (raw[j] == '$' && j + 1 < raw.size()) {
+      w.append(raw.substr(i, j - i));
+      size_t off = 0;
+      auto name = resovle_shell_name(raw.substr(j + 1), off);
+      if (name.empty()) {
+        if (off == 0) {
+          w.push_back(raw[j]);
+        }
+      } else {
+        expandEnvValue(name, w, strict);
+      }
+      j += off;
+      i = j + 1;
+    }
   }
-  auto oldsize = value.size();
-  value.resize(oldsize + len);
-  len = GetEnvironmentVariableW(key.data(), value.data() + oldsize, len);
-  if (len == 0) {
-    value.resize(oldsize);
-    return false;
-  }
-  value.resize(oldsize + len);
+  w.append(raw.substr(i));
   return true;
 }
 
-template <typename ContainerT = Derivator::value_type>
-bool AddBashCompatibleT(int argc, wchar_t *const *argv, ContainerT &envb) {
-  for (int i = 0; i < argc; i++) {
-    envb.emplace(bela::AlphaNum(i).Piece(), argv[i]);
-  }
-  envb.emplace(L"$",
-               bela::AlphaNum(GetCurrentProcessId()).Piece()); // current process PID
-  envb.emplace(L"@", GetCommandLineW());                       // $@ -->cmdline
-  std::wstring userprofile;
-  if (os_expand_env(L"USERPROFILE", userprofile)) {
-    envb.emplace(L"HOME", userprofile);
-  }
-  return true;
-}
-
-template <typename ContainerT = Derivator::value_type> std::wstring MakeEnvT(ContainerT &envb) {
+std::wstring Derivator::MakeEnv() const {
   LPWCH envs{nullptr};
   auto deleter = bela::finally([&] {
     if (envs) {
@@ -269,8 +264,7 @@ template <typename ContainerT = Derivator::value_type> std::wstring MakeEnvT(Con
   return ne;
 }
 
-template <typename ContainerT = Derivator::value_type>
-std::wstring CleanupEnvT(std::wstring_view prepend_to_path, ContainerT &envb) {
+std::wstring Derivator::CleanupEnv(std::wstring_view prepend_to_path) const {
   LPWCH envs{nullptr};
   auto deleter = bela::finally([&] {
     if (envs) {
@@ -321,48 +315,148 @@ std::wstring CleanupEnvT(std::wstring_view prepend_to_path, ContainerT &envb) {
   return ne;
 }
 
-bool Derivator::AddBashCompatible(int argc, wchar_t *const *argv) {
-  return AddBashCompatibleT(argc, argv, envb);
-}
-
-bool Derivator::EraseEnv(std::wstring_view key) { return envb.erase(key) != 0; }
-
-bool Derivator::SetEnv(std::wstring_view key, std::wstring_view value, bool force) {
-  if (force) {
-    // envb[key] = value;
-    envb.insert_or_assign(key, value);
+bool cleanupPathExt(std::wstring_view pathext, std::vector<std::wstring> &exts) {
+  constexpr std::wstring_view defaultexts[] = {L".com", L".exe", L".bat", L".cmd"};
+  std::vector<std::wstring_view> exts_ =
+      bela::StrSplit(pathext, bela::ByChar(bela::env::Separator), bela::SkipEmpty()); //
+  if (exts_.empty()) {
+    exts.assign(std::begin(defaultexts), std::end(defaultexts));
     return true;
   }
-  return envb.emplace(key, value).second;
-}
-
-bool Derivator::PutEnv(std::wstring_view nv, bool force) {
-  auto pos = nv.find(L'=');
-  if (pos == std::wstring_view::npos) {
-    return SetEnv(nv, L"", force);
+  for (const auto &e : exts_) {
+    if (e.front() != '.') {
+      exts.emplace_back(bela::StringCat(L".", bela::AsciiStrToLower(e)));
+      continue;
+    }
+    exts.emplace_back(bela::AsciiStrToLower(e));
   }
-  return SetEnv(nv.substr(0, pos), nv.substr(pos + 1), force);
-}
-
-[[nodiscard]] std::wstring_view Derivator::GetEnv(std::wstring_view key) const {
-  auto it = envb.find(key);
-  if (it == envb.end()) {
-    return L"";
-  }
-  return it->second;
-}
-
-bool Derivator::AppendFromEnv(std::wstring_view key, std::wstring &s) const {
-  auto it = envb.find(key);
-  if (it == envb.end()) {
-    return false;
-  }
-  s.append(it->second);
   return true;
 }
 
-// Expand Env string to normal string only support  Unix style'${KEY}'
-bool Derivator::ExpandEnv(std::wstring_view raw, std::wstring &w, bool strict) const {
+inline bool HasExt(std::wstring_view file) {
+  if (auto pos = file.rfind(L'.'); pos != std::wstring_view::npos) {
+    return file.find_last_of(L":\\/") < pos;
+  }
+  return false;
+}
+
+bool FindExecutable(std::wstring_view file, const std::vector<std::wstring> &exts,
+                    std::wstring &p) {
+  if (HasExt(file) && PathFileIsExists(file)) {
+    p = file;
+    return true;
+  }
+  std::wstring newfile;
+  newfile.reserve(file.size() + 8);
+  newfile.assign(file);
+  auto rawsize = newfile.size();
+  for (const auto &e : exts) {
+    // rawsize always < newfile.size();
+    // std::char_traits::assign
+    newfile.resize(rawsize);
+    newfile.append(e);
+    if (PathFileIsExists(newfile)) {
+      p.assign(std::move(newfile));
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Simulator::InitializeEnv() {
+  LPWCH envs{nullptr};
+  auto deleter = bela::finally([&] {
+    if (envs) {
+      FreeEnvironmentStringsW(envs);
+      envs = nullptr;
+    }
+  });
+  envs = ::GetEnvironmentStringsW();
+  if (envs == nullptr) {
+    return false;
+  }
+  for (wchar_t const *lastch{envs}; *lastch != '\0'; ++lastch) {
+    const auto len = ::wcslen(lastch);
+    const std::wstring_view entry{lastch, len};
+    const auto pos = entry.find(L'=');
+    if (pos == std::wstring_view::npos) {
+      lastch += len;
+      continue;
+    }
+    auto key = entry.substr(0, pos);
+    auto val = entry.substr(pos + 1);
+    lastch += len;
+    if (bela::EqualsIgnoreCase(key, L"Path")) {
+      std::vector<std::wstring_view> paths_ =
+          bela::StrSplit(val, bela::ByChar(bela::env::Separator), bela::SkipEmpty());
+      for (const auto p : paths_) {
+        paths.emplace_back(bela::PathCat(p));
+      }
+      continue;
+    }
+    if (bela::EqualsIgnoreCase(key, L"PATHEXT")) {
+      cleanupPathExt(val, pathexts);
+      continue;
+    }
+    envmap.emplace(key, val);
+  }
+  return true;
+}
+
+bool Simulator::InitializeCleanupEnv() {
+  LPWCH envs{nullptr};
+  auto deleter = bela::finally([&] {
+    if (envs) {
+      FreeEnvironmentStringsW(envs);
+      envs = nullptr;
+    }
+  });
+  envs = ::GetEnvironmentStringsW();
+  if (envs == nullptr) {
+    return false;
+  }
+  for (wchar_t const *lastch{envs}; *lastch != '\0'; ++lastch) {
+    const auto len = ::wcslen(lastch);
+    const std::wstring_view entry{lastch, len};
+    const auto pos = entry.find(L'=');
+    if (pos == std::wstring_view::npos) {
+      lastch += len;
+      continue;
+    }
+    auto key = entry.substr(0, pos);
+    auto val = entry.substr(pos + 1);
+    lastch += len;
+    if (bela::EqualsIgnoreCase(key, L"PATHEXT")) {
+      cleanupPathExt(val, pathexts);
+      continue;
+    }
+    if (bela::env_internal::ExistsEnv(key)) {
+      envmap.emplace(key, val);
+    }
+  }
+  bela::MakePathEnv(paths);
+  return true;
+}
+
+[[nodiscard]] bool Simulator::LookupPath(std::wstring_view cmd, std::wstring &exe) const {
+  if (cmd.find_first_of(L":\\/") != std::wstring_view::npos) {
+    auto ncmd = bela::PathAbsolute(cmd);
+    return FindExecutable(ncmd, pathexts, exe);
+  }
+  auto cwdfile = bela::PathAbsolute(cmd);
+  if (FindExecutable(cwdfile, pathexts, exe)) {
+    return true;
+  }
+  for (auto p : paths) {
+    auto exefile = bela::StringCat(p, L"\\", cmd);
+    if (FindExecutable(exefile, pathexts, exe)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Simulator::ExpandEnv(std::wstring_view raw, std::wstring &w) const {
   w.reserve(raw.size() * 2);
   size_t i = 0;
   for (size_t j = 0; j < raw.size(); j++) {
@@ -375,10 +469,8 @@ bool Derivator::ExpandEnv(std::wstring_view raw, std::wstring &w, bool strict) c
           w.push_back(raw[j]);
         }
       } else {
-        if (!AppendFromEnv(name, w)) {
-          if (!strict) {
-            os_expand_env(std::wstring(name), w);
-          }
+        if (auto it = envmap.find(name); it != envmap.end()) {
+          w.append(it->second);
         }
       }
       j += off;
@@ -389,86 +481,48 @@ bool Derivator::ExpandEnv(std::wstring_view raw, std::wstring &w, bool strict) c
   return true;
 }
 
-std::wstring Derivator::MakeEnv() const { return MakeEnvT(envb); }
-
-std::wstring Derivator::CleanupEnv(std::wstring_view prependpath) const {
-  return CleanupEnvT(prependpath, envb);
-}
-
-// DerivatorMT support MultiThreading
-
-bool DerivatorMT::AddBashCompatible(int argc, wchar_t *const *argv) {
-  return AddBashCompatibleT(argc, argv, envb);
-}
-
-bool DerivatorMT::EraseEnv(std::wstring_view key) {
-  return envb.erase(key) != 0; /// Internal is thread safe
-}
-
-bool DerivatorMT::SetEnv(std::wstring_view key, std::wstring_view value, bool force) {
-  if (force) {
-    envb.insert_or_assign(key, value);
+bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe,
+                            const std::vector<std::wstring> &paths) {
+  std::vector<std::wstring> exts;
+  cleanupPathExt(bela::GetEnv(L"PATHEXT"), exts);
+  if (cmd.find_first_of(L":\\/") != std::wstring_view::npos) {
+    auto ncmd = bela::PathAbsolute(cmd);
+    return FindExecutable(ncmd, exts, exe);
+  }
+  auto cwdfile = bela::PathAbsolute(cmd);
+  if (FindExecutable(cwdfile, exts, exe)) {
     return true;
   }
-  return envb.emplace(key, value).second;
-}
-
-bool DerivatorMT::PutEnv(std::wstring_view nv, bool force) {
-  auto pos = nv.find(L'=');
-  if (pos == std::wstring_view::npos) {
-    return SetEnv(nv, L"", force);
-  }
-  return SetEnv(nv.substr(0, pos), nv.substr(pos + 1), force);
-}
-
-[[nodiscard]] std::wstring DerivatorMT::GetEnv(std::wstring_view key) {
-  auto it = envb.find(key);
-  if (it == envb.end()) {
-    return L"";
-  }
-  return it->second;
-}
-
-bool DerivatorMT::AppendFromEnv(std::wstring_view key, std::wstring &s) {
-  auto it = envb.find(key);
-  if (it == envb.end()) {
-    return false;
-  }
-  s.append(it->second);
-  return true;
-}
-
-bool DerivatorMT::ExpandEnv(std::wstring_view raw, std::wstring &w, bool strict) {
-  w.reserve(raw.size() * 2);
-  size_t i = 0;
-  for (size_t j = 0; j < raw.size(); j++) {
-    if (raw[j] == '$' && j + 1 < raw.size()) {
-      w.append(raw.substr(i, j - i));
-      size_t off = 0;
-      auto name = resovle_shell_name(raw.substr(j + 1), off);
-      if (name.empty()) {
-        if (off == 0) {
-          w.push_back(raw[j]);
-        }
-      } else {
-        if (!AppendFromEnv(name, w)) {
-          if (!strict) {
-            os_expand_env(std::wstring(name), w);
-          }
-        }
-      }
-      j += off;
-      i = j + 1;
+  for (auto p : paths) {
+    auto exefile = bela::StringCat(p, L"\\", cmd);
+    if (FindExecutable(exefile, exts, exe)) {
+      return true;
     }
   }
-  w.append(raw.substr(i));
-  return true;
+  return false;
 }
 
-std::wstring DerivatorMT::MakeEnv() const { return MakeEnvT(envb); }
-
-std::wstring DerivatorMT::CleanupEnv(std::wstring_view prependpath) const {
-  return CleanupEnvT(prependpath, envb);
+bool ExecutableExistsInPath(std::wstring_view cmd, std::wstring &exe) {
+  std::vector<std::wstring> exts;
+  cleanupPathExt(bela::GetEnv(L"PATHEXT"), exts);
+  if (cmd.find_first_of(L":\\/") != std::wstring_view::npos) {
+    auto ncmd = bela::PathAbsolute(cmd);
+    return FindExecutable(ncmd, exts, exe);
+  }
+  auto cwdfile = bela::PathAbsolute(cmd);
+  if (FindExecutable(cwdfile, exts, exe)) {
+    return true;
+  }
+  auto path = GetEnv<4096>(L"PATH"); // 4K suggest.
+  std::vector<std::wstring_view> pathv =
+      bela::StrSplit(path, bela::ByChar(L';'), bela::SkipEmpty());
+  for (auto p : pathv) {
+    auto exefile = bela::StringCat(p, L"\\", cmd);
+    if (FindExecutable(exefile, exts, exe)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 } // namespace env

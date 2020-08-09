@@ -43,8 +43,34 @@ using envmap_t = bela::flat_hash_map<std::wstring, std::wstring, StringCaseInsen
 class Simulator {
 public:
   Simulator() = default;
-  Simulator(const Simulator &) = delete;
-  Simulator &operator=(const Simulator &) = delete;
+  Simulator(const Simulator &other) {
+    paths.assign(other.paths.begin(), other.paths.end());
+    pathexts.assign(other.pathexts.begin(), other.pathexts.end());
+    envmap.reserve(other.envmap.size());
+    for (const auto &[k, v] : envmap) {
+      envmap.emplace(k, v);
+    }
+  }
+  Simulator &operator=(const Simulator &other) {
+    paths.assign(other.paths.begin(), other.paths.end());
+    pathexts.assign(other.pathexts.begin(), other.pathexts.end());
+    envmap.reserve(other.envmap.size());
+    for (const auto &[k, v] : envmap) {
+      envmap.emplace(k, v);
+    }
+    return *this;
+  }
+  Simulator(Simulator &&other) {
+    paths = std::move(other.paths);
+    pathexts = std::move(other.pathexts);
+    envmap = std::move(other.envmap);
+  }
+  Simulator &operator=(Simulator &&other) {
+    paths = std::move(other.paths);
+    pathexts = std::move(other.pathexts);
+    envmap = std::move(other.envmap);
+    return *this;
+  }
   bool InitializeEnv();
   bool InitializeCleanupEnv();
   bool LookupPath(std::wstring_view cmd, std::wstring &exe) const;

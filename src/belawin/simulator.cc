@@ -290,6 +290,24 @@ bool Simulator::LookupPath(std::wstring_view cmd, std::wstring &exe) const {
   return false;
 }
 
+void Simulator::PathOrganize() {
+  cachedEnv.clear();
+  bela::flat_hash_set<std::wstring, bela::env::StringCaseInsensitiveHash,
+                      bela::env::StringCaseInsensitiveEq>
+      sets;
+  std::vector<std::wstring> newpaths;
+  sets.reserve(paths.size());
+  for (auto &p : paths) {
+    auto s = bela::PathCat(p);
+    if (sets.find(s) != sets.end()) {
+      continue;
+    }
+    sets.emplace(s);
+    newpaths.emplace_back(std::move(s));
+  }
+  paths = std::move(newpaths);
+}
+
 bool Simulator::ExpandEnv(std::wstring_view raw, std::wstring &w) const {
   w.reserve(raw.size() * 2);
   size_t i = 0;

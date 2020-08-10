@@ -99,31 +99,61 @@ public:
     return false;
   }
 
-  Simulator &PathPushFront(std::wstring_view p) {
+  Simulator &PathPushFront(const std::wstring_view p) {
+    cachedEnv.clear();
     std::vector<std::wstring> paths_;
     paths_.reserve(paths.size() + 1);
     paths_.emplace_back(p);
-    paths_.insert(paths.end(), paths.begin(), paths.end());
-    paths = std::move(paths_);
-    return *this;
-  }
-  Simulator &PathPushFront(std::vector<std::wstring> &&paths_) {
-    paths_.reserve(paths.size() + 1);
-    paths_.insert(paths.end(), paths.begin(), paths.end());
+    for (auto &p : paths) {
+      paths_.emplace_back(std::move(p));
+    }
     paths = std::move(paths_);
     return *this;
   }
 
-  Simulator &PathAppend(std::wstring_view p) {
+  // PathPushFront
+  Simulator &PathPushFront(std::vector<std::wstring> &&paths_) {
+    cachedEnv.clear();
+    paths_.reserve(paths_.size() + paths.size() + 1);
+    for (auto &p : paths) {
+      paths_.emplace_back(std::move(p));
+    }
+    paths = std::move(paths_);
+    return *this;
+  }
+
+  Simulator &PathPushFront(const std::vector<std::wstring> &paths_) {
+    cachedEnv.clear();
+    auto paths__ = paths_;
+    paths__.reserve(paths_.size() + paths.size() + 1);
+    for (auto &p : paths) {
+      paths__.emplace_back(p);
+    }
+    paths = std::move(paths__);
+    return *this;
+  }
+
+  Simulator &PathAppend(const std::wstring_view p) {
+    cachedEnv.clear();
     paths.emplace_back(p);
     return *this;
   }
-
+  // PathAppend copy
   Simulator &PathAppend(const std::vector<std::wstring> &paths_) {
+    cachedEnv.clear();
     paths.insert(paths.end(), paths.begin(), paths.end());
     return *this;
   }
+  // PathAppend move
+  Simulator &PathAppend(std::vector<std::wstring> &&paths_) {
+    cachedEnv.clear();
+    for (auto &p : paths_) {
+      paths.emplace_back(std::move(p));
+    }
+    return *this;
+  }
 
+  void PathOrganize();
   // AppendEnv append env
   bool AppendEnv(std::wstring_view key, std::wstring_view val) {
     if (key.empty() || val.empty()) {

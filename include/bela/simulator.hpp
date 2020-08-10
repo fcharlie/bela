@@ -141,7 +141,9 @@ public:
   // PathAppend copy
   Simulator &PathAppend(const std::vector<std::wstring> &paths_) {
     cachedEnv.clear();
-    paths.insert(paths.end(), paths.begin(), paths.end());
+    for (const auto &p : paths_) {
+      paths.emplace_back(p);
+    }
     return *this;
   }
   // PathAppend move

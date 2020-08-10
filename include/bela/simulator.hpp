@@ -1,8 +1,7 @@
-//
+// Environment simulator
 #ifndef BELA_SIMULATOR_HPP
 #define BELA_SIMULATOR_HPP
 #include "env.hpp"
-//
 
 namespace bela::env {
 struct StringCaseInsensitiveHash {
@@ -90,7 +89,7 @@ public:
     return true;
   }
 
-  // EraseEnv
+  // EraseEnv erase env
   bool EraseEnv(std::wstring_view key) {
     if (auto it = envmap.find(key); it != envmap.end()) {
       envmap.erase(it);
@@ -100,6 +99,7 @@ public:
     return false;
   }
 
+  // AppendEnv append env
   bool AppendEnv(std::wstring_view key, std::wstring_view val) {
     if (key.empty() || val.empty()) {
       return false;
@@ -120,7 +120,9 @@ public:
     envmap[key] = val;
     return true;
   }
-  bool Insert(std::wstring_view key, std::wstring_view val) {
+
+  // InsertEnv insert env
+  bool InsertEnv(std::wstring_view key, std::wstring_view val) {
     if (key.empty() || val.empty()) {
       return false;
     }

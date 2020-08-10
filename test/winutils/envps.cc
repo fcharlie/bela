@@ -32,7 +32,7 @@ int wmain() {
   bela::env::Simulator simulator;
   simulator.InitializeCleanupEnv();
   simulator.SetEnv(L"GOPROXY", L"https://goproxy.io/");
-  simulator.AppendEnv(L"Path", L"C:\\Go\\bin");
+  simulator.PathAppend(L"C:\\Go\\bin");
   GoVersion(&simulator);
   // simulator.SetEnv(L"Path", L"C:/Dev");
   auto envs = simulator.MakeEnv();

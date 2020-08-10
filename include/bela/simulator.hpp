@@ -99,16 +99,37 @@ public:
     return false;
   }
 
+  Simulator &PathPushFront(std::wstring_view p) {
+    std::vector<std::wstring> paths_;
+    paths_.reserve(paths.size() + 1);
+    paths_.emplace_back(p);
+    paths_.insert(paths.end(), paths.begin(), paths.end());
+    paths = std::move(paths_);
+    return *this;
+  }
+  Simulator &PathPushFront(std::vector<std::wstring> &&paths_) {
+    paths_.reserve(paths.size() + 1);
+    paths_.insert(paths.end(), paths.begin(), paths.end());
+    paths = std::move(paths_);
+    return *this;
+  }
+
+  Simulator &PathAppend(std::wstring_view p) {
+    paths.emplace_back(p);
+    return *this;
+  }
+
+  Simulator &PathAppend(const std::vector<std::wstring> &paths_) {
+    paths.insert(paths.end(), paths.begin(), paths.end());
+    return *this;
+  }
+
   // AppendEnv append env
   bool AppendEnv(std::wstring_view key, std::wstring_view val) {
     if (key.empty() || val.empty()) {
       return false;
     }
     cachedEnv.clear();
-    if (bela::EqualsIgnoreCase(key, L"Path")) {
-      paths.emplace_back(val);
-      return true;
-    }
     if (bela::EqualsIgnoreCase(key, L"PATHEXT")) {
       pathexts.emplace_back(val);
       return true;
@@ -127,14 +148,6 @@ public:
       return false;
     }
     cachedEnv.clear();
-    if (bela::EqualsIgnoreCase(key, L"Path")) {
-      std::vector<std::wstring> paths_;
-      paths_.reserve(paths.size() + 1);
-      paths_.emplace_back(val);
-      paths_.insert(paths.end(), paths.begin(), paths.end());
-      paths = std::move(paths_);
-      return true;
-    }
     if (bela::EqualsIgnoreCase(key, L"PATHEXT")) {
       std::vector<std::wstring> exts_;
       exts_.reserve(pathexts.size() + 1);
@@ -196,6 +209,8 @@ public:
     ExpandEnv(raw, s);
     return s;
   }
+
+  const std::vector<std::wstring> &Paths() const { return paths; }
 
   // MakeEnv make environment string
   [[nodiscard]] std::wstring MakeEnv() {

@@ -40,7 +40,8 @@ with a Unix-like OS, you can compile a working binary like this:
 
 ```bash
 gcc -O3 -o example example.c blake3.c blake3_dispatch.c blake3_portable.c \
-    blake3_sse41_x86-64_unix.S blake3_avx2_x86-64_unix.S blake3_avx512_x86-64_unix.S
+    blake3_sse2_x86-64_unix.S blake3_sse41_x86-64_unix.S blake3_avx2_x86-64_unix.S \
+    blake3_avx512_x86-64_unix.S
 ```
 
 # API
@@ -110,12 +111,11 @@ void blake3_hasher_init_derive_key(
 
 Initialize a `blake3_hasher` in the key derivation mode. Key material
 should be given as input after initialization, using
-`blake3_hasher_update`. `context` is a standard C string of any length,
-and the terminating null byte is not included. The context string should
-be hardcoded, globally unique, and application-specific. A good default
-format for the context string is `"[application] [commit timestamp]
-[purpose]"`, e.g., `"example.com 2019-12-25 16:18:03 session tokens
-v1"`.
+`blake3_hasher_update`. `context` is a standard null-terminated C string
+of any length.  The context string should be hardcoded, globally unique,
+and application-specific. A good default format for the context string
+is `"[application] [commit timestamp] [purpose]"`, e.g., `"example.com
+2019-12-25 16:18:03 session tokens v1"`.
 
 ```c
 void blake3_hasher_finalize_seek(
@@ -144,8 +144,8 @@ by hand. Note that these steps may change in future versions.
 Dynamic dispatch is enabled by default on x86. The implementation will
 query the CPU at runtime to detect SIMD support, and it will use the
 widest instruction set available. By default, `blake3_dispatch.c`
-expects to be linked with code for four different instruction sets:
-portable C, SSE4.1, AVX2, and AVX-512.
+expects to be linked with code for five different instruction sets:
+portable C, SSE2, SSE4.1, AVX2, and AVX-512.
 
 For each of the x86 SIMD instruction sets, two versions are available,
 one in assembly (with three flavors: Unix, Windows MSVC, and Windows
@@ -160,7 +160,8 @@ the assembly implementations:
 
 ```bash
 gcc -shared -O3 -o libblake3.so blake3.c blake3_dispatch.c blake3_portable.c \
-    blake3_sse41_x86-64_unix.S blake3_avx2_x86-64_unix.S blake3_avx512_x86-64_unix.S
+    blake3_sse2_x86-64_unix.S blake3_sse41_x86-64_unix.S blake3_avx2_x86-64_unix.S \
+    blake3_avx512_x86-64_unix.S
 ```
 
 When building the intrinsics-based implementations, you need to build
@@ -169,11 +170,12 @@ explicitly enabled in the compiler. Here's the same shared library using
 the intrinsics-based implementations:
 
 ```bash
+gcc -c -fPIC -O3 -msse2 blake3_sse2.c -o blake3_sse2.o
 gcc -c -fPIC -O3 -msse4.1 blake3_sse41.c -o blake3_sse41.o
 gcc -c -fPIC -O3 -mavx2 blake3_avx2.c -o blake3_avx2.o
 gcc -c -fPIC -O3 -mavx512f -mavx512vl blake3_avx512.c -o blake3_avx512.o
 gcc -shared -O3 -o libblake3.so blake3.c blake3_dispatch.c blake3_portable.c \
-    blake3_avx2.o blake3_avx512.o blake3_sse41.o
+    blake3_avx2.o blake3_avx512.o blake3_sse41.o blake3_sse2.o
 ```
 
 Note above that building `blake3_avx512.c` requires both `-mavx512f` and
@@ -187,8 +189,8 @@ each instruction set. Here's an example of building a shared library on
 x86 with only portable code:
 
 ```bash
-gcc -shared -O3 -o libblake3.so -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 \
-    blake3.c blake3_dispatch.c blake3_portable.c
+gcc -shared -O3 -o libblake3.so -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 \
+    -DBLAKE3_NO_AVX512 blake3.c blake3_dispatch.c blake3_portable.c
 ```
 
 ## ARM NEON
@@ -230,5 +232,5 @@ and their performance is the same if you use the assembly
 implementations or if you compile the intrinsics-based implementations
 with Clang. (Both Clang and rustc are LLVM-based.)
 
-The C implementation doesn't currently support multi-threading. OpenMP
-support or similar might be added in the future.
+The C implementation doesn't currently include any multithreading
+optimizations. OpenMP support or similar might be added in the future.

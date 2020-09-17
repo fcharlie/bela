@@ -71,6 +71,8 @@ void blake3_hasher_init(
 
 Initialize a `blake3_hasher` in the default hashing mode.
 
+---
+
 ```c
 void blake3_hasher_update(
   blake3_hasher *self,
@@ -79,6 +81,8 @@ void blake3_hasher_update(
 ```
 
 Add input to the hasher. This can be called any number of times.
+
+---
 
 ```c
 void blake3_hasher_finalize(
@@ -103,19 +107,48 @@ void blake3_hasher_init_keyed(
 Initialize a `blake3_hasher` in the keyed hashing mode. The key must be
 exactly 32 bytes.
 
+---
+
 ```c
 void blake3_hasher_init_derive_key(
   blake3_hasher *self,
   const char *context);
 ```
 
-Initialize a `blake3_hasher` in the key derivation mode. Key material
-should be given as input after initialization, using
-`blake3_hasher_update`. `context` is a standard null-terminated C string
-of any length.  The context string should be hardcoded, globally unique,
-and application-specific. A good default format for the context string
-is `"[application] [commit timestamp] [purpose]"`, e.g., `"example.com
+Initialize a `blake3_hasher` in the key derivation mode. The context
+string is given as an initialization parameter, and afterwards input key
+material should be given with `blake3_hasher_update`. The context string
+is a null-terminated C string which should be **hardcoded, globally
+unique, and application-specific**. The context string should not
+include any dynamic input like salts, nonces, or identifiers read from a
+database at runtime. A good default format for the context string is
+`"[application] [commit timestamp] [purpose]"`, e.g., `"example.com
 2019-12-25 16:18:03 session tokens v1"`.
+
+This function is intended for application code written in C. For
+language bindings, see `blake3_hasher_init_derive_key_raw` below.
+
+---
+
+```c
+void blake3_hasher_init_derive_key_raw(
+  blake3_hasher *self,
+  const void *context,
+  size_t context_len);
+```
+
+As `blake3_hasher_init_derive_key` above, except that the context string
+is given as a pointer to an array of arbitrary bytes with a provided
+length. This is intended for writing language bindings, where C string
+conversion would add unnecessary overhead and new error cases. Unicode
+strings should be encoded as UTF-8.
+
+Application code in C should prefer `blake3_hasher_init_derive_key`,
+which takes the context as a C string. If you need to use arbitrary
+bytes as a context string in application code, consider whether you're
+violating the requirement that context strings should be hardcoded.
+
+---
 
 ```c
 void blake3_hasher_finalize_seek(

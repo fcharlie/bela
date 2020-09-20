@@ -127,7 +127,7 @@ struct color {
                            bela::AlphaNum(bela::Hex(r, bela::kZeroPad2)), bela::AlphaNum(bela::Hex(g, bela::kZeroPad2)),
                            bela::AlphaNum(bela::Hex(b, bela::kZeroPad2)));
   }
-  std::string EncodeNarrow(const bool omitAlpha = false) const {
+  std::string NarrowEncode(const bool omitAlpha = false) const {
     if (omitAlpha) {
       return bela::narrow::StringCat("#", bela::narrow::AlphaNum(bela::narrow::Hex(r, bela::narrow::kZeroPad2)),
                                      bela::narrow::AlphaNum(bela::narrow::Hex(g, bela::narrow::kZeroPad2)),
@@ -192,6 +192,7 @@ struct color {
       return false;
     }
     c = color(r, g, b, a);
+    return true;
   }
 };
 

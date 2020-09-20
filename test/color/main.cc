@@ -11,6 +11,7 @@ int wmain() {
   if (bela::color::Decode(L"#FFFF42FF", c2)) {
     bela::FPrintF(stderr, L"r %d g %d b %d\n", c2.r, c2.g, c2.b);
   }
-
+  bela::color c(132, 122, 64);
+  bela::FPrintF(stderr, L"Encode -> %s\n", c.Encode(true));
   return 0;
 }

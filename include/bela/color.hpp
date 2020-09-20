@@ -117,7 +117,7 @@ struct color {
 
   constexpr bool operator!=(const bela::color &other) const { return !(*this == other); }
 
-  std::wstring Encode(const bool omitAlpha = false) const {
+  std::wstring Encode(const bool omitAlpha = true) const {
     if (omitAlpha) {
       return bela::StringCat(L"#", bela::AlphaNum(bela::Hex(r, bela::kZeroPad2)),
                              bela::AlphaNum(bela::Hex(g, bela::kZeroPad2)),
@@ -127,7 +127,7 @@ struct color {
                            bela::AlphaNum(bela::Hex(r, bela::kZeroPad2)), bela::AlphaNum(bela::Hex(g, bela::kZeroPad2)),
                            bela::AlphaNum(bela::Hex(b, bela::kZeroPad2)));
   }
-  std::string NarrowEncode(const bool omitAlpha = false) const {
+  std::string NarrowEncode(const bool omitAlpha = true) const {
     if (omitAlpha) {
       return bela::narrow::StringCat("#", bela::narrow::AlphaNum(bela::narrow::Hex(r, bela::narrow::kZeroPad2)),
                                      bela::narrow::AlphaNum(bela::narrow::Hex(g, bela::narrow::kZeroPad2)),

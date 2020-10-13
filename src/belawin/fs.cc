@@ -46,7 +46,16 @@ bool Remove(std::wstring_view path, bela::error_code &ec) {
   if (SetFileInformationByHandle(FileHandle, FileDispositionInfo, &_Info, sizeof(_Info)) == TRUE) {
     return true;
   }
-  ec = bela::make_system_error_code();
+  e = GetLastError();
+  if (ec.code == ERROR_ACCESS_DENIED) {
+    SetFileAttributesW(path.data(), GetFileAttributesW(path.data()) & ~nohideflags);
+    if (SetFileInformationByHandle(FileHandle, FileDispositionInfo, &_Info, sizeof(_Info)) == TRUE) {
+      return true;
+    }
+    e = GetLastError();
+  }
+  ec.code = e;
+  ec.message = bela::resolve_system_error_message(e);
   return false;
 }
 } // namespace bela::fs

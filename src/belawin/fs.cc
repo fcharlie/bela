@@ -10,6 +10,9 @@ bool Remove(std::wstring_view path, bela::error_code &ec) {
   auto FileHandle = CreateFileW(path.data(), DELETE, shm, nullptr, OPEN_EXISTING, flags, nullptr);
   if (FileHandle == INVALID_HANDLE_VALUE) {
     ec = bela::make_system_error_code(L"CreateFileW ");
+    if (ec.code == ERROR_FILE_NOT_FOUND) {
+      return true;
+    }
     return false;
   }
   auto closer = bela::finally([&] { CloseHandle(FileHandle); });

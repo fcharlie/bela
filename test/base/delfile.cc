@@ -8,8 +8,8 @@ int wmain(int argc, wchar_t **argv) {
     return 1;
   }
   bela::error_code ec;
-  if (!bela::fs::Remove(argv[1], ec)) {
-    bela::FPrintF(stderr, L"Delete File %s %d %s\n", argv[1], ec.code, ec.message);
+  if (!bela::fs::RemoveAll(argv[1], ec)) {
+    bela::FPrintF(stderr, L"remove all: %s %d %s\n", argv[1], ec.code, ec.message);
   }
   return 0;
 }

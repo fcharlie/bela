@@ -19,14 +19,13 @@ bool Remove(std::wstring_view path, bela::error_code &ec) {
   struct _File_disposition_info_ex {
     DWORD _Flags;
   };
-
+  DWORD e = NOERROR;
   _File_disposition_info_ex _Info_ex{0x3};
   constexpr auto _FileDispositionInfoExClass = static_cast<FILE_INFO_BY_HANDLE_CLASS>(21);
   if (SetFileInformationByHandle(FileHandle, _FileDispositionInfoExClass, &_Info_ex, sizeof(_Info_ex)) == TRUE) {
     return true;
   }
-  auto e = GetLastError();
-  if (e == ERROR_ACCESS_DENIED) {
+  if (e = GetLastError(); e == ERROR_ACCESS_DENIED) {
     SetFileAttributesW(path.data(), GetFileAttributesW(path.data()) & ~nohideflags);
     if (SetFileInformationByHandle(FileHandle, _FileDispositionInfoExClass, &_Info_ex, sizeof(_Info_ex)) == TRUE) {
       return true;
@@ -41,24 +40,58 @@ bool Remove(std::wstring_view path, bela::error_code &ec) {
   case ERROR_NOT_SUPPORTED:
     break;
   default:
-    ec.code = e;
-    ec.message = bela::resolve_system_error_message(e);
+    ec = bela::from_system_error_code(e, L"SetFileInformationByHandle ");
     return false;
   }
   FILE_DISPOSITION_INFO _Info{/* .Delete= */ TRUE};
   if (SetFileInformationByHandle(FileHandle, FileDispositionInfo, &_Info, sizeof(_Info)) == TRUE) {
     return true;
   }
-  e = GetLastError();
-  if (ec.code == ERROR_ACCESS_DENIED) {
+
+  if (e = GetLastError(); e == ERROR_ACCESS_DENIED) {
     SetFileAttributesW(path.data(), GetFileAttributesW(path.data()) & ~nohideflags);
     if (SetFileInformationByHandle(FileHandle, FileDispositionInfo, &_Info, sizeof(_Info)) == TRUE) {
       return true;
     }
     e = GetLastError();
   }
-  ec.code = e;
-  ec.message = bela::resolve_system_error_message(e);
+  ec = bela::from_system_error_code(e, L"SetFileInformationByHandle(fallback) ");
+  return false;
+}
+
+bool remove_all_dir(std::wstring_view path, bela::error_code &ec) {
+  Finder finder;
+  if (!finder.First(path, L"*", ec)) {
+    return false;
+  }
+  do {
+    if (finder.Ignore()) {
+      continue;
+    }
+    auto child = bela::StringCat(path, L"\\", finder.Name());
+    if (finder.IsDir() && !finder.IsReparsePoint()) { // only normal dir remove it. symlink not
+      if (!remove_all_dir(child, ec)) {
+        return false;
+      }
+      continue;
+    }
+    if (!bela::fs::Remove(child, ec)) {
+      return false;
+    }
+  } while (finder.Next());
+  if (!bela::fs::Remove(path, ec)) {
+    return false;
+  }
+  return true;
+}
+
+bool RemoveAll(std::wstring_view path, bela::error_code &ec) {
+  if (Remove(path, ec)) {
+    return true;
+  }
+  if (ec.code == ERROR_DIR_NOT_EMPTY) {
+    return remove_all_dir(path, ec);
+  }
   return false;
 }
 } // namespace bela::fs

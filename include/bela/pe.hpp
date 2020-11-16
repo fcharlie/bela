@@ -60,7 +60,7 @@ enum class Subsystem : uint16_t {
   WINDOWS_BOOT_APPLICATION = 16,
   XBOX_CODE_CATALOG = 17
 };
-
+#pragma pack(1)
 struct FileHeader {
   Machine Machine;
   uint16_t NumberOfSections;
@@ -70,7 +70,6 @@ struct FileHeader {
   uint16_t SizeOfOptionalHeader;
   uint16_t Characteristics;
 };
-
 struct DataDirectory {
   uint32_t VirtualAddress;
   uint32_t Size;
@@ -154,6 +153,7 @@ struct COFFSymbol {
   uint8_t StorageClass;
   uint8_t NumberOfAuxSymbols;
 };
+#pragma pack()
 
 struct StringTable {
   uint8_t *data{nullptr};

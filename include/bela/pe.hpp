@@ -7,6 +7,7 @@
 #include <optional>
 #include "base.hpp"
 #include "endian.hpp"
+#include "phmap.hpp"
 
 namespace bela::pe {
 enum class Machine : uint16_t {
@@ -142,7 +143,18 @@ struct OptionalHeader64 {
   DataDirectory DataDirectory[16];
 };
 
-constexpr uint32_t COFFSymbolSize = 18;
+struct SectionHeader32 {
+  uint8_t Name[8];
+  uint32_t VirtualSize;
+  uint32_t VirtualAddress;
+  uint32_t SizeOfRawData;
+  uint32_t PointerToRawData;
+  uint32_t PointerToRelocations;
+  uint32_t PointerToLineNumbers;
+  uint16_t NumberOfRelocations;
+  uint16_t NumberOfLineNumbers;
+  uint32_t Characteristics;
+};
 
 // COFFSymbol represents single COFF symbol table record.
 struct COFFSymbol {
@@ -153,11 +165,15 @@ struct COFFSymbol {
   uint8_t StorageClass;
   uint8_t NumberOfAuxSymbols;
 };
+
 #pragma pack()
+
+constexpr uint32_t COFFSymbolSize = sizeof(COFFSymbol);
 
 struct StringTable {
   uint8_t *data{nullptr};
   size_t length{0};
+  StringTable() = default;
   StringTable(const StringTable &) = delete;
   StringTable &operator=(const StringTable &) = delete;
   StringTable(StringTable &&other) { MoveFrom(std::move(other)); }
@@ -169,6 +185,8 @@ struct StringTable {
   void MoveFrom(StringTable &&other);
   std::optional<std::wstring> String(uint32_t start, bela::error_code &ec);
 };
+
+using symbols_map_t = bela::flat_hash_map<std::wstring, std::vector<std::wstring>>;
 
 class File {
 private:
@@ -185,10 +203,16 @@ public:
     FileMove(std::move(other));
     return *this;
   }
+  bool LookupImports(symbols_map_t &sm, bela::error_code &ec);
+  bool Is64Bit() const { return is64bit; }
   static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
 
 private:
   FILE *fd{nullptr};
+  FileHeader fh;
+  std::vector<COFFSymbol> coffsymbol;
+  StringTable stringTable;
+  bool is64bit{false};
 };
 
 inline std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec) { return File::NewFile(p, ec); }

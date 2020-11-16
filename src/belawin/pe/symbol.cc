@@ -17,10 +17,12 @@ bool readCOFFSymbols(FileHeader *fh, FILE *fd, std::vector<COFFSymbol> &symbols,
     ec = bela::make_stdc_error_code(ferror(fd), L"fail to read symbol table: ");
     return false;
   }
-  for (auto &s : symbols) {
-    s.SectionNumber = bela::swaple(s.SectionNumber);
-    s.Type = bela::swaple(s.Type);
-    s.Value = bela::swaple(s.Value);
+  if constexpr (bela::IsBigEndian()) {
+    for (auto &s : symbols) {
+      s.SectionNumber = bela::swaple(s.SectionNumber);
+      s.Type = bela::swaple(s.Type);
+      s.Value = bela::swaple(s.Value);
+    }
   }
   return true;
 }

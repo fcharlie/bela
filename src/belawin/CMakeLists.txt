@@ -7,6 +7,7 @@ add_library(belawin STATIC
   path.cc
   peimage.cc
   pe/file.cc
+  pe/section.cc
   pe/string.cc
   pe/symbol.cc
   process.cc

@@ -61,6 +61,138 @@ enum class Subsystem : uint16_t {
   XBOX_CODE_CATALOG = 17
 };
 
+struct FileHeader {
+  Machine Machine;
+  uint16_t NumberOfSections;
+  uint32_t TimeDateStamp;
+  uint32_t PointerToSymbolTable;
+  uint32_t NumberOfSymbols;
+  uint16_t SizeOfOptionalHeader;
+  uint16_t Characteristics;
+};
+
+struct DataDirectory {
+  uint32_t VirtualAddress;
+  uint32_t Size;
+};
+
+struct OptionalHeader32 {
+  uint16_t Magic;
+  uint8_t MajorLinkerVersion;
+  uint8_t MinorLinkerVersion;
+  uint32_t SizeOfCode;
+  uint32_t SizeOfInitializedData;
+  uint32_t SizeOfUninitializedData;
+  uint32_t AddressOfEntryPoint;
+  uint32_t BaseOfCode;
+  uint32_t BaseOfData;
+  uint32_t ImageBase;
+  uint32_t SectionAlignment;
+  uint32_t FileAlignment;
+  uint16_t MajorOperatingSystemVersion;
+  uint16_t MinorOperatingSystemVersion;
+  uint16_t MajorImageVersion;
+  uint16_t MinorImageVersion;
+  uint16_t MajorSubsystemVersion;
+  uint16_t MinorSubsystemVersion;
+  uint32_t Win32VersionValue;
+  uint32_t SizeOfImage;
+  uint32_t SizeOfHeaders;
+  uint32_t CheckSum;
+  uint16_t Subsystem;
+  uint16_t DllCharacteristics;
+  uint32_t SizeOfStackReserve;
+  uint32_t SizeOfStackCommit;
+  uint32_t SizeOfHeapReserve;
+  uint32_t SizeOfHeapCommit;
+  uint32_t LoaderFlags;
+  uint32_t NumberOfRvaAndSizes;
+  DataDirectory DataDirectory[16];
+};
+
+struct OptionalHeader64 {
+  uint16_t Magic;
+  uint8_t MajorLinkerVersion;
+  uint8_t MinorLinkerVersion;
+  uint32_t SizeOfCode;
+  uint32_t SizeOfInitializedData;
+  uint32_t SizeOfUninitializedData;
+  uint32_t AddressOfEntryPoint;
+  uint32_t BaseOfCode;
+  uint64_t ImageBase;
+  uint32_t SectionAlignment;
+  uint32_t FileAlignment;
+  uint16_t MajorOperatingSystemVersion;
+  uint16_t MinorOperatingSystemVersion;
+  uint16_t MajorImageVersion;
+  uint16_t MinorImageVersion;
+  uint16_t MajorSubsystemVersion;
+  uint16_t MinorSubsystemVersion;
+  uint32_t Win32VersionValue;
+  uint32_t SizeOfImage;
+  uint32_t SizeOfHeaders;
+  uint32_t CheckSum;
+  uint16_t Subsystem;
+  uint16_t DllCharacteristics;
+  uint64_t SizeOfStackReserve;
+  uint64_t SizeOfStackCommit;
+  uint64_t SizeOfHeapReserve;
+  uint64_t SizeOfHeapCommit;
+  uint32_t LoaderFlags;
+  uint32_t NumberOfRvaAndSizes;
+  DataDirectory DataDirectory[16];
+};
+
+constexpr uint32_t COFFSymbolSize = 18;
+
+// COFFSymbol represents single COFF symbol table record.
+struct COFFSymbol {
+  uint8_t Name[8];
+  uint32_t Value;
+  int16_t SectionNumber;
+  uint16_t Type;
+  uint8_t StorageClass;
+  uint8_t NumberOfAuxSymbols;
+};
+
+struct StringTable {
+  uint8_t *data{nullptr};
+  size_t length{0};
+  StringTable(const StringTable &) = delete;
+  StringTable &operator=(const StringTable &) = delete;
+  StringTable(StringTable &&other) { MoveFrom(std::move(other)); }
+  StringTable &operator=(StringTable &&other) {
+    MoveFrom(std::move(other));
+    return *this;
+  }
+  ~StringTable();
+  void MoveFrom(StringTable &&other);
+  std::optional<std::wstring> String(uint32_t start, bela::error_code &ec);
+};
+
+class File {
+private:
+  void Free();
+  void FileMove(File &&other);
+
+public:
+  File() = default;
+  ~File() { Free(); }
+  File(const File &) = delete;
+  File(File &&other) { FileMove(std::move(other)); }
+  File &operator=(const File &&) = delete;
+  File &operator=(File &&other) {
+    FileMove(std::move(other));
+    return *this;
+  }
+  static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
+
+private:
+  FILE *fd{nullptr};
+};
+
+inline std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec) { return File::NewFile(p, ec); }
+
 struct VersionPair {
   uint16_t major{0};
   uint16_t minor{0};

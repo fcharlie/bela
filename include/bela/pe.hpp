@@ -86,7 +86,7 @@ struct DosHeader {     // DOS .EXE header
 };
 
 struct FileHeader {
-  Machine Machine;
+  uint16_t Machine;
   uint16_t NumberOfSections;
   uint32_t TimeDateStamp;
   uint32_t PointerToSymbolTable;
@@ -209,7 +209,12 @@ struct StringTable {
   std::optional<std::wstring> String(uint32_t start, bela::error_code &ec);
 };
 
-using symbols_map_t = bela::flat_hash_map<std::wstring, std::vector<std::wstring>>;
+struct Function {
+  std::wstring Name;
+  int Index;
+};
+
+using symbols_map_t = bela::flat_hash_map<std::wstring, std::vector<Function>>;
 
 class File {
 private:
@@ -229,13 +234,30 @@ public:
   bool LookupImports(symbols_map_t &sm, bela::error_code &ec);
   bool Is64Bit() const { return is64bit; }
   static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
-  std::string_view Table() const {
-    return std::string_view{reinterpret_cast<const char *>(stringTable.data), stringTable.length};
+  template <typename AStringT> void GoStringTable(std::vector<AStringT> &table) {
+    auto sv = std::string_view{reinterpret_cast<const char *>(stringTable.data), stringTable.length};
+    for (;;) {
+      auto p = sv.find('\0');
+      if (p == std::string_view::npos) {
+        if (sv.size() != 0) {
+          table.emplace_back(sv);
+        }
+        break;
+      }
+      table.emplace_back(sv.substr(0, p));
+      sv.remove_prefix(p + 1);
+    }
   }
+  const FileHeader &Fh() { return fh; }
+  const OptionalHeader64 *Oh64() const { return &oh64; }
+  const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh64); }
 
 private:
   FILE *fd{nullptr};
   FileHeader fh;
+  // The OptionalHeader64 structure is larger than OptionalHeader32. Therefore, we can store OptionalHeader32 in oh64.
+  // Conversion by pointer.
+  OptionalHeader64 oh64;
   std::vector<COFFSymbol> coffsymbol;
   StringTable stringTable;
   bool is64bit{false};

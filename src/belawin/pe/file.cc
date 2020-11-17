@@ -25,6 +25,7 @@ void File::Free() {
 void File::FileMove(File &&other) {
   Free();
   fd = other.fd;
+  is64bit = other.is64bit;
   other.fd = nullptr;
   coffsymbol = std::move(other.coffsymbol);
   stringTable = std::move(other.stringTable);
@@ -40,31 +41,37 @@ std::optional<File> File::NewFile(std::wstring_view p, bela::error_code &ec) {
   }
   File file;
   file.fd = fd;
-  uint8_t dh[96];
-  if (fread(dh, 1, sizeof(dh), fd) != 96) {
+  DosHeader dh;
+  if (fread(&dh, 1, sizeof(DosHeader), fd) != sizeof(DosHeader)) {
     ec = bela::make_stdc_error_code(ferror(fd), L"open file: ");
     return std::nullopt;
   }
+  constexpr auto x = 0x3c;
+
   int64_t base = 0;
-  if (dh[0] == 'M' && dh[1] == 'Z') {
-    auto signoff = static_cast<int64_t>(bela::readle<uint32_t>(dh + 0x3c));
+  if (bela::swaple(dh.e_magic) == IMAGE_DOS_SIGNATURE) {
+    auto signoff = static_cast<int64_t>(bela::swaple(dh.e_lfanew));
     uint8_t sign[4];
-    if (auto eno = _fseeki64(fd, signoff, SEEK_CUR); eno != 0) {
+    if (auto eno = _fseeki64(fd, signoff, SEEK_SET); eno != 0) {
       ec = bela::make_stdc_error_code(eno, L"Invalid PE COFF file signature of ");
       return std::nullopt;
     }
+    if (fread(sign, 1, 4, fd) != 4) {
+      ec = bela::make_stdc_error_code(ferror(fd), L"Invalid PE COFF file signature of ");
+      return std::nullopt;
+    }
     if (!(sign[0] == 'P' && sign[1] == 'E' && sign[2] == 0 && sign[3] == 0)) {
-      ec = bela::make_error_code(1, L"Invalid PE COFF file signature of ['", int(sign[1]), L"','", int(sign[1]), L"','",
+      ec = bela::make_error_code(1, L"Invalid PE COFF file signature of ['", int(sign[0]), L"','", int(sign[1]), L"','",
                                  int(sign[2]), L"','", int(sign[3]), L"']");
       return std::nullopt;
     }
     base = signoff + 4;
   }
-  if (auto eno = _fseeki64(fd, base, SEEK_CUR); eno != 0) {
+  if (auto eno = _fseeki64(fd, base, SEEK_SET); eno != 0) {
     ec = bela::make_stdc_error_code(eno, L"unable seek to base");
     return std::nullopt;
   }
-  if (fread(&file.fh, 1, sizeof(File), file.fd) != sizeof(File)) {
+  if (fread(&file.fh, 1, sizeof(FileHeader), file.fd) != sizeof(FileHeader)) {
     ec = bela::make_stdc_error_code(ferror(file.fd), L"Invalid PE COFF file FileHeader ");
     return std::nullopt;
   }

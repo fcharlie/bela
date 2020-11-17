@@ -5,6 +5,31 @@
 
 namespace bela::pe {
 
+inline std::string_view cstring_view(const char *data, size_t len) {
+  std::string_view sv{data, len};
+  if (auto p = sv.find('\0'); p != std::string_view::npos) {
+    return sv.substr(0, p);
+  }
+  return sv;
+}
+
+inline std::string_view cstring_view(const uint8_t *data, size_t len) {
+  return cstring_view(reinterpret_cast<const char *>(data), len);
+}
+
+struct ImportDirectory {
+  uint32_t OriginalFirstThunk;
+  uint32_t TimeDateStamp;
+  uint32_t ForwarderChain;
+  uint32_t Name;
+  uint32_t FirstThunk;
+
+  std::string DllName;
+};
+
+std::string sectionFullName(SectionHeader32 &sh, StringTable &st);
+bool readRelocs(Section &sec, FILE *fd);
+bool readSectionData(std::vector<char> &data, const Section &sec, FILE *fd);
 bool readStringTable(FileHeader *fh, FILE *fd, StringTable &table, bela::error_code &ec);
 bool readCOFFSymbols(FileHeader *fh, FILE *fd, std::vector<COFFSymbol> &symbols, bela::error_code &ec);
 } // namespace bela::pe

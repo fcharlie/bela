@@ -25,5 +25,17 @@ int wmain(int argc, wchar_t **argv) {
   if (file->Is64Bit()) {
     bela::FPrintF(stderr, L"Subsystem %d\n", file->Oh64()->Subsystem);
   }
+  for (const auto &sec : file->Sections()) {
+    bela::FPrintF(stderr, L"Section: %s VirtualAddress: %d\n", sec.Header.Name, sec.Header.VirtualAddress);
+  }
+  bela::pe::symbols_map_t sm;
+  file->LookupImports(sm, ec);
+
+  for (const auto &d : sm) {
+    bela::FPrintF(stderr, L"\x1b[33mDllName: %s\x1b[0m\n", d.first);
+    for (const auto &n : d.second) {
+      bela::FPrintF(stderr, L"%s %d\n", n.Name, n.Index);
+    }
+  }
   return 0;
 }

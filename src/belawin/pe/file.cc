@@ -88,6 +88,20 @@ void swaple(OptionalHeader32 *oh) {
   }
 }
 
+void swaple(SectionHeader32 &sh) {
+  if constexpr (bela::IsBigEndian()) {
+    sh.VirtualSize = bela::swaple(sh.VirtualSize);
+    sh.VirtualAddress = bela::swaple(sh.VirtualAddress);
+    sh.SizeOfRawData = bela::swaple(sh.SizeOfRawData);
+    sh.PointerToRawData = bela::swaple(sh.PointerToRawData);
+    sh.PointerToRelocations = bela::swaple(sh.PointerToRelocations);
+    sh.PointerToLineNumbers = bela::swaple(sh.PointerToLineNumbers);
+    sh.NumberOfRelocations = bela::swaple(sh.NumberOfRelocations);
+    sh.NumberOfLineNumbers = bela::swaple(sh.NumberOfLineNumbers);
+    sh.Characteristics = bela::swaple(sh.Characteristics);
+  }
+}
+
 void File::Free() {
   if (fd != nullptr) {
     fclose(fd);
@@ -102,6 +116,7 @@ void File::FileMove(File &&other) {
   other.fd = nullptr;
   coffsymbol = std::move(other.coffsymbol);
   stringTable = std::move(other.stringTable);
+  sections = std::move(other.sections);
   memcpy(&fh, &other.fh, sizeof(FileHeader));
   memcpy(&oh64, &other.oh64, sizeof(OptionalHeader64));
 }
@@ -174,15 +189,140 @@ std::optional<File> File::NewFile(std::wstring_view p, bela::error_code &ec) {
     }
     swaple(reinterpret_cast<OptionalHeader32 *>(&file.oh64));
   }
+  file.sections.reserve(file.fh.NumberOfSections);
+  for (int i = 0; i < file.fh.NumberOfSections; i++) {
+    SectionHeader32 sh;
+    if (fread(&sh, 1, sizeof(SectionHeader32), fd) != sizeof(SectionHeader32)) {
+      ec = bela::make_stdc_error_code(ferror(file.fd), L"Invalid PE COFF file SectionHeader32 ");
+      return std::nullopt;
+    }
+    swaple(sh);
+    Section sec;
+    sec.Header.Name = sectionFullName(sh, file.stringTable);
+    sec.Header.VirtualSize = sh.VirtualSize;
+    sec.Header.VirtualAddress = sh.VirtualAddress;
+    sec.Header.Size = sh.SizeOfRawData;
+    sec.Header.Offset = sh.PointerToRawData;
+    sec.Header.PointerToRelocations = sh.PointerToRelocations;
+    sec.Header.PointerToLineNumbers = sh.PointerToLineNumbers;
+    sec.Header.NumberOfRelocations = sh.NumberOfRelocations;
+    sec.Header.NumberOfLineNumbers = sh.NumberOfLineNumbers;
+    sec.Header.Characteristics = sh.Characteristics;
+    file.sections.emplace_back(std::move(sec));
+  }
+  for (auto &sec : file.sections) {
+    readRelocs(sec, fd);
+  }
   return std::make_optional(std::move(file));
+}
+
+// getString extracts a string from symbol string table.
+std::string getString(std::vector<char> &section, int start) {
+  if (start < 0 || start >= section.size()) {
+    return "";
+  }
+  for (auto end = start; end < section.size(); end++) {
+    if (section[end] == 0) {
+      return std::string(section.data() + start, end - start);
+    }
+  }
+  return "";
+}
+
+uint16_t getFunctionHit(std::vector<char> &section, int start) {
+  if (start < 0 || start - 2 > section.size()) {
+    return 0;
+  }
+  return bela::readle<uint16_t>(section.data() + start);
 }
 
 bool File::LookupImports(symbols_map_t &sm, bela::error_code &ec) {
   uint32_t ddlen = 0;
+  const DataDirectory *idd = nullptr;
+  const DataDirectory *delay = nullptr;
   if (is64bit) {
     ddlen = Oh64()->NumberOfRvaAndSizes;
+    idd = &(Oh64()->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
+    delay = &(Oh64()->DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
   } else {
     ddlen = Oh32()->NumberOfRvaAndSizes;
+    delay = &(Oh32()->DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
+  }
+  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1) {
+    return true;
+  }
+  const Section *ds = nullptr;
+  for (const auto &sec : sections) {
+    if (sec.Header.VirtualAddress <= idd->VirtualAddress &&
+        idd->VirtualAddress < sec.Header.VirtualAddress + sec.Header.VirtualSize) {
+      ds = &sec;
+    }
+  }
+  if (ds == nullptr) {
+    return true;
+  }
+  std::vector<char> data;
+  if (!readSectionData(data, *ds, fd)) {
+    ec = bela::make_error_code(L"unable read section data");
+    return false;
+  }
+  auto N = idd->VirtualAddress - ds->Header.VirtualAddress;
+  std::string_view sv{data.data() + N, data.size() - N};
+  std::vector<ImportDirectory> ida;
+  while (sv.size() > 20) {
+    const auto dt = reinterpret_cast<const IMAGE_IMPORT_DESCRIPTOR *>(sv.data());
+    sv.remove_prefix(20);
+    ImportDirectory id;
+    id.OriginalFirstThunk = bela::swaple(dt->OriginalFirstThunk);
+    id.TimeDateStamp = bela::swaple(dt->TimeDateStamp);
+    id.ForwarderChain = bela::swaple(dt->ForwarderChain);
+    id.Name = bela::swaple(dt->Name);
+    id.FirstThunk = bela::swaple(dt->FirstThunk);
+    if (id.OriginalFirstThunk == 0) {
+      break;
+    }
+    ida.emplace_back(std::move(id));
+  }
+
+  for (auto &dt : ida) {
+    dt.DllName = getString(data, int(dt.Name - ds->Header.VirtualAddress));
+    auto N = dt.OriginalFirstThunk - ds->Header.VirtualAddress;
+    std::string_view d{data.data() + N, data.size() - N};
+    std::vector<Function> functions;
+    while (d.size() > 0) {
+      if (is64bit) {
+        auto va = bela::readle<uint64_t>(d.data());
+        d.remove_prefix(8);
+        if (va == 0) {
+          break;
+        }
+        // IMAGE_ORDINAL_FLAG64
+        if ((va & 0x8000000000000000) > 0) {
+          // TODO add dynimport ordinal support.
+        } else {
+          auto fn = getString(data, static_cast<int>(static_cast<uint64_t>(va)) - ds->Header.VirtualAddress + 2);
+          auto hit = getFunctionHit(data, static_cast<int>(static_cast<uint64_t>(va)) - ds->Header.VirtualAddress);
+          functions.emplace_back(fn, static_cast<int>(hit));
+        }
+      } else {
+        auto va = bela::readle<uint32_t>(d.data());
+        d.remove_prefix(4);
+        if (va == 0) {
+          break;
+        }
+        // IMAGE_ORDINAL_FLAG32
+        if ((va & 0x80000000) > 0) {
+          // is Ordinal
+          // TODO add dynimport ordinal support.
+          // ord := va&0x0000FFFF
+        } else {
+          auto fn = getString(data, static_cast<int>(va) - ds->Header.VirtualAddress + 2);
+          auto hit = getFunctionHit(data, static_cast<int>(static_cast<uint32_t>(va)) - ds->Header.VirtualAddress);
+          functions.emplace_back(fn, static_cast<int>(hit));
+        }
+      }
+    }
+    sm.emplace(std::move(dt.DllName), std::move(functions));
   }
   return false;
 }

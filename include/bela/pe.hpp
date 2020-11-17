@@ -179,6 +179,12 @@ struct SectionHeader32 {
   uint32_t Characteristics;
 };
 
+struct Reloc {
+  uint32_t VirtualAddress;
+  uint32_t SymbolTableIndex;
+  uint16_t Type;
+};
+
 // COFFSymbol represents single COFF symbol table record.
 struct COFFSymbol {
   uint8_t Name[8];
@@ -190,6 +196,24 @@ struct COFFSymbol {
 };
 
 #pragma pack()
+
+struct SectionHeader {
+  std::string Name;
+  uint32_t VirtualSize;
+  uint32_t VirtualAddress;
+  uint32_t Size;
+  uint32_t Offset;
+  uint32_t PointerToRelocations;
+  uint32_t PointerToLineNumbers;
+  uint16_t NumberOfRelocations;
+  uint16_t NumberOfLineNumbers;
+  uint32_t Characteristics;
+};
+
+struct Section {
+  SectionHeader Header;
+  std::vector<Reloc> Relocs;
+};
 
 constexpr uint32_t COFFSymbolSize = sizeof(COFFSymbol);
 
@@ -206,15 +230,17 @@ struct StringTable {
   }
   ~StringTable();
   void MoveFrom(StringTable &&other);
-  std::optional<std::wstring> String(uint32_t start, bela::error_code &ec);
+  std::optional<std::string> String(uint32_t start, bela::error_code &ec);
 };
 
 struct Function {
-  std::wstring Name;
-  int Index;
+  Function(std::string &&name, int index = 0) : Name(std::move(name)), Index{index} {}
+  Function(const std::string_view name, int index = 0) : Name(name), Index{index} {}
+  std::string Name;
+  int Index{0};
 };
 
-using symbols_map_t = bela::flat_hash_map<std::wstring, std::vector<Function>>;
+using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
 
 class File {
 private:
@@ -251,6 +277,8 @@ public:
   const FileHeader &Fh() { return fh; }
   const OptionalHeader64 *Oh64() const { return &oh64; }
   const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh64); }
+  const auto &COFFSymbols() const { return coffsymbol; }
+  const auto &Sections() const { return sections; }
 
 private:
   FILE *fd{nullptr};
@@ -259,6 +287,7 @@ private:
   // Conversion by pointer.
   OptionalHeader64 oh64;
   std::vector<COFFSymbol> coffsymbol;
+  std::vector<Section> sections;
   StringTable stringTable;
   bool is64bit{false};
 };

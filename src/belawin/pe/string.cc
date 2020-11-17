@@ -2,6 +2,7 @@
 #include "internal.hpp"
 
 namespace bela::pe {
+
 void StringTable::MoveFrom(StringTable &&other) {
   if (data != nullptr) {
     HeapFree(GetProcessHeap(), 0, data);
@@ -14,7 +15,7 @@ void StringTable::MoveFrom(StringTable &&other) {
 
 StringTable::~StringTable() { HeapFree(GetProcessHeap(), 0, data); }
 
-std::optional<std::wstring> StringTable::String(uint32_t start, bela::error_code &ec) {
+std::optional<std::string> StringTable::String(uint32_t start, bela::error_code &ec) {
   if (start < 4) {
     ec = bela::make_error_code(1, L"offset ", start, L" is before the start of string table");
     return std::nullopt;
@@ -24,16 +25,7 @@ std::optional<std::wstring> StringTable::String(uint32_t start, bela::error_code
     ec = bela::make_error_code(1, L"offset ", start, L" is beyond the end of string table");
     return std::nullopt;
   }
-  std::string_view sv;
-  auto begin = data + start;
-  auto len = length - start;
-  auto p = memchr(data + start, 0, length - start);
-  if (p == nullptr) {
-    sv = {reinterpret_cast<const char *>(begin), len};
-  } else {
-    sv = {reinterpret_cast<const char *>(begin), len - (reinterpret_cast<const uint8_t *>(p) - begin)};
-  }
-  return std::make_optional(bela::fromascii(sv));
+  return std::make_optional<std::string>(cstring_view(data + start, length - start));
 }
 
 bool readStringTable(FileHeader *fh, FILE *fd, StringTable &table, bela::error_code &ec) {

@@ -28,14 +28,33 @@ int wmain(int argc, wchar_t **argv) {
   for (const auto &sec : file->Sections()) {
     bela::FPrintF(stderr, L"Section: %s VirtualAddress: %d\n", sec.Header.Name, sec.Header.VirtualAddress);
   }
-  bela::pe::symbols_map_t sm;
-  file->LookupImports(sm, ec);
-
-  for (const auto &d : sm) {
+  bela::pe::FunctionTable ft;
+  file->LookupFunctionTable(ft, ec);
+  for (const auto &d : ft.imports) {
     bela::FPrintF(stderr, L"\x1b[33mDllName: %s\x1b[0m\n", d.first);
     for (const auto &n : d.second) {
+      if (n.Ordinal != 0) {
+        bela::FPrintF(stderr, L"%s (Ordinal %d)\n", n.Name, n.Ordinal);
+        continue;
+      }
       bela::FPrintF(stderr, L"%s %d\n", n.Name, n.Index);
     }
   }
+
+  for (const auto &d : ft.delayimprots) {
+    bela::FPrintF(stderr, L"\x1b[34mDllName: %s\x1b[0m\n", d.first);
+    for (const auto &n : d.second) {
+      if (n.Ordinal != 0) {
+        bela::FPrintF(stderr, L"%s (Ordinal %d)\n", n.Name, n.Ordinal);
+        continue;
+      }
+      bela::FPrintF(stderr, L"(Delay) %s %d\n", n.Name, n.Index);
+    }
+  }
+
+  for (const auto &d : ft.exports) {
+    bela::FPrintF(stderr, L"\x1b[35mExport: %s\x1b[0m\n", d);
+  }
+
   return 0;
 }

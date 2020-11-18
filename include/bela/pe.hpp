@@ -234,10 +234,12 @@ struct StringTable {
 };
 
 struct Function {
-  Function(std::string &&name, int index = 0) : Name(std::move(name)), Index{index} {}
-  Function(const std::string_view name, int index = 0) : Name(name), Index{index} {}
+  Function(std::string &&name, int index = 0, int ordinal = 0)
+      : Name(std::move(name)), Index(index), Ordinal(ordinal) {}
+  Function(const std::string_view &name, int index = 0, int ordinal = 0) : Name(name), Index(index), Ordinal(ordinal) {}
   std::string Name;
   int Index{0};
+  int Ordinal{0};
 };
 
 struct FunctionTable {
@@ -253,6 +255,9 @@ class File {
 private:
   void Free();
   void FileMove(File &&other);
+  bool LookupExports(std::vector<std::string> &exports, bela::error_code &ec);
+  bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec);
+  bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec);
 
 public:
   File() = default;
@@ -264,7 +269,7 @@ public:
     FileMove(std::move(other));
     return *this;
   }
-  bool LookupImports(symbols_map_t &sm, bela::error_code &ec);
+
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec);
   bool Is64Bit() const { return is64bit; }
   static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);

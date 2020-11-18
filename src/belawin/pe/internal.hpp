@@ -27,6 +27,19 @@ struct ImportDirectory {
   std::string DllName;
 };
 
+struct ImportDelayDirectory {
+  uint32_t Attributes;
+  uint32_t DllNameRVA;
+  uint32_t ModuleHandleRVA;
+  uint32_t ImportAddressTableRVA;
+  uint32_t ImportNameTableRVA;
+  uint32_t BoundImportAddressTableRVA;
+  uint32_t UnloadInformationTableRVA;
+  uint32_t TimeDateStamp;
+
+  std::string DllName;
+};
+
 std::string sectionFullName(SectionHeader32 &sh, StringTable &st);
 bool readRelocs(Section &sec, FILE *fd);
 bool readSectionData(std::vector<char> &data, const Section &sec, FILE *fd);

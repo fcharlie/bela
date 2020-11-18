@@ -53,7 +53,7 @@ int wmain(int argc, wchar_t **argv) {
   }
 
   for (const auto &d : ft.exports) {
-    bela::FPrintF(stderr, L"\x1b[35mExport: %s\x1b[0m\n", d);
+    bela::FPrintF(stderr, L"\x1b[35mExport: %s Ordinal: %d Address: %08X\x1b[0m\n", d.Name, d.Ordinal, d.Address);
   }
 
   return 0;

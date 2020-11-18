@@ -238,7 +238,7 @@ uint16_t getFunctionHit(std::vector<char> &section, int start) {
   return bela::readle<uint16_t>(section.data() + start);
 }
 
-bool File::LookupExports(std::vector<std::string> &exports, bela::error_code &ec) {
+bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec) {
   uint32_t ddlen = 0;
   const DataDirectory *exd = nullptr;
   if (is64bit) {
@@ -249,7 +249,7 @@ bool File::LookupExports(std::vector<std::string> &exports, bela::error_code &ec
     ddlen = oh3->NumberOfRvaAndSizes;
     exd = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
   }
-  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1) {
+  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || exd->VirtualAddress == 0) {
     return true;
   }
   const Section *ds = nullptr;
@@ -269,7 +269,58 @@ bool File::LookupExports(std::vector<std::string> &exports, bela::error_code &ec
   }
   auto N = exd->VirtualAddress - ds->Header.VirtualAddress;
   std::string_view sv{rdata.data() + N, rdata.size() - N};
-
+  if (sv.size() < sizeof(IMAGE_EXPORT_DIRECTORY)) {
+    return true;
+  }
+  IMAGE_EXPORT_DIRECTORY ied;
+  if constexpr (bela::IsLittleEndian()) {
+    memcpy(&ied, sv.data(), sizeof(IMAGE_EXPORT_DIRECTORY));
+  } else {
+    auto cied = reinterpret_cast<const IMAGE_EXPORT_DIRECTORY *>(sv.data());
+    ied.Characteristics = bela::swaple(cied->Characteristics);
+    ied.TimeDateStamp = bela::swaple(cied->TimeDateStamp);
+    ied.MajorVersion = bela::swaple(cied->MajorVersion);
+    ied.MinorVersion = bela::swaple(cied->MinorVersion);
+    ied.Name = bela::swaple(cied->Name);
+    ied.Base = bela::swaple(cied->Base);
+    ied.NumberOfFunctions = bela::swaple(cied->NumberOfFunctions);
+    ied.NumberOfNames = bela::swaple(cied->NumberOfNames);
+    ied.AddressOfFunctions = bela::swaple(cied->AddressOfFunctions);       // RVA from base of image
+    ied.AddressOfNames = bela::swaple(cied->AddressOfNames);               // RVA from base of image
+    ied.AddressOfNameOrdinals = bela::swaple(cied->AddressOfNameOrdinals); // RVA from base of image
+  }
+  exports.resize(ied.NumberOfNames);
+  if (ied.AddressOfNameOrdinals > ds->Header.VirtualAddress &&
+      ied.AddressOfNameOrdinals < ds->Header.VirtualAddress + ds->Header.VirtualSize) {
+    auto N = ied.AddressOfNameOrdinals - ds->Header.VirtualAddress;
+    auto sv = std::string_view{rdata.data() + N, rdata.size() - N};
+    if (sv.size() > exports.size() * 2) {
+      for (size_t i = 0; i < exports.size(); i++) {
+        exports[i].Ordinal = bela::readle<uint16_t>(sv.data() + i * 2);
+      }
+    }
+  }
+  if (ied.AddressOfNames > ds->Header.VirtualAddress &&
+      ied.AddressOfNames < ds->Header.VirtualAddress + ds->Header.VirtualSize) {
+    auto N = ied.AddressOfNames - ds->Header.VirtualAddress;
+    auto sv = std::string_view{rdata.data() + N, rdata.size() - N};
+    if (sv.size() >= exports.size() * 4) {
+      for (size_t i = 0; i < exports.size(); i++) {
+        auto start = bela::readle<uint32_t>(sv.data() + i * 4) - ds->Header.VirtualAddress;
+        exports[i].Name = getString(rdata, start);
+      }
+    }
+  }
+  if (ied.AddressOfFunctions > ds->Header.VirtualAddress &&
+      ied.AddressOfFunctions < ds->Header.VirtualAddress + ds->Header.VirtualSize) {
+    auto N = ied.AddressOfFunctions - ds->Header.VirtualAddress;
+    for (size_t i = 0; i < exports.size(); i++) {
+      auto sv = std::string_view{rdata.data() + N, rdata.size() - N};
+      if (sv.size() > exports[i].Ordinal * 4 + 4) {
+        exports[i].Address = bela::readle<uint32_t>(sv.data() + exports[i].Ordinal * 4);
+      }
+    }
+  }
   return true;
 }
 
@@ -285,7 +336,7 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
     ddlen = oh3->NumberOfRvaAndSizes;
     delay = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
   }
-  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1) {
+  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || delay->VirtualAddress == 0) {
     return true;
   }
   const Section *ds = nullptr;
@@ -378,18 +429,15 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
 bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) {
   uint32_t ddlen = 0;
   const DataDirectory *idd = nullptr;
-  const DataDirectory *delay = nullptr;
   if (is64bit) {
     ddlen = oh64.NumberOfRvaAndSizes;
     idd = &(oh64.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
-    delay = &(oh64.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
   } else {
     auto oh3 = Oh32();
     ddlen = oh3->NumberOfRvaAndSizes;
     idd = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
-    delay = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
   }
-  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1) {
+  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || idd->VirtualAddress == 0) {
     return true;
   }
   const Section *ds = nullptr;
@@ -476,10 +524,13 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
 
 // Lookup function table
 bool File::LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) {
-  LookupImports(ft.imports, ec);
-  LookupDelayImports(ft.delayimprots, ec);
-  LookupExports(ft.exports, ec);
-  return true;
+  if (!LookupImports(ft.imports, ec)) {
+    return false;
+  }
+  if (!LookupDelayImports(ft.delayimprots, ec)) {
+    return false;
+  }
+  return LookupExports(ft.exports, ec);
 }
 
 } // namespace bela::pe

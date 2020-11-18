@@ -233,6 +233,15 @@ struct StringTable {
   std::optional<std::string> String(uint32_t start, bela::error_code &ec);
 };
 
+struct ExportedSymbol {
+  std::string Name;
+  std::string UndecoratedName;
+  std::string ForwardName;
+  DWORD Address;
+  unsigned short Ordinal{0xFFFF};
+  int Hint{0};
+};
+
 struct Function {
   Function(std::string &&name, int index = 0, int ordinal = 0)
       : Name(std::move(name)), Index(index), Ordinal(ordinal) {}
@@ -246,7 +255,7 @@ struct FunctionTable {
   using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
   symbols_map_t imports;
   symbols_map_t delayimprots;
-  std::vector<std::string> exports;
+  std::vector<ExportedSymbol> exports;
 };
 
 using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
@@ -255,7 +264,7 @@ class File {
 private:
   void Free();
   void FileMove(File &&other);
-  bool LookupExports(std::vector<std::string> &exports, bela::error_code &ec);
+  bool LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec);
   bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec);
   bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec);
 

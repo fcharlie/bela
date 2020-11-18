@@ -1,6 +1,8 @@
 //
 #include "internal.hpp"
 
+// https://en.wikipedia.org/wiki/Portable_Executable
+
 namespace bela::pe {
 
 void swaple(FileHeader &fh) {

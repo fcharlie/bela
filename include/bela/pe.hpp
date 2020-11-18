@@ -240,6 +240,13 @@ struct Function {
   int Index{0};
 };
 
+struct FunctionTable {
+  using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
+  symbols_map_t imports;
+  symbols_map_t delayimprots;
+  std::vector<std::string> exports;
+};
+
 using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
 
 class File {
@@ -258,6 +265,7 @@ public:
     return *this;
   }
   bool LookupImports(symbols_map_t &sm, bela::error_code &ec);
+  bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec);
   bool Is64Bit() const { return is64bit; }
   static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
   template <typename AStringT> void GoStringTable(std::vector<AStringT> &table) {

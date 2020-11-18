@@ -245,7 +245,9 @@ bool File::LookupImports(symbols_map_t &sm, bela::error_code &ec) {
     idd = &(Oh64()->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
     delay = &(Oh64()->DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
   } else {
+    auto oh3 = Oh32();
     ddlen = Oh32()->NumberOfRvaAndSizes;
+    idd = &(Oh32()->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
     delay = &(Oh32()->DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
   }
   if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1) {
@@ -283,13 +285,13 @@ bool File::LookupImports(symbols_map_t &sm, bela::error_code &ec) {
     }
     ida.emplace_back(std::move(id));
   }
-
+  auto ptrsize = is64bit ? sizeof(uint64_t) : sizeof(uint32_t);
   for (auto &dt : ida) {
     dt.DllName = getString(data, int(dt.Name - ds->Header.VirtualAddress));
     auto N = dt.OriginalFirstThunk - ds->Header.VirtualAddress;
     std::string_view d{data.data() + N, data.size() - N};
     std::vector<Function> functions;
-    while (d.size() > 0) {
+    while (d.size() >= ptrsize) {
       if (is64bit) {
         auto va = bela::readle<uint64_t>(d.data());
         d.remove_prefix(8);

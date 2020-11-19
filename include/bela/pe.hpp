@@ -340,30 +340,11 @@ struct VersionPair {
   std::wstring Str() const { return bela::StringCat(major, L".", minor); }
 };
 
-struct Attributes {
-  std::wstring clrmsg;
-  std::vector<std::wstring> depends; // depends dll
-  std::vector<std::wstring> delays;  // delay load library
-  VersionPair osver;
-  VersionPair linkver;
-  VersionPair imagever;
-  Machine machine;
-  Subsystem subsystem;
-  uint16_t characteristics{0};
-  uint16_t dllcharacteristics{0};
-  bool IsConsole() const { return subsystem == Subsystem::CUI; }
-  bool IsDLL() const {
-    constexpr uint16_t imagefiledll = 0x2000;
-    return (characteristics & imagefiledll) != 0;
-  }
-};
-std::optional<Attributes> Expose(std::wstring_view file, bela::error_code &ec);
-
 // https://docs.microsoft.com/en-us/windows/win32/api/winver/nf-winver-getfileversioninfoexw
 // https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-getfileversioninfosizeexw
 // https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-verqueryvaluew
 // version.lib
-struct VersionInfo {
+struct Version {
   std::wstring CompanyName;
   std::wstring FileDescription;
   std::wstring FileVersion;
@@ -378,7 +359,7 @@ struct VersionInfo {
   std::wstring SpecialBuild;
 };
 
-std::optional<VersionInfo> ExposeVersion(std::wstring_view file, bela::error_code &ec);
+std::optional<Version> LookupVersion(std::wstring_view file, bela::error_code &ec);
 
 } // namespace bela::pe
 

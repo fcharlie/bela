@@ -298,17 +298,17 @@ public:
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
   bool Is64Bit() const { return is64bit; }
   static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
-  template <typename AStringT> void GoStringTable(std::vector<AStringT> &table) {
+  template <typename AStringT> void SplitStringTable(std::vector<AStringT> &sa) const {
     auto sv = std::string_view{reinterpret_cast<const char *>(stringTable.data), stringTable.length};
     for (;;) {
       auto p = sv.find('\0');
       if (p == std::string_view::npos) {
         if (sv.size() != 0) {
-          table.emplace_back(sv);
+          sa.emplace_back(sv);
         }
         break;
       }
-      table.emplace_back(sv.substr(0, p));
+      sa.emplace_back(sv.substr(0, p));
       sv.remove_prefix(p + 1);
     }
   }

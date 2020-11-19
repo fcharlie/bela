@@ -17,9 +17,9 @@ int wmain(int argc, wchar_t **argv) {
                 L"Is64Bit: %b\nMachine: %d\nCharacteristics: %d\nPointerToSymbolTable: %d\nNumberOfSymbols %d\n",
                 file->Is64Bit(), file->Fh().Machine, file->Fh().Characteristics, file->Fh().PointerToSymbolTable,
                 file->Fh().NumberOfSymbols);
-  std::vector<std::string_view> gstable;
-  file->GoStringTable(gstable);
-  for (const auto s : gstable) {
+  std::vector<std::string_view> sa;
+  file->SplitStringTable(sa);
+  for (const auto s : sa) {
     bela::FPrintF(stderr, L"%s\n", s);
   }
   if (file->Is64Bit()) {

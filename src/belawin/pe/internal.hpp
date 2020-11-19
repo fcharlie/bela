@@ -44,7 +44,6 @@ std::string sectionFullName(SectionHeader32 &sh, StringTable &st);
 bool readRelocs(Section &sec, FILE *fd);
 bool readSectionData(std::vector<char> &data, const Section &sec, FILE *fd);
 bool readStringTable(FileHeader *fh, FILE *fd, StringTable &table, bela::error_code &ec);
-bool readCOFFSymbols(FileHeader *fh, FILE *fd, std::vector<COFFSymbol> &symbols, bela::error_code &ec);
 } // namespace bela::pe
 
 #endif

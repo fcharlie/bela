@@ -15,17 +15,17 @@ void StringTable::MoveFrom(StringTable &&other) {
 
 StringTable::~StringTable() { HeapFree(GetProcessHeap(), 0, data); }
 
-std::optional<std::string> StringTable::String(uint32_t start, bela::error_code &ec) {
+std::string StringTable::String(uint32_t start, bela::error_code &ec) const {
   if (start < 4) {
     ec = bela::make_error_code(1, L"offset ", start, L" is before the start of string table");
-    return std::nullopt;
+    return "";
   }
   start -= 4;
   if (static_cast<size_t>(start) > length) {
     ec = bela::make_error_code(1, L"offset ", start, L" is beyond the end of string table");
-    return std::nullopt;
+    return "";
   }
-  return std::make_optional<std::string>(cstring_view(data + start, length - start));
+  return std::string(cstring_view(data + start, length - start));
 }
 
 bool readStringTable(FileHeader *fh, FILE *fd, StringTable &table, bela::error_code &ec) {

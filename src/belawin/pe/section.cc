@@ -14,10 +14,7 @@ std::string sectionFullName(SectionHeader32 &sh, StringTable &st) {
     return "";
   }
   bela::error_code ec;
-  if (auto res = st.String(offset, ec); res) {
-    return std::string(std::move(*res));
-  }
-  return "";
+  return st.String(offset, ec);
 }
 
 bool readRelocs(Section &sec, FILE *fd) {

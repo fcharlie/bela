@@ -221,6 +221,7 @@ struct Section {
 
 constexpr uint32_t COFFSymbolSize = sizeof(COFFSymbol);
 
+// StringTable: Programs written in golang will customize stringtable
 struct StringTable {
   uint8_t *data{nullptr};
   size_t length{0};
@@ -234,7 +235,17 @@ struct StringTable {
   }
   ~StringTable();
   void MoveFrom(StringTable &&other);
-  std::optional<std::string> String(uint32_t start, bela::error_code &ec);
+  std::string String(uint32_t start, bela::error_code &ec) const;
+};
+
+// Symbol is similar to COFFSymbol with Name field replaced
+// by Go string. Symbol also does not have NumberOfAuxSymbols.
+struct Symbol {
+  std::string Name;
+  uint32_t Value;
+  int16_t SectionNumber;
+  uint16_t Type;
+  uint8_t StorageClass;
 };
 
 struct ExportedSymbol {
@@ -268,9 +279,9 @@ class File {
 private:
   void Free();
   void FileMove(File &&other);
-  bool LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec);
-  bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec);
-  bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec);
+  bool LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec) const;
+  bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
+  bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
 
 public:
   File() = default;
@@ -283,7 +294,8 @@ public:
     return *this;
   }
 
-  bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec);
+  bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
+  bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
   bool Is64Bit() const { return is64bit; }
   static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
   template <typename AStringT> void GoStringTable(std::vector<AStringT> &table) {
@@ -303,7 +315,6 @@ public:
   const FileHeader &Fh() { return fh; }
   const OptionalHeader64 *Oh64() const { return &oh64; }
   const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh64); }
-  const auto &COFFSymbols() const { return coffsymbol; }
   const auto &Sections() const { return sections; }
 
 private:
@@ -312,7 +323,6 @@ private:
   // The OptionalHeader64 structure is larger than OptionalHeader32. Therefore, we can store OptionalHeader32 in oh64.
   // Conversion by pointer.
   OptionalHeader64 oh64;
-  std::vector<COFFSymbol> coffsymbol;
   std::vector<Section> sections;
   StringTable stringTable;
   bool is64bit{false};

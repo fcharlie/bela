@@ -53,7 +53,15 @@ int wmain(int argc, wchar_t **argv) {
   }
 
   for (const auto &d : ft.exports) {
-    bela::FPrintF(stderr, L"\x1b[35mExport: %s Ordinal: %d Address: %08X\x1b[0m\n", d.Name, d.Ordinal, d.Address);
+    bela::FPrintF(stderr, L"\x1b[35mExport: %s Ordinal: %d Address: %08X\x1b[0m\n", llvm::demangle(d.Name), d.Ordinal,
+                  d.Address);
+  }
+  std::vector<bela::pe::Symbol> syms;
+  if(file->LookupSymbols(syms,ec)){
+    for(const auto &sm:syms){
+      bela::FPrintF(stderr,L"Symbols: %08x %s\n",sm.Value,sm.Name);
+    }
+
   }
 
   return 0;

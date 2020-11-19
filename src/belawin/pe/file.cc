@@ -119,7 +119,7 @@ void File::FileMove(File &&other) {
   stringTable = std::move(other.stringTable);
   sections = std::move(other.sections);
   memcpy(&fh, &other.fh, sizeof(FileHeader));
-  memcpy(&oh64, &other.oh64, sizeof(OptionalHeader64));
+  memcpy(&oh, &other.oh, sizeof(OptionalHeader64));
 }
 
 std::optional<File> File::NewFile(std::wstring_view p, bela::error_code &ec) {
@@ -178,17 +178,17 @@ std::optional<File> File::NewFile(std::wstring_view p, bela::error_code &ec) {
     return std::nullopt;
   }
   if (file.is64bit) {
-    if (fread(&file.oh64, 1, sizeof(OptionalHeader64), fd) != sizeof(OptionalHeader64)) {
+    if (fread(&file.oh, 1, sizeof(OptionalHeader64), fd) != sizeof(OptionalHeader64)) {
       ec = bela::make_stdc_error_code(ferror(file.fd), L"Invalid PE COFF file OptionalHeader64 ");
       return std::nullopt;
     }
-    swaple(&file.oh64);
+    swaple(&file.oh);
   } else {
-    if (fread(&file.oh64, 1, sizeof(OptionalHeader32), fd) != sizeof(OptionalHeader32)) {
+    if (fread(&file.oh, 1, sizeof(OptionalHeader32), fd) != sizeof(OptionalHeader32)) {
       ec = bela::make_stdc_error_code(ferror(file.fd), L"Invalid PE COFF file OptionalHeader32 ");
       return std::nullopt;
     }
-    swaple(reinterpret_cast<OptionalHeader32 *>(&file.oh64));
+    swaple(reinterpret_cast<OptionalHeader32 *>(&file.oh));
   }
   file.sections.reserve(file.fh.NumberOfSections);
   for (int i = 0; i < file.fh.NumberOfSections; i++) {
@@ -241,10 +241,10 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
   uint32_t ddlen = 0;
   const DataDirectory *exd = nullptr;
   if (is64bit) {
-    ddlen = oh64.NumberOfRvaAndSizes;
-    exd = &(oh64.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
+    ddlen = oh.NumberOfRvaAndSizes;
+    exd = &(oh.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
   } else {
-    auto oh3 = Oh32();
+    auto oh3 = reinterpret_cast<const OptionalHeader32 *>(&oh);
     ddlen = oh3->NumberOfRvaAndSizes;
     exd = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
   }
@@ -328,10 +328,10 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
   uint32_t ddlen = 0;
   const DataDirectory *delay = nullptr;
   if (is64bit) {
-    ddlen = oh64.NumberOfRvaAndSizes;
-    delay = &(oh64.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
+    ddlen = oh.NumberOfRvaAndSizes;
+    delay = &(oh.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
   } else {
-    auto oh3 = Oh32();
+    auto oh3 = reinterpret_cast<const OptionalHeader32 *>(&oh);
     ddlen = oh3->NumberOfRvaAndSizes;
     delay = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
   }
@@ -429,10 +429,10 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
   uint32_t ddlen = 0;
   const DataDirectory *idd = nullptr;
   if (is64bit) {
-    ddlen = oh64.NumberOfRvaAndSizes;
-    idd = &(oh64.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
+    ddlen = oh.NumberOfRvaAndSizes;
+    idd = &(oh.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
   } else {
-    auto oh3 = Oh32();
+    auto oh3 = reinterpret_cast<const OptionalHeader32 *>(&oh);
     ddlen = oh3->NumberOfRvaAndSizes;
     idd = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
   }

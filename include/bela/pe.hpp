@@ -294,10 +294,6 @@ public:
     return *this;
   }
 
-  bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
-  bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
-  bool Is64Bit() const { return is64bit; }
-  static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
   template <typename AStringT> void SplitStringTable(std::vector<AStringT> &sa) const {
     auto sv = std::string_view{reinterpret_cast<const char *>(stringTable.data), stringTable.length};
     for (;;) {
@@ -312,33 +308,29 @@ public:
       sv.remove_prefix(p + 1);
     }
   }
+
+  bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
+  bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
+  bool Is64Bit() const { return is64bit; }
   const FileHeader &Fh() { return fh; }
-  const OptionalHeader64 *Oh64() const { return &oh64; }
-  const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh64); }
+  const OptionalHeader64 *Oh64() const { return &oh; }
+  const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh); }
   const auto &Sections() const { return sections; }
+  // NewFile resolve pe file
+  static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
 
 private:
   FILE *fd{nullptr};
   FileHeader fh;
   // The OptionalHeader64 structure is larger than OptionalHeader32. Therefore, we can store OptionalHeader32 in oh64.
   // Conversion by pointer.
-  OptionalHeader64 oh64;
+  OptionalHeader64 oh;
   std::vector<Section> sections;
   StringTable stringTable;
   bool is64bit{false};
 };
 
 inline std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec) { return File::NewFile(p, ec); }
-
-struct VersionPair {
-  uint16_t major{0};
-  uint16_t minor{0};
-  template <typename T> void Update(T major_, T minor_) {
-    major = bela::swaple(major_);
-    minor = bela::swaple(minor_);
-  }
-  std::wstring Str() const { return bela::StringCat(major, L".", minor); }
-};
 
 // https://docs.microsoft.com/en-us/windows/win32/api/winver/nf-winver-getfileversioninfoexw
 // https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-getfileversioninfosizeexw

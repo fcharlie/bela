@@ -37,7 +37,7 @@ int wmain(int argc, wchar_t **argv) {
         bela::FPrintF(stderr, L"%s (Ordinal %d)\n", n.Name, n.Ordinal);
         continue;
       }
-      bela::FPrintF(stderr, L"%s %d\n", n.Name, n.Index);
+      bela::FPrintF(stderr, L"%s %d\n", llvm::demangle(n.Name), n.Index);
     }
   }
 

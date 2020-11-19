@@ -6,6 +6,10 @@ add_library(belawin STATIC
   fs.cc
   path.cc
   peimage.cc
+  pe/llvm/Demangle.cpp
+  pe/llvm/ItaniumDemangle.cpp
+  pe/llvm/MicrosoftDemangle.cpp
+  pe/llvm/MicrosoftDemangleNodes.cpp
   pe/file.cc
   pe/resource.cc
   pe/section.cc

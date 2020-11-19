@@ -311,11 +311,15 @@ public:
 
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
-  bool Is64Bit() const { return is64bit; }
   const FileHeader &Fh() { return fh; }
   const OptionalHeader64 *Oh64() const { return &oh; }
   const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh); }
   const auto &Sections() const { return sections; }
+  bool Is64Bit() const { return is64bit; }
+  bela::pe::Machine Machine() const { return static_cast<bela::pe::Machine>(fh.Machine); }
+  bela::pe::Subsystem Subsystem() const {
+    return static_cast<bela::pe::Subsystem>(is64bit ? oh.Subsystem : Oh32()->Subsystem);
+  }
   // NewFile resolve pe file
   static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
 

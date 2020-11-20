@@ -378,8 +378,6 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
         }
         // IMAGE_ORDINAL_FLAG64
         if ((va & 0x8000000000000000) > 0) {
-          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va & 0x8000000000000000)) -
-                                         ds->Header.VirtualAddress + 2);
           auto ordinal = IMAGE_ORDINAL64(va);
           functions.emplace_back("", 0, static_cast<int>(ordinal));
           // TODO add dynimport ordinal support.
@@ -474,8 +472,6 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
         }
         // IMAGE_ORDINAL_FLAG64
         if ((va & 0x8000000000000000) > 0) {
-          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va & 0x8000000000000000)) -
-                                         ds->Header.VirtualAddress + 2);
           auto ordinal = IMAGE_ORDINAL64(va);
           functions.emplace_back("", 0, static_cast<int>(ordinal));
           // TODO add dynimport ordinal support.

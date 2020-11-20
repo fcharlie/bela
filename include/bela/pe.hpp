@@ -46,6 +46,10 @@ enum class Machine : uint16_t {
   AMD64 = 0x8664, // AMD64 (K8)
   M32R = 0x9041,  // M32R little-endian
   ARM64 = 0xAA64, // ARM64 Little-Endian
+  RISCV32 = 0x5032,
+  RISCV64 = 0x5064,
+  RISCV128 = 0x5128,
+  CHPEX86 = 0x3A64,
   CEE = 0xC0EE
 };
 enum class Subsystem : uint16_t {

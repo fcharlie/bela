@@ -49,7 +49,7 @@ bool removeAuxSymbols(const std::vector<COFFSymbol> &csyms, const StringTable &s
     }
     aux = cm.NumberOfAuxSymbols;
     Symbol sm;
-    sm.Name = std::move(symbolFullName(cm, st));
+    sm.Name = symbolFullName(cm, st);
     sm.Value = cm.Value;
     sm.SectionNumber = cm.SectionNumber;
     sm.StorageClass = cm.StorageClass;

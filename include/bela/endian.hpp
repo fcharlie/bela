@@ -5,8 +5,8 @@
 #include <cstring>
 #include <type_traits>
 
-// 19.28.29334.0
-#if defined(_MSC_FULL_VER) && _MSC_FULL_VER >= 192829334
+// 19.28.29334.0 and clang-cl BUG
+#if defined(_MSC_FULL_VER) && !defined(__clang__) && _MSC_FULL_VER >= 192829334
 #define BELA_ENDIAN_CONSTEXPR constexpr
 #else
 #define BELA_ENDIAN_CONSTEXPR
@@ -93,7 +93,9 @@ inline BELA_ENDIAN_CONSTEXPR signed short bswap(signed short v) {
 inline BELA_ENDIAN_CONSTEXPR unsigned int bswap(unsigned int v) {
   return static_cast<unsigned int>(swap32(static_cast<uint32_t>(v)));
 }
-inline BELA_ENDIAN_CONSTEXPR signed int bswap(signed int v) { return static_cast<signed int>(swap32(static_cast<uint32_t>(v))); }
+inline BELA_ENDIAN_CONSTEXPR signed int bswap(signed int v) {
+  return static_cast<signed int>(swap32(static_cast<uint32_t>(v)));
+}
 
 inline BELA_ENDIAN_CONSTEXPR unsigned long bswap(unsigned long v) {
   if constexpr (sizeof(unsigned long) == 8) {

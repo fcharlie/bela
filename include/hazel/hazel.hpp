@@ -7,7 +7,7 @@
 
 namespace hazel {
 #define nullfile_t INVALID_HANDLE_VALUE
-struct AttributeTable {
+struct FileAttributeTable {
   bela::flat_hash_map<std::wstring, std::wstring> attributes;
   bela::flat_hash_map<std::wstring, std::vector<std::wstring>> multi_attributes;
   std::wstring_view mime;
@@ -27,7 +27,7 @@ public:
     return *this;
   }
   bool NewFile(std::wstring_view file, bela::error_code &ec);
-  bool Lookup(AttributeTable &at, bela::error_code &ec);
+  bool Lookup(FileAttributeTable &fat, bela::error_code &ec);
   std::wstring_view FullPath() const { return fullpath; }
 
 private:

@@ -13,7 +13,7 @@ bool File::NewFile(std::wstring_view file, bela::error_code &ec) {
   return true;
 }
 
-bool File::Lookup(AttributeTable &at, bela::error_code &ec) {
+bool File::Lookup(FileAttributeTable &fat, bela::error_code &ec) {
   if (!SeekStart(0)) {
     ec = bela::make_system_error_code();
     return false;

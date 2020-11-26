@@ -1,7 +1,13 @@
 # bela hazel library
 
 add_library(hazel STATIC
+  fs.cc
+  hazel.cc
   mime.cc
+)
+
+target_link_libraries(hazel
+  bela
 )
 
 if(BELA_ENABLE_LTO)

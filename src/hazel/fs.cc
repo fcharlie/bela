@@ -209,7 +209,6 @@ bool LookupReparsePoint(std::wstring_view file, FileReparsePoint &frp, bela::err
   default:
     break;
   }
-
   return true;
 }
 } // namespace hazel::fs

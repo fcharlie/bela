@@ -62,8 +62,6 @@ typedef enum reparse_point_e : unsigned long {
 
 struct FileReparsePoint {
   bela::flat_hash_map<std::wstring, std::wstring> attributes;
-  bela::flat_hash_map<std::wstring, std::vector<std::wstring>> multi_attributes;
-  std::wstring_view name;
   reparse_point_t type;
 };
 

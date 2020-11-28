@@ -1,4 +1,5 @@
-/// Thanks Apple.inc
+// Thanks Apple.inc
+// https://github.com/apple/darwin-xnu/blob/master/osfmk/mach/machine.h
 // https://opensource.apple.com/source/xnu/xnu-4903.221.2/osfmk/mach/machine.h.auto.html
 /*
  * Copyright (c) 2007-2016 Apple, Inc. All rights reserved.

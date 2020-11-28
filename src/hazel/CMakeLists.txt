@@ -1,6 +1,16 @@
 # bela hazel library
 
 add_library(hazel STATIC
+  ina/archive.cc
+  ina/binexeobj.cc
+  ina/docs.cc
+  ina/font.cc
+  ina/git.cc
+  ina/image.cc
+  ina/media.cc
+  ina/shl.cc
+  ina/text.cc
+  ina/zipfamily.cc
   fs.cc
   hazel.cc
   mime.cc

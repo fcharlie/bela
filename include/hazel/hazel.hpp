@@ -3,15 +3,53 @@
 #define HAZEL_HAZEL_HPP
 #include <bela/base.hpp>
 #include <bela/phmap.hpp>
+#include <bela/buffer.hpp>
 #include "types.hpp"
 
-namespace hazel {
+#ifndef nullfile_t
 #define nullfile_t INVALID_HANDLE_VALUE
+#endif
+
+namespace hazel {
 struct FileAttributeTable {
   bela::flat_hash_map<std::wstring, std::wstring> attributes;
   bela::flat_hash_map<std::wstring, std::vector<std::wstring>> multi_attributes;
-  std::wstring_view mime;
-  types::hazel_types_t type;
+  types::hazel_types_t type{types::none};
+  FileAttributeTable &assign(std::wstring_view desc, types::hazel_types_t t = types::none) {
+    attributes.emplace(L"Description", desc);
+    type = t;
+    return *this;
+  }
+  FileAttributeTable &append(const std::wstring_view &name, const std::wstring_view &value) {
+    attributes.emplace(name, value);
+    return *this;
+  }
+  FileAttributeTable &append(std::wstring &&name, std::wstring &&value) {
+    attributes.emplace(std::move(name), std::move(value));
+    return *this;
+  }
+  FileAttributeTable &append(std::wstring &&name, std::vector<std::wstring> &&value) {
+    multi_attributes.emplace(std::move(name), std::move(value));
+    return *this;
+  }
+
+  bool LooksLikeELF() const {
+    return type == types::elf || type == types::elf_executable || type == types::elf_relocatable ||
+           type == types::elf_shared_object;
+  }
+  bool LooksLikeMachO() const {
+    return type == types::macho_bundle || type == types::macho_core || type == types::macho_dsym_companion ||
+           type == types::macho_dynamic_linker || type == types::macho_dynamically_linked_shared_lib ||
+           type == types::macho_dynamically_linked_shared_lib_stub || type == types::macho_executable ||
+           type == types::macho_fixed_virtual_memory_shared_lib || type == types::macho_kext_bundle ||
+           type == types::macho_object || type == types::macho_preload_executable ||
+           type == types::macho_universal_binary;
+  }
+  bool LooksLikePE() const { return type == types::pecoff_executable; }
+  bool LooksLikeZIP() const {
+    return type == types::zip || type == types::docx || type == types::xlsx || type == types::pptx ||
+           type == types::ofd;
+  }
 };
 // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfilepointerex
 // SetFilePointerEx
@@ -27,22 +65,15 @@ public:
     return *this;
   }
   bool NewFile(std::wstring_view file, bela::error_code &ec);
-  bool Lookup(FileAttributeTable &fat, bela::error_code &ec);
+
+  bool ReadAt(bela::Buffer &b, size_t len, uint64_t pos, bela::error_code &ec);
+  bool ReadAt(bela::Buffer &b, uint64_t pos, bela::error_code &ec) { return ReadAt(b, b.capacity(), pos, ec); }
   std::wstring_view FullPath() const { return fullpath; }
+  bool Lookup(FileAttributeTable &fat, bela::error_code &ec);
 
 private:
   HANDLE fd{nullfile_t};
   std::wstring fullpath;
-  // inline
-  bool SeekStart(uint64_t offset) {
-    LARGE_INTEGER li;
-    li.QuadPart = offset;
-    LARGE_INTEGER oli{0};
-    if (SetFilePointerEx(fd, li, &li, FILE_BEGIN) == 0) {
-      return false;
-    }
-    return true;
-  }
   void Free() {
     if (fd != nullfile_t) {
       CloseHandle(fd);

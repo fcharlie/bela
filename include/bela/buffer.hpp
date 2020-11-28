@@ -5,6 +5,7 @@
 #include <optional>
 
 namespace bela {
+constexpr inline size_t align_length(size_t n) { return (n / 8 + 1) * 8; }
 namespace buffer {
 template <typename T = uint8_t, typename Allocator = std::allocator<T>> class Buffer {
 private:
@@ -46,6 +47,18 @@ public:
   size_t size() const { return size_; }
   size_t &size() { return size_; }
   size_t capacity() const { return capacity_; }
+  void grow(size_t n) {
+    if (n <= capacity_) {
+      return;
+    }
+    auto b = get_allocator().allocate(n);
+    if (size_ != 0) {
+      memcpy(b, data_, sizeof(T) * n);
+    }
+    get_allocator().deallocate(data_, capacity_);
+    data_ = b;
+    capacity_ = n;
+  }
   template <typename I> const I *cast() const { return reinterpret_cast<const I *>(data_); }
   const T *data() const { return data_; }
   T *data() { return data_; }

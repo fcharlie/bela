@@ -20,7 +20,6 @@ add_library(belawin STATIC
   pe/version.cc
   process.cc
   realpath.cc
-  reparsepoint.cc
   simulator.cc
 )
 

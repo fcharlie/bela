@@ -10,9 +10,10 @@ target_link_libraries(appexeclink_test
 
 
 add_executable(rptest
-rptest.cc
+  rptest.cc
 )
 
 target_link_libraries(rptest
   belawin
+  hazel
 )

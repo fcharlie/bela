@@ -5,7 +5,7 @@
 #include <bela/phmap.hpp>
 
 namespace hazel::fs {
-typedef enum reparse_point_e : uint32_t {
+typedef enum reparse_point_e : unsigned long {
   MOUNT_POINT = 0xA0000003,
   HSM = 0xC0000004,
   DRIVE_EXTENDER = 0x80000005,

@@ -1,6 +1,5 @@
 //
 #include "hazelinc.hpp"
-#include "macho.hpp"
 
 namespace hazel::internal {
 static constexpr const uint8_t ElfMagic[] = {0x7f, 'E', 'L', 'F'};
@@ -43,6 +42,31 @@ constexpr std::string_view wasmobj{"\0asm", 4};
 constexpr std::string_view irobj{"\xDE\xC0\x17\x0B", 4};
 constexpr std::string_view irobj2{"\xBC\xC0\xDE", 3};
 constexpr std::string_view bobj{"\0\0\xFF\xFF", 4};
+
+struct mach_header {
+  uint32_t magic;      /* mach magic number identifier */
+  uint32_t cputype;    /* cpu specifier */
+  uint32_t cpusubtype; /* machine specifier */
+  uint32_t filetype;   /* type of file */
+  uint32_t ncmds;      /* number of load commands */
+  uint32_t sizeofcmds; /* the size of all the load commands */
+  uint32_t flags;      /* flags */
+};
+
+/*
+ * The 64-bit mach header appears at the very beginning of object files for
+ * 64-bit architectures.
+ */
+struct mach_header_64 {
+  uint32_t magic;      /* mach magic number identifier */
+  uint32_t cputype;    /* cpu specifier */
+  uint32_t cpusubtype; /* machine specifier */
+  uint32_t filetype;   /* type of file */
+  uint32_t ncmds;      /* number of load commands */
+  uint32_t sizeofcmds; /* the size of all the load commands */
+  uint32_t flags;      /* flags */
+  uint32_t reserved;   /* reserved */
+};
 
 status_t LookupExecutableFile(bela::MemView mv, FileAttributeTable &fat) {
   if (mv.size() < 4) {

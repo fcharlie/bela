@@ -56,6 +56,8 @@ typedef enum reparse_point_e : unsigned long {
   LX_FIFO = 0x80000024,
   LX_CHR = 0x80000025,
   LX_BLK = 0x80000026,
+  WCI_LINK = 0xA0000027,
+  WCI_LINK_1 = 0xA0001027,
 } reparse_point_t;
 
 struct FileReparsePoint {

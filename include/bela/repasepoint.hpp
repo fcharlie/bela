@@ -252,6 +252,27 @@
 #define MAXIMUM_REPARSE_DATA_BUFFER_SIZE (16 * 1024)
 #endif
 
+// NFS https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/ff4df658-7f27-476a-8025-4074c0121eec
+#ifndef NFS_SPECFILE_LNK
+#define NFS_SPECFILE_LNK 0x00000000014B4E4CULL
+#endif
+
+#ifndef NFS_SPECFILE_CHR
+#define NFS_SPECFILE_CHR 0x0000000000524843ULL
+#endif
+
+#ifndef NFS_SPECFILE_BLK
+#define NFS_SPECFILE_BLK 0x00000000004B4C42ULL
+#endif
+
+#ifndef NFS_SPECFILE_FIFO
+#define NFS_SPECFILE_FIFO 0x000000004F464946ULL
+#endif
+
+#ifndef NFS_SPECFILE_SOCK
+#define NFS_SPECFILE_SOCK 0x000000004B434F53ULL
+#endif
+
 #if (_WIN32_WINNT >= _WIN32_WINNT_WIN10_RS1)
 #define FSCTL_SET_REPARSE_POINT_EX                                                                                     \
   CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 259, METHOD_BUFFERED, FILE_SPECIAL_ACCESS) // REPARSE_DATA_BUFFER_EX
@@ -337,6 +358,12 @@ typedef struct _REPARSE_DATA_BUFFER {
       USHORT Length;   // Length of the data (uncompressed)
       BYTE RawData[1]; // To be RtlDecompressBuffer-ed
     } HsmReparseBufferRaw;
+
+    // Handled by NFS
+    struct {
+      ULONGLONG Type;
+      BYTE RawData[1];
+    } NfsReparseBufferRaw;
 
     // Dummy structure
     struct {

@@ -9,9 +9,9 @@ bool File::NewFile(std::wstring_view file, bela::error_code &ec) {
     ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
     return false;
   }
-  if (fd = CreateFileW(file.data(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
-                       FILE_ATTRIBUTE_NORMAL, nullptr);
-      fd == nullfile_t) {
+  fd = CreateFileW(file.data(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
+                   FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (fd == nullfile_t) {
     ec = bela::make_system_error_code();
     return false;
   }

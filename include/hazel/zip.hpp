@@ -3,8 +3,8 @@
 #define HAZEL_ZIP_HPP
 #include <bela/base.hpp>
 
-namespace hazel {
-//
-}
+namespace hazel::zip {
+struct ZipHeader {};
+} // namespace hazel::zip
 
 #endif

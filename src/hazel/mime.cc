@@ -20,13 +20,12 @@ const wchar_t *lookup_mime(types::hazel_types_t t) {
       // text index end
       // binary
       {types::bitcode, L"application/octet-stream"},           ///< Bitcode file
-      {types::archive, L"application/octet-stream"},           ///< ar style archive file
-      {types::elf, L"application/x-executable"},               ///< ELF Unknown type
-      {types::elf, L"application/x-executable"},               ///< ELF Unknown type
-      {types::elf_relocatable, L"application/x-executable"},   ///< ELF Relocatable object file
+      {types::archive, L"application/x-unix-archive"},         ///< ar style archive file
+      {types::elf, L"application/x-elf"},                      ///< ELF Unknown type
+      {types::elf_relocatable, L"application/x-relocatable"},  ///< ELF Relocatable object file
       {types::elf_executable, L"application/x-executable"},    ///< ELF Executable image
-      {types::elf_shared_object, L"application/x-executable"}, ///< ELF dynamically linked shared lib
-      {types::elf_core, L"application/x-executable"},          ///< ELF core image
+      {types::elf_shared_object, L"application/x-sharedlib"},  ///< ELF dynamically linked shared lib
+      {types::elf_core, L"application/x-coredump"},            ///< ELF core image
       {types::macho_object, L"application/x-mach-binary"},     ///< Mach-O Object file
       {types::macho_executable, L"application/x-mach-binary"}, ///< Mach-O Executable
       {types::macho_fixed_virtual_memory_shared_lib, L"application/x-mach-binary"},    ///< Mach-O Shared Lib, FVM
@@ -115,7 +114,7 @@ const wchar_t *lookup_mime(types::hazel_types_t t) {
       {types::avi, L"video/x-msvideo"},
       {types::wmv, L"video/x-ms-wmv"},
       {types::mpeg, L"video/mpeg"},
-      {types::flv, L""},
+      {types::flv, L"video/x-flv"},
       // support git
       {types::gitpack, L"application/x-git-pack"},
       {types::gitpkindex, L"application/x-git-pack-index"},

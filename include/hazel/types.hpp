@@ -118,8 +118,11 @@ typedef enum hazel_types_e : uint32_t {
   gitpack,
   gitpkindex,
   gitmidx,
+  //
   shelllink, // Windows shelllink
-  iso
+  //
+  iso,
+  jar,
 } hazel_types_t;
 
 }

@@ -152,10 +152,6 @@ status_t lookup_chardet(bela::MemView mv, FileAttributeTable &fat) {
     fat.assign(L"Binary data");
     return Found;
   }
-  // if (validate_utf8(reinterpret_cast<const char *>(mv.data()), mv.size())) {
-  //   fat.assign(L"UTF-8 Unicode text", types::utf8);
-  //   return Found;
-  // }
   fat.assign(L"UTF-8 Unicode text", types::utf8);
   return Found;
 }

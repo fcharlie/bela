@@ -56,14 +56,20 @@ struct FileAttributeTable {
 // zip details
 
 struct ZipDetails {
-  std::wstring_view mime;
-  bela::flat_hash_map<uint16_t, uint32_t> methodsmap;
+  std::wstring comments;
+  std::wstring mime;
+  bela::flat_hash_map<uint16_t, uint32_t> methods;
   uint64_t uncompressedsize{0};
   uint32_t filecounts{0};
   uint32_t folders{0};
   bool hassymlink{false};
   types::hazel_types_t subtype;
 };
+class File;
+namespace zip {
+bool DissectZIP(const File &r, ZipDetails &zd, bela::error_code &ec);
+}
+
 // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfilepointerex
 // SetFilePointerEx
 class File {
@@ -114,6 +120,7 @@ public:
   bool Read(bela::Buffer &b, bela::error_code &ec) const { return Read(b.data(), b.capacity(), b.size(), ec); }
   bool Read(bela::Buffer &b, size_t len, bela::error_code &ec) const { return Read(b.data(), len, b.size(), ec); }
   bool ReadAt(bela::Buffer &b, uint64_t pos, bela::error_code &ec) const { return ReadAt(b, b.capacity(), pos, ec); }
+  bool DissectZIP(ZipDetails &zd, bela::error_code &ec) { return zip::DissectZIP(*this, zd, ec); }
   std::wstring_view FullPath() const { return fullpath; }
   bool Lookup(FileAttributeTable &fat, bela::error_code &ec);
 

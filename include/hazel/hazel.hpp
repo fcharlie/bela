@@ -53,27 +53,6 @@ struct FileAttributeTable {
   }
 };
 
-// zip details
-
-struct ZipDetails {
-  ZipDetails &Add(uint16_t m) {
-    if (auto it = methods.find(m); it != methods.end()) {
-      it->second++;
-      return *this;
-    }
-    methods[m] = 1;
-    return *this;
-  }
-  std::wstring comments;
-  std::wstring mime;
-  bela::flat_hash_map<uint16_t, uint32_t> methods;
-  uint64_t uncompressedsize{0};
-  uint32_t filecounts{0};
-  uint32_t folders{0};
-  bool hassymlink{false};
-  types::hazel_types_t subtype;
-};
-
 // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfilepointerex
 // SetFilePointerEx
 class File {

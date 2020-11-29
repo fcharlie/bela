@@ -38,7 +38,6 @@ bool File::Lookup(FileAttributeTable &fat, bela::error_code &ec) {
       LookupDocs,
       LookupFonts,     //
       LookupShellLink, // shortcut
-      LookupZipFamily, // zip
       LookupMedia,     // media
       LookupImages,    // images
       LookupText,

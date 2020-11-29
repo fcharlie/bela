@@ -496,7 +496,16 @@ status_t lookup_archivesinternal(bela::MemView mv, FileAttributeTable &fat) {
   return None;
 }
 
+inline bool IsZip(const uint8_t *buf, size_t size) {
+  return (size > 3 && buf[0] == 0x50 && buf[1] == 0x4B && (buf[2] == 0x3 || buf[2] == 0x5 || buf[2] == 0x7) &&
+          (buf[3] == 0x4 || buf[3] == 0x6 || buf[3] == 0x8));
+}
+
 status_t LookupArchives(bela::MemView mv, FileAttributeTable &fat) {
+  if (IsZip(mv.data(), mv.size())) {
+    fat.assign(L"ZIP file", types::zip);
+    return Found;
+  }
   if (lookup_7zinternal(mv, fat) == Found) {
     return Found;
   }

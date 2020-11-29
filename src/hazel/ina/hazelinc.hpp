@@ -20,7 +20,6 @@ status_t LookupArchives(bela::MemView mv, hazel::FileAttributeTable &fat);
 status_t LookupDocs(bela::MemView mv, FileAttributeTable &fat);
 status_t LookupFonts(bela::MemView mv, FileAttributeTable &fat);
 status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat);
-status_t LookupZipFamily(bela::MemView mv, FileAttributeTable &fat);
 status_t LookupMedia(bela::MemView mv, FileAttributeTable &fat);
 status_t LookupImages(bela::MemView mv, FileAttributeTable &fat);
 status_t LookupText(bela::MemView mv, FileAttributeTable &fat);

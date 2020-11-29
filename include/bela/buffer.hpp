@@ -44,9 +44,9 @@ public:
   Buffer(const Buffer &) = delete;
   Buffer &operator=(const Buffer &) = delete;
   ~Buffer() {}
-  size_t size() const { return size_; }
-  size_t &size() { return size_; }
-  size_t capacity() const { return capacity_; }
+  [[nodiscard]] size_t size() const { return size_; }
+  [[nodiscard]] size_t &size() { return size_; }
+  [[nodiscard]] size_t capacity() const { return capacity_; }
   void grow(size_t n) {
     if (n <= capacity_) {
       return;
@@ -59,9 +59,10 @@ public:
     data_ = b;
     capacity_ = n;
   }
-  template <typename I> const I *cast() const { return reinterpret_cast<const I *>(data_); }
-  const T *data() const { return data_; }
-  T *data() { return data_; }
+  template <typename I>[[nodiscard]] const I *cast() const { return reinterpret_cast<const I *>(data_); }
+  [[nodiscard]] const T *data() const { return data_; }
+  [[nodiscard]] T operator[](const size_t _Off) const noexcept { return *(data_ + _Off); }
+  [[nodiscard]] T *data() { return data_; }
 
 private:
   T *data_{nullptr};

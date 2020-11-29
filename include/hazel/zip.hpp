@@ -2,6 +2,7 @@
 #ifndef HAZEL_ZIP_HPP
 #define HAZEL_ZIP_HPP
 #include <bela/base.hpp>
+#include <bela/buffer.hpp>
 #include <ctime>
 
 #define HAZEL_COMPRESS_LEVEL_DEFAULT (-1)
@@ -102,54 +103,88 @@ typedef enum zip_method_e : uint16_t {
   ZIP_JPEG = 96,    /* Compressed Jpeg data */
   ZIP_WAVPACK = 97, /* WavPack compressed data */
   ZIP_PPMD = 98,    /* PPMd version I, Rev 1 */
+  ZIP_AES = 99,     /* AE-x encryption marker (see APPENDIX E) */
 } zip_method_t;
 
-#pragma pack(2)
-struct zip_file_header_t {
-  uint8_t magic[4]; //{'P','K','',''} // 0x04034b50 LE
-  uint16_t version;
-  uint16_t bitflag;
-  uint16_t method;
-  uint16_t mtime;
-  uint16_t mdate;
-  uint32_t crc32;
-  uint32_t compressedsize;
-  uint32_t uncompressedsize;
-  uint16_t namelen;
-  uint16_t fieldlength;
+struct directory_end {
+  uint32_t diskNbr;            // unused
+  uint32_t dirDiskNbr;         // unused
+  uint64_t dirRecordsThisDisk; // unused
+  uint64_t directoryRecords;
+  uint64_t directorySize;
+  uint64_t directoryOffset; // relative to file
+  uint16_t commentLen;
+  std::string comment;
 };
 
-// Thanks Minizip
-typedef struct hazel_zip_file_s {
-  uint16_t version_madeby;     /* version made by */
-  uint16_t version_needed;     /* version needed to extract */
-  uint16_t flag;               /* general purpose bit flag */
-  uint16_t compression_method; /* compression method */
-  time_t modified_date;        /* last modified date in unix time */
-  time_t accessed_date;        /* last accessed date in unix time */
-  time_t creation_date;        /* creation date in unix time */
-  uint32_t crc;                /* crc-32 */
-  int64_t compressed_size;     /* compressed size */
-  int64_t uncompressed_size;   /* uncompressed size */
-  uint16_t filename_size;      /* filename length */
-  uint16_t extrafield_size;    /* extra field length */
-  uint16_t comment_size;       /* file comment length */
-  uint32_t disk_number;        /* disk number start */
-  int64_t disk_offset;         /* relative offset of local header */
-  uint16_t internal_fa;        /* internal file attributes */
-  uint32_t external_fa;        /* external file attributes */
+class Reader {
+public:
+  Reader(HANDLE fd_, int64_t sz) : fd(fd_), size(sz) {}
+  Reader(const Reader &r) { CopyFrom(r); }
+  Reader &operator=(const Reader &r) {
+    CopyFrom(r);
+    return *this;
+  }
+  Reader(Reader &&r) { MoveFrom(std::move(r)); }
+  Reader &operator=(Reader &&r) {
+    MoveFrom(std::move(r));
+    return *this;
+  }
+  bool PositionAt(uint64_t pos, bela::error_code &ec) const {
+    auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
+    LARGE_INTEGER oli{0};
+    if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
+      ec = bela::make_error_code(L"SetFilePointerEx: ");
+      return false;
+    }
+    return true;
+  }
+  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
+    DWORD dwSize = {0};
+    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
+      ec = bela::make_system_error_code(L"ReadFile: ");
+      return false;
+    }
+    outlen = static_cast<size_t>(len);
+    return true;
+  }
+  bool ReadAt(void *buffer, size_t len, uint64_t pos, size_t &outlen, bela::error_code &ec) {
+    if (!PositionAt(pos, ec)) {
+      return false;
+    }
+    return Read(buffer, len, outlen, ec);
+  }
+  bool ReadAt(bela::Buffer &b, size_t len, uint64_t pos, bela::error_code &ec) const {
+    if (len > b.capacity()) {
+      b.grow(bela::align_length(len));
+    }
+    if (!PositionAt(pos, ec)) {
+      return false;
+    }
+    return Read(b.data(), len, b.size(), ec);
+  }
+  static std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec);
 
-  const char *filename;      /* filename utf8 null-terminated string */
-  const uint8_t *extrafield; /* extrafield data */
-  const char *comment;       /* comment utf8 null-terminated string */
-  const char *linkname;      /* sym-link filename utf8 null-terminated string */
+private:
+  HANDLE fd;
+  int64_t size;
+  std::string comment;
+  void CopyFrom(const Reader &r) {
+    fd = r.fd;
+    size = r.size;
+    comment = r.comment;
+  }
+  void MoveFrom(Reader &&r) {
+    fd = r.fd;
+    r.fd = INVALID_HANDLE_VALUE;
+    size = r.size;
+    r.size = 0;
+    comment = std::move(r.comment);
+  }
 
-  uint16_t zip64;              /* zip64 extension mode */
-  uint16_t aes_version;        /* winzip aes extension if not 0 */
-  uint8_t aes_encryption_mode; /* winzip aes encryption mode */
-} hazel_zip_file;
-
-#pragma pack()
+  bool initialize(bela::error_code &ec);
+  bool readde(directory_end &de, bela::error_code &ec);
+};
 
 } // namespace hazel::zip
 

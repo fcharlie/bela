@@ -56,6 +56,14 @@ struct FileAttributeTable {
 // zip details
 
 struct ZipDetails {
+  ZipDetails &Add(uint16_t m) {
+    if (auto it = methods.find(m); it != methods.end()) {
+      it->second++;
+      return *this;
+    }
+    methods[m] = 1;
+    return *this;
+  }
   std::wstring comments;
   std::wstring mime;
   bela::flat_hash_map<uint16_t, uint32_t> methods;
@@ -65,10 +73,6 @@ struct ZipDetails {
   bool hassymlink{false};
   types::hazel_types_t subtype;
 };
-class File;
-namespace zip {
-bool DissectZIP(const File &r, ZipDetails &zd, bela::error_code &ec);
-}
 
 // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfilepointerex
 // SetFilePointerEx
@@ -88,6 +92,15 @@ public:
     auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
     LARGE_INTEGER oli{0};
     if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
+      ec = bela::make_error_code(L"SetFilePointerEx: ");
+      return false;
+    }
+    return true;
+  }
+  bool PositionEnd(uint64_t pos, bela::error_code &ec) const {
+    auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
+    LARGE_INTEGER oli{0};
+    if (SetFilePointerEx(fd, li, &oli, SEEK_END) != TRUE) {
       ec = bela::make_error_code(L"SetFilePointerEx: ");
       return false;
     }
@@ -120,9 +133,9 @@ public:
   bool Read(bela::Buffer &b, bela::error_code &ec) const { return Read(b.data(), b.capacity(), b.size(), ec); }
   bool Read(bela::Buffer &b, size_t len, bela::error_code &ec) const { return Read(b.data(), len, b.size(), ec); }
   bool ReadAt(bela::Buffer &b, uint64_t pos, bela::error_code &ec) const { return ReadAt(b, b.capacity(), pos, ec); }
-  bool DissectZIP(ZipDetails &zd, bela::error_code &ec) { return zip::DissectZIP(*this, zd, ec); }
   std::wstring_view FullPath() const { return fullpath; }
   bool Lookup(FileAttributeTable &fat, bela::error_code &ec);
+  HANDLE FD() const { return fd; }
 
 private:
   HANDLE fd{nullfile_t};

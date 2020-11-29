@@ -11,10 +11,10 @@ add_library(hazel STATIC
   ina/shl.cc
   ina/text.cc
   ina/zipfamily.cc
+  zip/zip.cc
   fs.cc
   hazel.cc
   mime.cc
-  zip.cc
 )
 
 target_link_libraries(hazel

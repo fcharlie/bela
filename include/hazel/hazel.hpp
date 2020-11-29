@@ -11,6 +11,7 @@
 #endif
 
 namespace hazel {
+// file attribute table
 struct FileAttributeTable {
   bela::flat_hash_map<std::wstring, std::wstring> attributes;
   bela::flat_hash_map<std::wstring, std::vector<std::wstring>> multi_attributes;
@@ -51,6 +52,18 @@ struct FileAttributeTable {
            type == types::ofd;
   }
 };
+
+// zip details
+
+struct ZipDetails {
+  std::wstring_view mime;
+  bela::flat_hash_map<uint16_t, uint32_t> methodsmap;
+  uint64_t uncompressedsize{0};
+  uint32_t filecounts{0};
+  uint32_t folders{0};
+  bool hassymlink{false};
+  types::hazel_types_t subtype;
+};
 // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfilepointerex
 // SetFilePointerEx
 class File {
@@ -65,9 +78,42 @@ public:
     return *this;
   }
   bool NewFile(std::wstring_view file, bela::error_code &ec);
-
-  bool ReadAt(bela::Buffer &b, size_t len, uint64_t pos, bela::error_code &ec);
-  bool ReadAt(bela::Buffer &b, uint64_t pos, bela::error_code &ec) { return ReadAt(b, b.capacity(), pos, ec); }
+  bool PositionAt(uint64_t pos, bela::error_code &ec) const {
+    auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
+    LARGE_INTEGER oli{0};
+    if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
+      ec = bela::make_error_code(L"SetFilePointerEx: ");
+      return false;
+    }
+    return true;
+  }
+  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
+    DWORD dwSize = {0};
+    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
+      ec = bela::make_system_error_code(L"ReadFile: ");
+      return false;
+    }
+    outlen = static_cast<size_t>(len);
+    return true;
+  }
+  bool ReadAt(bela::Buffer &b, size_t len, uint64_t pos, bela::error_code &ec) const {
+    if (len > b.capacity()) {
+      b.grow(bela::align_length(len));
+    }
+    if (!PositionAt(pos, ec)) {
+      return false;
+    }
+    return Read(b.data(), len, b.size(), ec);
+  }
+  bool ReadAt(void *buffer, size_t len, uint64_t pos, size_t &outlen, bela::error_code &ec) {
+    if (!PositionAt(pos, ec)) {
+      return false;
+    }
+    return Read(buffer, len, outlen, ec);
+  }
+  bool Read(bela::Buffer &b, bela::error_code &ec) const { return Read(b.data(), b.capacity(), b.size(), ec); }
+  bool Read(bela::Buffer &b, size_t len, bela::error_code &ec) const { return Read(b.data(), len, b.size(), ec); }
+  bool ReadAt(bela::Buffer &b, uint64_t pos, bela::error_code &ec) const { return ReadAt(b, b.capacity(), pos, ec); }
   std::wstring_view FullPath() const { return fullpath; }
   bool Lookup(FileAttributeTable &fat, bela::error_code &ec);
 

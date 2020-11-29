@@ -106,7 +106,7 @@ typedef enum zip_method_e : uint16_t {
   ZIP_AES = 99,     /* AE-x encryption marker (see APPENDIX E) */
 } zip_method_t;
 
-struct directory_end {
+struct directoryEnd {
   uint32_t diskNbr;            // unused
   uint32_t dirDiskNbr;         // unused
   uint64_t dirRecordsThisDisk; // unused
@@ -183,9 +183,11 @@ private:
   }
 
   bool initialize(bela::error_code &ec);
-  bool readde(directory_end &de, bela::error_code &ec);
+  bool readde(directoryEnd &d, bela::error_code &ec);
+  bool readd64e(int64_t offset, directoryEnd &d, bela::error_code &ec);
+  int64_t findd64e(int64_t directoryEndOffset, bela::error_code &ec);
 };
-
+inline std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec) { return Reader::NewReader(fd, ec); }
 } // namespace hazel::zip
 
 #endif

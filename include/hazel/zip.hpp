@@ -188,6 +188,7 @@ private:
   int64_t findd64e(int64_t directoryEndOffset, bela::error_code &ec);
 };
 inline std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec) { return Reader::NewReader(fd, ec); }
+const wchar_t *MethodString(hazel::zip::zip_method_t m);
 } // namespace hazel::zip
 
 #endif

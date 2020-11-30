@@ -200,52 +200,38 @@ std::optional<Reader> Reader::NewReader(HANDLE fd, bela::error_code &ec) {
   return std::make_optional(std::move(r));
 }
 
-const wchar_t *ZipMethodName(uint16_t m) {
-  switch (m) {
-  case zip_method_t::ZIP_STORE:
-    return L"store";
-  case zip_method_t::ZIP_SHRINK:
-    return L"shrunk";
-  case zip_method_t::ZIP_REDUCE_1:
-    return L"REDUCE_1";
-  case zip_method_t::ZIP_REDUCE_2:
-    return L"REDUCE_2";
-  case zip_method_t::ZIP_REDUCE_3:
-    return L"REDUCE_3";
-  case zip_method_t::ZIP_REDUCE_4:
-    return L"REDUCE_4";
-  case zip_method_t::ZIP_IMPLODE:
-    return L"IMPLODE";
-  case zip_method_t::ZIP_DEFLATE:
-    return L"deflate";
-  case zip_method_t::ZIP_DEFLATE64:
-    return L"deflate64";
-  case zip_method_t::ZIP_PKWARE_IMPLODE:
-    return L"PKWARE_IMPLODE";
-  case zip_method_t::ZIP_BZIP2:
-    return L"bzip2";
-  case zip_method_t::ZIP_LZMA:
-    return L"lzma";
-  case zip_method_t::ZIP_TERSE:
-    return L"IBM TERSE";
-  case zip_method_t::ZIP_LZ77:
-    return L"LZ77";
-  case zip_method_t::ZIP_LZMA2:
-    return L"lzma2";
-  case zip_method_t::ZIP_ZSTD:
-    return L"zstd";
-  case zip_method_t::ZIP_XZ:
-    return L"xz";
-  case zip_method_t::ZIP_JPEG:
-    return L"Jpeg";
-  case zip_method_t::ZIP_WAVPACK:
-    return L"WavPack";
-  case zip_method_t::ZIP_PPMD:
-    return L"PPMd";
-  case zip_method_t::ZIP_AES:
-    return L"AES";
-  default:
-    break;
+const wchar_t *MethodString(hazel::zip::zip_method_t m) {
+  struct method_kv_t {
+    hazel::zip::zip_method_t m;
+    const wchar_t *name;
+  };
+  constexpr const method_kv_t methods[] = {
+      {zip_method_t::ZIP_STORE, L"store"},
+      {zip_method_t::ZIP_SHRINK, L"shrunk"},
+      {zip_method_t::ZIP_REDUCE_1, L"ZIP_REDUCE_1"},
+      {zip_method_t::ZIP_REDUCE_2, L"ZIP_REDUCE_2"},
+      {zip_method_t::ZIP_REDUCE_3, L"ZIP_REDUCE_3"},
+      {zip_method_t::ZIP_REDUCE_4, L"ZIP_REDUCE_4"},
+      {zip_method_t::ZIP_IMPLODE, L"IMPLODE"},
+      {zip_method_t::ZIP_DEFLATE, L"deflate"},
+      {zip_method_t::ZIP_DEFLATE64, L"deflate64"},
+      {zip_method_t::ZIP_PKWARE_IMPLODE, L"ZIP_PKWARE_IMPLODE"},
+      {zip_method_t::ZIP_BZIP2, L"bzip2"},
+      {zip_method_t::ZIP_LZMA, L"lzma"},
+      {zip_method_t::ZIP_TERSE, L"IBM TERSE"},
+      {zip_method_t::ZIP_LZ77, L"LZ77"},
+      {zip_method_t::ZIP_LZMA2, L"lzma2"},
+      {zip_method_t::ZIP_ZSTD, L"zstd"},
+      {zip_method_t::ZIP_XZ, L"xz"},
+      {zip_method_t::ZIP_JPEG, L"Jpeg"},
+      {zip_method_t::ZIP_WAVPACK, L"WavPack"},
+      {zip_method_t::ZIP_PPMD, L"PPMd"},
+      {zip_method_t::ZIP_AES, L"AES"},
+  };
+  for (const auto &i : methods) {
+    if (i.m == m) {
+      return i.name;
+    }
   }
   return L"NONE";
 }

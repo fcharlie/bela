@@ -7,7 +7,10 @@
 #include <numeric>
 
 namespace hazel::zip {
-
+// https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
+// https://en.wikipedia.org/wiki/ZIP_(file_format)
+// https://en.wikipedia.org/wiki/Comparison_of_file_archivers
+// https://en.wikipedia.org/wiki/List_of_archive_formats
 constexpr int fileHeaderSignature = 0x04034b50;
 constexpr int directoryHeaderSignature = 0x02014b50;
 constexpr int directoryEndSignature = 0x06054b50;
@@ -51,96 +54,6 @@ constexpr int ntfsExtraID = 0x000a;        // NTFS
 constexpr int unixExtraID = 0x000d;        // UNIX
 constexpr int extTimeExtraID = 0x5455;     // Extended timestamp
 constexpr int infoZipUnixExtraID = 0x5855; // Info-ZIP Unix extension
-
-// see https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
-#pragma pack(2)
-
-/*
-      local file header signature     4 bytes  (0x04034b50)
-      version needed to extract       2 bytes
-      general purpose bit flag        2 bytes
-      compression method              2 bytes
-      last mod file time              2 bytes
-      last mod file date              2 bytes
-      crc-32                          4 bytes
-      compressed size                 4 bytes
-      uncompressed size               4 bytes
-      file name length                2 bytes
-      extra field length              2 bytes
-
-      file name (variable size)
-      extra field (variable size)
-*/
-
-struct zip_file_header_t {
-  uint8_t signature[4]; //{'P','K','',''} // 0x04034b50 LE
-  uint16_t version;
-  uint16_t flags;
-  uint16_t method;
-  uint16_t mtime;
-  uint16_t mdate;
-  uint32_t crc32;
-  uint32_t compressed_size;
-  uint32_t uncompressed_size;
-  uint16_t namelen;
-  uint16_t fieldlength;
-  // file name (variable size)
-  // extra field (variable size)
-  // file data
-};
-
-struct zip_file_header64_t {
-  uint8_t signature[4]; //{'P','K','',''} // 0x04034b50 LE
-  uint16_t version;
-  uint16_t flags;
-  uint16_t method;
-  uint16_t mtime;
-  uint16_t mdate;
-  uint32_t crc32;
-  uint64_t compressed_size;
-  uint64_t uncompressed_size;
-  uint16_t namelen;
-  uint16_t fieldlength;
-  // file name (variable size)
-  // extra field (variable size)
-  // file data
-};
-
-struct zip_partial_header_t {
-  uint8_t signature[4]; //{'P','K','',''} // 0x04034b50 LE
-  uint16_t version;
-  uint16_t flags;
-  uint16_t method;
-  uint16_t mtime;
-  uint16_t mdate;
-  uint32_t crc32;
-};
-
-struct zip_partial_header32_t {
-  uint32_t compressed_size;
-  uint32_t uncompressed_size;
-  uint16_t namelen;
-  uint16_t fieldlength;
-};
-
-struct zip_partial_header64_t {
-  uint64_t compressed_size;
-  uint64_t uncompressed_size;
-  uint16_t namelen;
-  uint16_t fieldlength;
-};
-
-// signature + version + flags + method + mtime + crc32
-constexpr size_t algin_msize = sizeof(zip_partial_header_t);
-
-// Zero-byte files, directories, and other file types that contain no content MUST NOT include file data.
-
-// When compressing files, compressed and uncompressed sizes SHOULD be stored in ZIP64 format (as 8 byte values) when a
-// file's size exceeds 0xFFFFFFFF.   However ZIP64 format MAY be used regardless of the size of a file.  When
-// extracting, if the zip64 extended information extra field is present for the file the compressed and uncompressed
-// sizes will be 8 byte values.
-
-#pragma pack()
 
 inline bool IsSuperficialPath(std::string_view sv) {
   auto pv = bela::SplitPath(sv);

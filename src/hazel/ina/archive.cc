@@ -6,6 +6,9 @@
 #include "hazelinc.hpp"
 
 namespace hazel::internal {
+// https://en.wikipedia.org/wiki/ZIP_(file_format)
+// https://en.wikipedia.org/wiki/Comparison_of_file_archivers
+// https://en.wikipedia.org/wiki/List_of_archive_formats
 // 7z details:
 // https://github.com/mcmilk/7-Zip-zstd/blob/master/CPP/7zip/Archive/7z/7zHeader.h
 constexpr const unsigned k7zSignatureSize = 6;

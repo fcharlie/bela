@@ -117,6 +117,23 @@ struct directoryEnd {
   std::string comment;
 };
 
+struct File {
+  std::string name;
+  std::string comment;
+  std::string extra;
+  uint64_t compressedSize;
+  uint64_t uncompressedSize;
+  uint64_t position; // file position
+  time_t time;
+  uint32_t crc32;
+  uint32_t externalAttrs;
+  uint16_t cversion;
+  uint16_t rversion;
+  uint16_t flags;
+  uint16_t method;
+  bool utf8{false};
+};
+
 class Reader {
 public:
   Reader(HANDLE fd_, int64_t sz) : fd(fd_), size(sz) {}
@@ -164,15 +181,19 @@ public:
     return Read(b.data(), len, b.size(), ec);
   }
   static std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec);
+  std::string_view Comment() const { return comment; }
+  const auto &Files() const { return files; }
 
 private:
   HANDLE fd;
   int64_t size;
   std::string comment;
+  std::vector<File> files;
   void CopyFrom(const Reader &r) {
     fd = r.fd;
     size = r.size;
     comment = r.comment;
+    files = r.files;
   }
   void MoveFrom(Reader &&r) {
     fd = r.fd;
@@ -180,6 +201,7 @@ private:
     size = r.size;
     r.size = 0;
     comment = std::move(r.comment);
+    files = std::move(files);
   }
 
   bool initialize(bela::error_code &ec);

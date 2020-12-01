@@ -32,6 +32,10 @@ struct error_code {
   long code{None};
   const wchar_t *data() const { return message.data(); }
   explicit operator bool() const noexcept { return code != None; }
+  void clear() {
+    code = None;
+    message.clear();
+  }
 };
 
 inline bela::error_code make_error_code(const AlphaNum &a) {

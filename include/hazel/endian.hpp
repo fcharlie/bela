@@ -13,9 +13,21 @@ enum class Endian { little = 0, big = 1, native = little };
 
 template <Endian E = Endian::native> class Reader {
 public:
+  Reader() = default;
   Reader(const void *p, size_t len) : data(reinterpret_cast<const uint8_t *>(p)), size(len) {}
-  Reader(const Reader &) = delete;
-  Reader &operator=(const Reader &) = delete;
+  Reader(const Reader &other) {
+    data = other.data;
+    size = other.size;
+  }
+  Reader &operator=(const Reader &other) {
+    data = other.data;
+    size = other.size;
+    return *this;
+  }
+  void Reset(const void *p, size_t len) {
+    data = reinterpret_cast<const uint8_t *>(p);
+    size = len;
+  }
   template <typename T> T Read() {
     auto p = reinterpret_cast<const T *>(data);
     data += sizeof(T);
@@ -37,9 +49,9 @@ public:
   size_t Size() const { return size; }
 
 private:
-  Endian e{E};
-  const uint8_t *data;
-  size_t size;
+  const uint8_t *data{nullptr};
+  size_t size{0};
+  const Endian e{E};
 };
 
 } // namespace hazel::endian

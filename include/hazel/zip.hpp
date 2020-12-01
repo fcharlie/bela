@@ -201,7 +201,7 @@ private:
     size = r.size;
     r.size = 0;
     comment = std::move(r.comment);
-    files = std::move(files);
+    files = std::move(r.files);
   }
 
   bool initialize(bela::error_code &ec);
@@ -210,7 +210,7 @@ private:
   int64_t findd64e(int64_t directoryEndOffset, bela::error_code &ec);
 };
 inline std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec) { return Reader::NewReader(fd, ec); }
-const wchar_t *MethodString(hazel::zip::zip_method_t m);
+const wchar_t *Method(uint16_t m);
 } // namespace hazel::zip
 
 #endif

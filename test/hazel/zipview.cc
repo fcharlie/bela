@@ -31,5 +31,9 @@ int wmain(int argc, wchar_t **argv) {
   if (!zr->Comment().empty()) {
     bela::FPrintF(stderr, L"comment: %s\n", zr->Comment());
   }
+  bela::FPrintF(stderr, L"Files: %d\n", zr->Files().size());
+  for (const auto &file : zr->Files()) {
+    bela::FPrintF(stderr, L"File: %s (%s) %d\n", file.name, hazel::zip::Method(file.method), file.uncompressedSize);
+  }
   return 0;
 }

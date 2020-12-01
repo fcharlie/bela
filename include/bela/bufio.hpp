@@ -3,7 +3,6 @@
 #define BELA_BUFIO_HPP
 #include "base.hpp"
 #include <algorithm>
-#include "terminal.hpp"
 
 namespace bela::bufio {
 constexpr int default_buffer_size = 4096;

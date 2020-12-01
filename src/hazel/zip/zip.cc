@@ -178,75 +178,7 @@ using bufioReader = bela::bufio::Reader<4096>;
 constexpr uint32_t SizeMin = 0xFFFFFFFFu;
 constexpr uint64_t OffsetMin = 0xFFFFFFFFull;
 
-/*
-        case ntfsExtraID:
-                        if len(fieldBuf) < 4 {
-                                continue parseExtras
-                        }
-                        fieldBuf.uint32()        // reserved (ignored)
-                        for len(fieldBuf) >= 4 { // need at least tag and size
-                                attrTag := fieldBuf.uint16()
-                                attrSize := int(fieldBuf.uint16())
-                                if len(fieldBuf) < attrSize {
-                                        continue parseExtras
-                                }
-                                attrBuf := fieldBuf.sub(attrSize)
-                                if attrTag != 1 || attrSize != 24 {
-                                        continue // Ignore irrelevant attributes
-                                }
-
-                                const ticksPerSecond = 1e7    // Windows timestamp resolution
-                                ts := int64(attrBuf.uint64()) // ModTime since Windows epoch
-                                secs := int64(ts / ticksPerSecond)
-                                nsecs := (1e9 / ticksPerSecond) * int64(ts%ticksPerSecond)
-                                epoch := time.Date(1601, time.January, 1, 0, 0, 0, 0, time.UTC)
-                                modified = time.Unix(epoch.Unix()+secs, nsecs)
-                        }
-                case unixExtraID, infoZipUnixExtraID:
-                        if len(fieldBuf) < 8 {
-                                continue parseExtras
-                        }
-                        fieldBuf.uint32()              // AcTime (ignored)
-                        ts := int64(fieldBuf.uint32()) // ModTime since Unix epoch
-                        modified = time.Unix(ts, 0)
-                case extTimeExtraID:
-                        if len(fieldBuf) < 5 || fieldBuf.uint8()&1 == 0 {
-                                continue parseExtras
-                        }
-                        ts := int64(fieldBuf.uint32()) // ModTime since Unix epoch
-                        modified = time.Unix(ts, 0)
-        msdosModified := msDosTimeToTime(f.ModifiedDate, f.ModifiedTime)
-        f.Modified = msdosModified
-        if !modified.IsZero() {
-                f.Modified = modified.UTC()
-
-                // If legacy MS-DOS timestamps are set, we can use the delta between
-                // the legacy and extended versions to estimate timezone offset.
-                //
-                // A non-UTC timezone is always used (even if offset is zero).
-                // Thus, FileHeader.Modified.Location() == time.UTC is useful for
-                // determining whether extended timestamps are present.
-                // This is necessary for users that need to do additional time
-                // calculations when dealing with legacy ZIP formats.
-                if f.ModifiedTime != 0 || f.ModifiedDate != 0 {
-                        f.Modified = modified.In(timeZone(msdosModified.Sub(modified)))
-                }
-        }
-
-        // Assume that uncompressed size 2³²-1 could plausibly happen in
-        // an old zip32 file that was sharding inputs into the largest chunks
-        // possible (or is just malicious; search the web for 42.zip).
-        // If needUSize is true still, it means we didn't see a zip64 extension.
-        // As long as the compressed size is not also 2³²-1 (implausible)
-        // and the header is not also 2³²-1 (equally implausible),
-        // accept the uncompressed size 2³²-1 as valid.
-        // If nothing else, this keeps archive/zip working with 42.zip.
-        _ = needUSize
-
-        if needCSize || needHeaderOffset {
-                return ErrFormat
-        }
-*/
+// Thanks github.com\klauspost\compress@v1.11.3\zip\reader.go
 
 bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela::error_code &ec) {
   uint8_t buf[directoryHeaderLen];
@@ -281,7 +213,6 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
   file.name.assign(reinterpret_cast<const char *>(buffer.data()), filenameLen);
   file.extra.assign(reinterpret_cast<const char *>(buffer.data() + filenameLen), extraLen);
   file.comment.assign(reinterpret_cast<const char *>(buffer.data() + filenameLen + extraLen), commentLen);
-  bela::FPrintF(stderr, L"%s %d/%d\n", file.name, file.compressedSize, file.uncompressedSize);
   auto needUSize = file.uncompressedSize == SizeMin;
   auto needSize = file.compressedSize == SizeMin;
   auto needOffset = file.position == OffsetMin;
@@ -353,7 +284,6 @@ bool Reader::initialize(bela::error_code &ec) {
     }
     files.emplace_back(std::move(file));
   }
-  // file counst d.directoryRecords
   return true;
 }
 
@@ -370,7 +300,7 @@ std::optional<Reader> Reader::NewReader(HANDLE fd, bela::error_code &ec) {
   return std::make_optional(std::move(r));
 }
 
-const wchar_t *MethodString(hazel::zip::zip_method_t m) {
+const wchar_t *Method(uint16_t m) {
   struct method_kv_t {
     hazel::zip::zip_method_t m;
     const wchar_t *name;
@@ -399,7 +329,7 @@ const wchar_t *MethodString(hazel::zip::zip_method_t m) {
       {zip_method_t::ZIP_AES, L"AES"},
   };
   for (const auto &i : methods) {
-    if (i.m == m) {
+    if (static_cast<uint16_t>(i.m) == m) {
       return i.name;
     }
   }

@@ -240,6 +240,18 @@ private:
 };
 inline std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec) { return Reader::NewReader(fd, ec); }
 const wchar_t *Method(uint16_t m);
+
+// WindowsTickToUnixTime
+// https://stackoverflow.com/questions/20370920/convert-current-time-from-windows-to-unix-timestamp-in-c-or-c
+inline time_t WindowsTickToUnixTime(uint64_t tick) {
+  constexpr auto tickPerSecond = 10'000'000ll;
+  constexpr auto unixTimeStart = 116444736000000000ui64;
+  return static_cast<time_t>(tick - unixTimeStart) / tickPerSecond;
+}
+// DosDateTimeToUnixTime dos time to unix time
+// https://msdn.microsoft.com/en-us/library/ms724247(v=VS.85).aspx
+// Windows Epoch start 1601
+time_t DosDateTimeToUnixTime(uint16_t dosDate, uint16_t dosTime);
 } // namespace hazel::zip
 
 #endif

@@ -10,6 +10,7 @@ add_library(hazel STATIC
   ina/media.cc
   ina/shl.cc
   ina/text.cc
+  zip/time.cc
   zip/zip.cc
   fs.cc
   hazel.cc

@@ -179,19 +179,6 @@ using bufioReader = bela::bufio::Reader<4096>;
 constexpr uint32_t SizeMin = 0xFFFFFFFFu;
 constexpr uint64_t OffsetMin = 0xFFFFFFFFull;
 
-// https://docs.microsoft.com/zh-cn/windows/win32/api/winbase/nf-winbase-dosdatetimetofiletime
-time_t dosTimeToUnix(uint16_t dosDate, uint16_t dosTime) {
-  struct tm t = {0};
-  t.tm_year = (static_cast<int>(dosDate) >> 9) + 1980 - 1900;
-  t.tm_mon = static_cast<int>((dosDate >> 5) & 0xf) - 1;
-  t.tm_mday = static_cast<int>(dosDate & 0x1f);
-  t.tm_hour = static_cast<int>(dosTime) >> 11;
-  t.tm_min = static_cast<int>((dosTime >> 5) & 0x3f);
-  t.tm_sec = static_cast<int>(dosTime & 0x1f) << 1;
-  t.tm_isdst = 0;
-  return _mkgmtime64(&t);
-}
-
 // Thanks github.com\klauspost\compress@v1.11.3\zip\reader.go
 
 bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela::error_code &ec) {
@@ -284,11 +271,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
         if (attrTag != 1 || attrSize != 24) {
           break;
         }
-        // https://stackoverflow.com/questions/20370920/convert-current-time-from-windows-to-unix-timestamp-in-c-or-c
-        constexpr auto tickPerSecond = 10'000'000ll;
-        constexpr auto unixTimeStart = 0x019DB1DED53E8000ll;
-        auto ts = ab.Read<uint64_t>();
-        modified = (static_cast<int64_t>(ts) - unixTimeStart) / tickPerSecond;
+        modified = WindowsTickToUnixTime(ab.Read<uint64_t>());
       }
       continue;
     }
@@ -320,8 +303,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
     }
     ///
   }
-  //  https://msdn.microsoft.com/en-us/library/ms724247(v=VS.85).aspx
-  if (auto t = dosTimeToUnix(dosDate, dosTime); t >= 0) {
+  if (auto t = DosDateTimeToUnixTime(dosDate, dosTime); t >= 0) {
     file.time = t;
   }
   if (modified != 0) {

@@ -9,6 +9,7 @@ inline std::string TimeString(time_t t) {
   }
   std::tm tm_;
   localtime_s(&tm_, &t);
+  
   std::string buffer;
   buffer.resize(64);
   auto n = std::strftime(buffer.data(), 64, "%Y-%m-%dT%H:%M:%S%z", &tm_);

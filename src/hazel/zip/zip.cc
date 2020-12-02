@@ -189,7 +189,7 @@ time_t dosTimeToUnix(uint16_t dosDate, uint16_t dosTime) {
   t.tm_min = static_cast<int>((dosTime >> 5) & 0x3f);
   t.tm_sec = static_cast<int>(dosTime & 0x1f) << 1;
   t.tm_isdst = 0;
-  return mktime(&t);
+  return _mkgmtime64(&t);
 }
 
 // Thanks github.com\klauspost\compress@v1.11.3\zip\reader.go
@@ -231,6 +231,9 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
   auto needSize = file.compressedSize == SizeMin;
   auto needOffset = file.position == OffsetMin;
   file.utf8 = (file.flags & 0x800) != 0;
+
+  time_t modified = {0};
+
   bela::endian::LittenEndian extra(file.extra.data(), file.extra.size());
   for (; extra.Size() >= 4;) {
     auto fieldTag = extra.Read<uint16_t>();
@@ -285,7 +288,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
         constexpr auto tickPerSecond = 10'000'000ll;
         constexpr auto unixTimeStart = 0x019DB1DED53E8000ll;
         auto ts = ab.Read<uint64_t>();
-        file.time = (static_cast<int64_t>(ts) - unixTimeStart) / tickPerSecond;
+        modified = (static_cast<int64_t>(ts) - unixTimeStart) / tickPerSecond;
       }
       continue;
     }
@@ -301,7 +304,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
       if (fb.Size() < 5 || (fb.Pick() & 1) == 0) {
         continue;
       }
-      file.time = static_cast<time_t>(fb.Read<uint32_t>());
+      modified = static_cast<time_t>(fb.Read<uint32_t>());
       continue;
     }
     // https://www.winzip.com/win/en/aes_info.html
@@ -318,10 +321,11 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
     ///
   }
   //  https://msdn.microsoft.com/en-us/library/ms724247(v=VS.85).aspx
-  if (file.time == 0) {
-    if (auto t = dosTimeToUnix(dosDate, dosTime); t >= 0) {
-      file.time = t;
-    }
+  if (auto t = dosTimeToUnix(dosDate, dosTime); t >= 0) {
+    file.time = t;
+  }
+  if (modified != 0) {
+    file.time = modified;
   }
   if (needSize || needOffset) {
     ec = bela::make_error_code(L"zip: not a valid zip file");

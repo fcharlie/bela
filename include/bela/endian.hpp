@@ -221,15 +221,19 @@ public:
     data += n;
     return size;
   }
-  size_t Size() const { return size; }
-
+  uint8_t Pick() {
+    auto c = *data;
+    data++;
+    size--;
+    return c;
+  }
   Reader Sub(int n) {
     size += n;
     auto p = data;
     data += n;
     return Reader(p, n);
   }
-
+  size_t Size() const { return size; }
   template <typename T = char> const T *Data() const { return reinterpret_cast<const T *>(data); }
 
 private:

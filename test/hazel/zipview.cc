@@ -33,6 +33,11 @@ int wmain(int argc, wchar_t **argv) {
   }
   bela::FPrintF(stderr, L"Files: %d\n", zr->Files().size());
   for (const auto &file : zr->Files()) {
+    if (file.IsEncrypted()) {
+      bela::FPrintF(stderr, L"File: %s (%s %s) %d\n", file.name, hazel::zip::Method(file.method), file.AesText(),
+                    file.uncompressedSize);
+      continue;
+    }
     bela::FPrintF(stderr, L"File: %s (%s) %d\n", file.name, hazel::zip::Method(file.method), file.uncompressedSize);
   }
   return 0;

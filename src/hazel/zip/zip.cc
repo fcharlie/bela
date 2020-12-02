@@ -56,6 +56,7 @@ constexpr int ntfsExtraID = 0x000a;        // NTFS
 constexpr int unixExtraID = 0x000d;        // UNIX
 constexpr int extTimeExtraID = 0x5455;     // Extended timestamp
 constexpr int infoZipUnixExtraID = 0x5855; // Info-ZIP Unix extension
+constexpr int winzipAesExtraID = 0x9901;   // winzip AES Extra Field
 
 inline bool IsSuperficialPath(std::string_view sv) {
   auto pv = bela::SplitPath(sv);
@@ -225,8 +226,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
       break;
     }
     auto fb = extra.Sub(fieldSize);
-    switch (fieldTag) {
-    case zip64ExtraID:
+    if (fieldTag == zip64ExtraID) {
       if (needUSize) {
         needUSize = false;
         if (fb.Size() < 8) {
@@ -251,9 +251,56 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
         }
         file.position = fb.Read<uint64_t>();
       }
-      break;
-    default:
-      break;
+      continue;
+    }
+    if (fieldTag == ntfsExtraID) {
+      if (fb.Size() < 4) {
+        continue;
+      }
+      fb.Discard(4);
+      for (; fb.Size() >= 4;) {
+        auto attrTag = fb.Read<uint16_t>();
+        auto attrSize = fb.Read<uint16_t>();
+        if (fb.Size() < attrSize) {
+          break;
+        }
+        auto ab = fb.Sub(attrSize);
+        if (attrTag != 1 || attrSize != 24) {
+          break;
+        }
+        // https://stackoverflow.com/questions/20370920/convert-current-time-from-windows-to-unix-timestamp-in-c-or-c
+        constexpr auto tickPerSecond = 10'000'000ll;
+        constexpr auto unixTimeStart = 0x019DB1DED53E8000ll;
+        auto ts = ab.Read<uint64_t>();
+        file.time = (static_cast<int64_t>(ts) - unixTimeStart) / tickPerSecond;
+      }
+      continue;
+    }
+    if (fieldTag == unixExtraID || fieldTag == infoZipUnixExtraID) {
+      if (fb.Size() < 8) {
+        continue;
+      }
+      fb.Discard(4);
+      file.time = static_cast<time_t>(fb.Read<uint32_t>());
+      continue;
+    }
+    if (fieldTag == extTimeExtraID) {
+      if (fb.Size() < 5 || (fb.Pick() & 1) == 0) {
+        continue;
+      }
+      file.time = static_cast<time_t>(fb.Read<uint32_t>());
+      continue;
+    }
+    // https://www.winzip.com/win/en/aes_info.html
+    if (fieldTag == winzipAesExtraID) {
+      if (fb.Size() < 7) {
+        continue;
+      }
+      file.aesVersion = fb.Read<uint16_t>();
+      fb.Discard(2); // VendorID 'AE'
+      file.aesStrength = fb.Pick();
+      file.method = fb.Read<uint16_t>();
+      continue;
     }
     ///
   }
@@ -282,6 +329,8 @@ bool Reader::initialize(bela::error_code &ec) {
     if (!readDirectoryHeader(br, buffer, file, ec)) {
       return false;
     }
+    uncompressedSize += file.uncompressedSize;
+    compressedSize += file.compressedSize;
     files.emplace_back(std::move(file));
   }
   return true;

@@ -3,6 +3,7 @@
 #define HAZEL_ZIP_HPP
 #include <bela/base.hpp>
 #include <bela/buffer.hpp>
+#include <bela/narrow/strcat.hpp>
 #include <ctime>
 
 #define HAZEL_COMPRESS_LEVEL_DEFAULT (-1)
@@ -117,21 +118,39 @@ struct directoryEnd {
   std::string comment;
 };
 
+inline const char *AESStrength(uint8_t i) {
+  switch (i) {
+  case 1:
+    return "AES-128";
+  case 2:
+    return "AES-192";
+  case 3:
+    return "AES-256";
+  default:
+    break;
+  }
+  return "AES-???";
+}
+
 struct File {
   std::string name;
   std::string comment;
   std::string extra;
-  uint64_t compressedSize;
-  uint64_t uncompressedSize;
-  uint64_t position; // file position
-  time_t time;
-  uint32_t crc32;
-  uint32_t externalAttrs;
-  uint16_t cversion;
-  uint16_t rversion;
-  uint16_t flags;
-  uint16_t method;
+  uint64_t compressedSize{0};
+  uint64_t uncompressedSize{0};
+  uint64_t position{0}; // file position
+  time_t time{0};
+  uint32_t crc32{0};
+  uint32_t externalAttrs{0};
+  uint16_t cversion{0};
+  uint16_t rversion{0};
+  uint16_t flags{0};
+  uint16_t method{0};
+  uint16_t aesVersion{0};
+  uint8_t aesStrength{0};
   bool utf8{false};
+  bool IsEncrypted() const { return (flags & 0x1) != 0; }
+  std::string AesText() const { return bela::narrow::StringCat("AE-", aesVersion, "/", AESStrength(aesStrength)); }
 };
 
 class Reader {
@@ -183,10 +202,14 @@ public:
   static std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec);
   std::string_view Comment() const { return comment; }
   const auto &Files() const { return files; }
+  int64_t CompressedSize() const { return compressedSize; }
+  int64_t UncompressedSize() const { return uncompressedSize; }
 
 private:
   HANDLE fd;
   int64_t size;
+  int64_t uncompressedSize{0};
+  int64_t compressedSize{0};
   std::string comment;
   std::vector<File> files;
   void CopyFrom(const Reader &r) {
@@ -194,11 +217,17 @@ private:
     size = r.size;
     comment = r.comment;
     files = r.files;
+    uncompressedSize = r.uncompressedSize;
+    compressedSize = r.compressedSize;
   }
   void MoveFrom(Reader &&r) {
     fd = r.fd;
     r.fd = INVALID_HANDLE_VALUE;
     size = r.size;
+    uncompressedSize = r.uncompressedSize;
+    compressedSize = r.compressedSize;
+    r.uncompressedSize = 0;
+    r.compressedSize = 0;
     r.size = 0;
     comment = std::move(r.comment);
     files = std::move(r.files);

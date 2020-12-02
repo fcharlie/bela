@@ -1,4 +1,5 @@
 //
+#include <type_traits>
 #include <hazel/hazel.hpp>
 #include <bela/mapview.hpp>
 #include <bela/path.hpp>
@@ -22,7 +23,6 @@ bool File::NewFile(std::wstring_view file, bela::error_code &ec) {
   }
   return true;
 }
-
 typedef hazel::internal::status_t (*lookup_handle_t)(bela::MemView mv, FileAttributeTable &fat);
 bool File::Lookup(FileAttributeTable &fat, bela::error_code &ec) {
   uint8_t buffer[4096];

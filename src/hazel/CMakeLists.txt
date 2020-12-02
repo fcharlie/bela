@@ -12,6 +12,8 @@ add_library(hazel STATIC
   ina/text.cc
   zip/time.cc
   zip/zip.cc
+  elf/elf.cc
+  macho/macho.cc
   fs.cc
   hazel.cc
   mime.cc

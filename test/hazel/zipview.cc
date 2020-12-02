@@ -3,6 +3,19 @@
 #include <hazel/zip.hpp>
 #include <bela/terminal.hpp>
 
+inline std::string TimeString(time_t t) {
+  if (t < 0) {
+    t = 0;
+  }
+  std::tm tm_;
+  localtime_s(&tm_, &t);
+  std::string buffer;
+  buffer.resize(64);
+  auto n = std::strftime(buffer.data(), 64, "%Y-%m-%dT%H:%M:%S%z", &tm_);
+  buffer.resize(n);
+  return buffer;
+}
+
 int wmain(int argc, wchar_t **argv) {
   if (argc < 2) {
     bela::FPrintF(stderr, L"usage: %s zipfile\n", argv[0]);
@@ -33,12 +46,14 @@ int wmain(int argc, wchar_t **argv) {
   }
   bela::FPrintF(stderr, L"Files: %d\n", zr->Files().size());
   for (const auto &file : zr->Files()) {
+    auto ts = TimeString(file.time);
     if (file.IsEncrypted()) {
-      bela::FPrintF(stderr, L"File: %s (%s %s) %d\n", file.name, hazel::zip::Method(file.method), file.AesText(),
-                    file.uncompressedSize);
+      bela::FPrintF(stderr, L"File: %s [%s] (%s %s) %d\n", file.name, ts, hazel::zip::Method(file.method),
+                    file.AesText(), file.uncompressedSize);
       continue;
     }
-    bela::FPrintF(stderr, L"File: %s (%s) %d\n", file.name, hazel::zip::Method(file.method), file.uncompressedSize);
+    bela::FPrintF(stderr, L"File: %s [%s] (%s) %d\n", file.name, ts, hazel::zip::Method(file.method),
+                  file.uncompressedSize);
   }
   return 0;
 }

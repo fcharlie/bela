@@ -179,6 +179,19 @@ using bufioReader = bela::bufio::Reader<4096>;
 constexpr uint32_t SizeMin = 0xFFFFFFFFu;
 constexpr uint64_t OffsetMin = 0xFFFFFFFFull;
 
+// https://docs.microsoft.com/zh-cn/windows/win32/api/winbase/nf-winbase-dosdatetimetofiletime
+time_t dosTimeToUnix(uint16_t dosDate, uint16_t dosTime) {
+  struct tm t = {0};
+  t.tm_year = (static_cast<int>(dosDate) >> 9) + 1980 - 1900;
+  t.tm_mon = static_cast<int>((dosDate >> 5) & 0xf) - 1;
+  t.tm_mday = static_cast<int>(dosDate & 0x1f);
+  t.tm_hour = static_cast<int>(dosTime) >> 11;
+  t.tm_min = static_cast<int>((dosTime >> 5) & 0x3f);
+  t.tm_sec = static_cast<int>(dosTime & 0x1f) << 1;
+  t.tm_isdst = 0;
+  return mktime(&t);
+}
+
 // Thanks github.com\klauspost\compress@v1.11.3\zip\reader.go
 
 bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela::error_code &ec) {
@@ -195,8 +208,8 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
   file.rversion = le.Read<uint16_t>();
   file.flags = le.Read<uint16_t>();
   file.method = le.Read<uint16_t>();
-  auto mtime = le.Read<uint16_t>();
-  auto mdata = le.Read<uint16_t>();
+  auto dosTime = le.Read<uint16_t>();
+  auto dosDate = le.Read<uint16_t>();
   file.crc32 = le.Read<uint32_t>();
   file.compressedSize = le.Read<uint32_t>();
   file.uncompressedSize = le.Read<uint32_t>();
@@ -303,6 +316,16 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
       continue;
     }
     ///
+  }
+  //  https://msdn.microsoft.com/en-us/library/ms724247(v=VS.85).aspx
+  if (file.time == 0) {
+    if (auto t = dosTimeToUnix(dosDate, dosTime); t >= 0) {
+      file.time = t;
+    }
+  }
+  if (needSize || needOffset) {
+    ec = bela::make_error_code(L"zip: not a valid zip file");
+    return false;
   }
   return true;
 }

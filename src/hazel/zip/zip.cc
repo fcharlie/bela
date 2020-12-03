@@ -5,7 +5,6 @@
 #include <bela/endian.hpp>
 #include <bela/algorithm.hpp>
 #include <bela/bufio.hpp>
-#include <bela/terminal.hpp>
 #include <numeric>
 
 namespace hazel::zip {
@@ -75,25 +74,25 @@ int findSignatureInBlock(const bela::Buffer &b) {
   return -1;
 }
 bool Reader::readd64e(int64_t offset, directoryEnd &d, bela::error_code &ec) {
-  bela::Buffer b(directory64EndLen);
-  if (!ReadAt(b, directory64EndLen, offset, ec)) {
+  bela::Buffer buf(directory64EndLen);
+  if (!ReadAt(buf, directory64EndLen, offset, ec)) {
     return false;
   }
-  bela::endian::LittenEndian le(b.data(), b.size());
+  bela::endian::LittenEndian b(buf.data(), buf.size());
 
-  if (auto sig = le.Read<uint32_t>(); sig != directory64EndSignature) {
+  if (auto sig = b.Read<uint32_t>(); sig != directory64EndSignature) {
     ec = bela::make_error_code(L"zip: not a valid zip file");
     return false;
   }
-  le.Discard(16);
-  d.diskNbr = le.Read<uint32_t>();    // number of this disk
-  d.dirDiskNbr = le.Read<uint32_t>(); // number of the disk with the start of the central directory
-                                      // total number of entries in the central directory on this disk
-  d.dirRecordsThisDisk = le.Read<uint64_t>();
-  d.directoryRecords = le.Read<uint64_t>(); // total number of entries in the central directory
-  d.directorySize = le.Read<uint64_t>();    // size of the central directory
+  b.Discard(16);
+  d.diskNbr = b.Read<uint32_t>();    // number of this disk
+  d.dirDiskNbr = b.Read<uint32_t>(); // number of the disk with the start of the central directory
+                                     // total number of entries in the central directory on this disk
+  d.dirRecordsThisDisk = b.Read<uint64_t>();
+  d.directoryRecords = b.Read<uint64_t>(); // total number of entries in the central directory
+  d.directorySize = b.Read<uint64_t>();    // size of the central directory
   // offset of start of central directory with respect to the starting disk number
-  d.directoryOffset = le.Read<uint64_t>();
+  d.directoryOffset = b.Read<uint64_t>();
   return true;
 }
 
@@ -102,19 +101,19 @@ int64_t Reader::findd64e(int64_t directoryEndOffset, bela::error_code &ec) {
   if (locOffset < 0) {
     return -1;
   }
-  bela::Buffer b(directory64LocLen);
-  if (!ReadAt(b, directory64LocLen, locOffset, ec)) {
+  bela::Buffer buf(directory64LocLen);
+  if (!ReadAt(buf, directory64LocLen, locOffset, ec)) {
     return -1;
   }
-  bela::endian::LittenEndian le(b.data(), b.size());
-  if (auto sig = le.Read<uint32_t>(); sig != directory64LocSignature) {
+  bela::endian::LittenEndian b(buf.data(), buf.size());
+  if (auto sig = b.Read<uint32_t>(); sig != directory64LocSignature) {
     return -1;
   }
-  if (le.Read<uint32_t>() != 0) {
+  if (b.Read<uint32_t>() != 0) {
     return -1;
   }
-  auto p = le.Read<uint64_t>();
-  if (le.Read<uint32_t>() != 1) {
+  auto p = b.Read<uint64_t>();
+  if (b.Read<uint32_t>() != 1) {
     return -1;
   }
   return static_cast<int64_t>(p);
@@ -122,22 +121,22 @@ int64_t Reader::findd64e(int64_t directoryEndOffset, bela::error_code &ec) {
 
 // github.com\klauspost\compress@v1.11.3\zip\reader.go
 bool Reader::readde(directoryEnd &d, bela::error_code &ec) {
-  bela::Buffer b(16 * 1024);
-  int64_t deoffset = 0;
+  bela::Buffer buf(16 * 1024);
+  int64_t directoryEndOffset = 0;
   constexpr int64_t offrange[] = {1024, 65 * 1024};
-  bela::endian::LittenEndian le;
+  bela::endian::LittenEndian b;
   for (size_t i = 0; i < bela::ArrayLength(offrange); i++) {
     auto blen = offrange[i];
     if (blen > size) {
       blen = size;
     }
-    b.grow(blen);
-    if (!ReadAt(b, blen, size - blen, ec)) {
+    buf.grow(blen);
+    if (!ReadAt(buf, blen, size - blen, ec)) {
       return false;
     }
-    if (auto p = findSignatureInBlock(b); p >= 0) {
-      le.Reset(reinterpret_cast<const char *>(b.data()) + p, b.size() - p);
-      deoffset = size - blen + p;
+    if (auto p = findSignatureInBlock(buf); p >= 0) {
+      b.Reset(reinterpret_cast<const char *>(buf.data()) + p, buf.size() - p);
+      directoryEndOffset = size - blen + p;
       break;
     }
     if (i == 1 || blen == size) {
@@ -145,22 +144,22 @@ bool Reader::readde(directoryEnd &d, bela::error_code &ec) {
       return false;
     }
   }
-  le.Discard(4);
-  d.diskNbr = le.Read<uint16_t>();
-  d.dirDiskNbr = le.Read<uint16_t>();
-  d.dirRecordsThisDisk = le.Read<uint16_t>();
-  d.directoryRecords = le.Read<uint16_t>();
-  d.directorySize = le.Read<uint32_t>();
-  d.directoryOffset = le.Read<uint32_t>();
-  d.commentLen = le.Read<uint16_t>();
-  if (static_cast<size_t>(d.commentLen) > le.Size()) {
+  b.Discard(4);
+  d.diskNbr = b.Read<uint16_t>();
+  d.dirDiskNbr = b.Read<uint16_t>();
+  d.dirRecordsThisDisk = b.Read<uint16_t>();
+  d.directoryRecords = b.Read<uint16_t>();
+  d.directorySize = b.Read<uint32_t>();
+  d.directoryOffset = b.Read<uint32_t>();
+  d.commentLen = b.Read<uint16_t>();
+  if (static_cast<size_t>(d.commentLen) > b.Size()) {
     ec = bela::make_error_code(L"zip: invalid comment length");
     return false;
   }
-  d.comment.assign(le.Data(), d.commentLen);
+  d.comment.assign(b.Data(), d.commentLen);
   if (d.directoryRecords == 0xFFFF || d.directorySize == 0xFFFF || d.directoryOffset == 0xFFFFFFFF) {
     ec.clear();
-    auto p = findd64e(deoffset, ec);
+    auto p = findd64e(directoryEndOffset, ec);
     if (!ec && p > 0) {
       readd64e(p, d, ec);
     }
@@ -186,26 +185,26 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
   if (br.ReadFull(buf, sizeof(buf), ec) != sizeof(buf)) {
     return false;
   }
-  bela::endian::LittenEndian le(buf, sizeof(buf));
-  if (static_cast<int>(le.Read<uint32_t>()) != directoryHeaderSignature) {
+  bela::endian::LittenEndian b(buf, sizeof(buf));
+  if (auto n = static_cast<int>(b.Read<uint32_t>()); n != directoryHeaderSignature) {
     ec = bela::make_error_code(L"zip: not a valid zip file");
     return false;
   }
-  file.cversion = le.Read<uint16_t>();
-  file.rversion = le.Read<uint16_t>();
-  file.flags = le.Read<uint16_t>();
-  file.method = le.Read<uint16_t>();
-  auto dosTime = le.Read<uint16_t>();
-  auto dosDate = le.Read<uint16_t>();
-  file.crc32 = le.Read<uint32_t>();
-  file.compressedSize = le.Read<uint32_t>();
-  file.uncompressedSize = le.Read<uint32_t>();
-  auto filenameLen = le.Read<uint16_t>();
-  auto extraLen = le.Read<uint16_t>();
-  auto commentLen = le.Read<uint16_t>();
-  le.Discard(4);
-  file.externalAttrs = le.Read<uint32_t>();
-  file.position = le.Read<uint32_t>();
+  file.cversion = b.Read<uint16_t>();
+  file.rversion = b.Read<uint16_t>();
+  file.flags = b.Read<uint16_t>();
+  file.method = b.Read<uint16_t>();
+  auto dosTime = b.Read<uint16_t>();
+  auto dosDate = b.Read<uint16_t>();
+  file.crc32 = b.Read<uint32_t>();
+  file.compressedSize = b.Read<uint32_t>();
+  file.uncompressedSize = b.Read<uint32_t>();
+  auto filenameLen = b.Read<uint16_t>();
+  auto extraLen = b.Read<uint16_t>();
+  auto commentLen = b.Read<uint16_t>();
+  b.Discard(4);
+  file.externalAttrs = b.Read<uint32_t>();
+  file.position = b.Read<uint32_t>();
   auto totallen = filenameLen + extraLen + commentLen;
   buffer.grow(totallen);
   if (br.ReadFull(buffer.data(), totallen, ec) != totallen) {

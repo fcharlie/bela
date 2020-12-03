@@ -32,6 +32,13 @@ struct error_code {
   long code{None};
   const wchar_t *data() const { return message.data(); }
   explicit operator bool() const noexcept { return code != None; }
+  error_code &assgin(error_code &&o) {
+    message = o.message;
+    o.message.clear();
+    code = o.code;
+    o.code = None;
+    return *this;
+  }
   void clear() {
     code = None;
     message.clear();

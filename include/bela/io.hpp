@@ -2,9 +2,9 @@
 #ifndef BELA_IO_HPP
 #define BELA_IO_HPP
 #include "base.hpp"
+#include "types.hpp"
 
 namespace bela::io {
-using ssize_t = ptrdiff_t;
 [[maybe_unused]] constexpr auto MaximumRead = 1024ull * 1024 * 8; // 8MB
 [[maybe_unused]] constexpr auto MaximumLineLength = 1024ull * 64; // 64KB
 bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, uint64_t maxsize = MaximumRead);
@@ -27,22 +27,21 @@ inline bool WriteText(std::u16string_view text, std::wstring_view file, bela::er
   return WriteText(bela::ToNarrow(text), file, ec);
 }
 
-class Reader {
-public:
+struct Reader {
   virtual ssize_t Read(void *buffer, size_t len, bela::error_code &ec) = 0;
 };
 
-class ReaderAt {
-public:
+struct ReaderAt : public virtual Reader {
   virtual ssize_t ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) = 0;
 };
 
-class Writer {
-public:
+struct Writer {
   virtual ssize_t Write(const void *buffer, size_t len, bela::error_code &ec) = 0;
 };
 
-inline ssize_t ReadAtLeast(Reader *r, void *buffer, size_t len, size_t min, bela::error_code &ec) {
+struct ReadeWriter : public virtual Reader, public virtual Writer {};
+
+inline ssize_t ReadAtLeast(Reader &r, void *buffer, size_t len, size_t min, bela::error_code &ec) {
   if (len < min) {
     ec = bela::make_error_code(L"short buffer");
     return -1;
@@ -50,7 +49,7 @@ inline ssize_t ReadAtLeast(Reader *r, void *buffer, size_t len, size_t min, bela
   auto p = reinterpret_cast<uint8_t *>(buffer);
   size_t n = 0;
   for (; n < min;) {
-    auto nn = r->Read(p + n, len - n, ec);
+    auto nn = r.Read(p + n, len - n, ec);
     if (nn < 0) {
       return -1;
     }

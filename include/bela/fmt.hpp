@@ -8,25 +8,13 @@
 #include <cstring>
 #include <string>
 #include <string_view>
-
-#if defined(_MSC_VER)
-// Define ssize_t inside of our namespace.
-#if defined(_WIN64)
-typedef __int64 __bela__ssize_t;
-#else
-typedef long __bela__ssize_t;
-#endif
-#else
-typedef long __bela__ssize_t;
-#endif
+#include "types.hpp"
 
 // The unix compilers use a 32-bit wchar_t
 // The windows compilers, gcc and MSVC, both define a 16 bit wchar_t.
 // If you need to port this code to a non-Windows system, please be aware.
 
 namespace bela {
-using ssize_t = __bela__ssize_t;
-
 namespace format_internal {
 enum class ArgType {
   BOOLEAN,

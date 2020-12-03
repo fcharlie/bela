@@ -9,7 +9,7 @@ inline std::string TimeString(time_t t) {
   }
   std::tm tm_;
   localtime_s(&tm_, &t);
-  
+
   std::string buffer;
   buffer.resize(64);
   auto n = std::strftime(buffer.data(), 64, "%Y-%m-%dT%H:%M:%S%z", &tm_);
@@ -45,7 +45,7 @@ int wmain(int argc, wchar_t **argv) {
   if (!zr->Comment().empty()) {
     bela::FPrintF(stderr, L"comment: %s\n", zr->Comment());
   }
-  bela::FPrintF(stderr, L"Files: %d\n", zr->Files().size());
+
   for (const auto &file : zr->Files()) {
     auto ts = TimeString(file.time);
     if (file.IsEncrypted()) {
@@ -56,5 +56,6 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stderr, L"File: %s [%s] (%s) %d\n", file.name, ts, hazel::zip::Method(file.method),
                   file.uncompressedSize);
   }
+  bela::FPrintF(stderr, L"Files: %d\n", zr->Files().size());
   return 0;
 }

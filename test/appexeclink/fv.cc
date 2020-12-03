@@ -7,14 +7,14 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stderr, L"usage: %s path\n", argv[0]);
     return 1;
   }
-  hazel::File file;
+  hazel::io::File file;
   bela::error_code ec;
-  if (!file.NewFile(argv[1], ec)) {
+  if (!file.Open(argv[1], ec)) {
     bela::FPrintF(stderr, L"unable open file %s\n", ec.message);
     return 1;
   }
   hazel::FileAttributeTable fat;
-  if (!file.Lookup(fat, ec)) {
+  if (!hazel::LookupFile(file, fat, ec)) {
     bela::FPrintF(stderr, L"unable detect file type %s\n", ec.message);
     return 1;
   }

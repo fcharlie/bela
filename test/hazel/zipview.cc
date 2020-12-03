@@ -2,6 +2,7 @@
 #include <hazel/hazel.hpp>
 #include <hazel/zip.hpp>
 #include <bela/terminal.hpp>
+#include <bela/path.hpp>
 
 inline std::string TimeString(time_t t) {
   if (t < 0) {
@@ -22,14 +23,18 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stderr, L"usage: %s zipfile\n", argv[0]);
     return 1;
   }
-  hazel::File file;
+  hazel::io::File file;
   bela::error_code ec;
-  if (!file.NewFile(argv[1], ec)) {
+  if (!file.Open(argv[1], ec)) {
     bela::FPrintF(stderr, L"unable openfile: %s %s\n", argv[1], ec.message);
     return 1;
   }
+  std::wstring path;
+  if (auto fp = bela::RealPathByHandle(file.FD(), ec)) {
+    path.assign(std::move(*fp));
+  }
   hazel::FileAttributeTable fat;
-  if (!file.Lookup(fat, ec)) {
+  if (!hazel::LookupFile(file, fat, ec)) {
     bela::FPrintF(stderr, L"unable detect file type: %s %s\n", argv[1], ec.message);
     return 1;
   }
@@ -39,7 +44,7 @@ int wmain(int argc, wchar_t **argv) {
   }
   auto zr = hazel::zip::NewReader(file.FD(), ec);
   if (!zr) {
-    bela::FPrintF(stderr, L"open zip file: %s error %s\n", file.FullPath(), ec.message);
+    bela::FPrintF(stderr, L"open zip file: %s error %s\n", path, ec.message);
     return 1;
   }
   if (!zr->Comment().empty()) {

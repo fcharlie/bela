@@ -13,6 +13,7 @@ public:
   Reader(HANDLE r) : fd(r) {}
   Reader(const Reader &) = delete;
   Reader &operator=(const Reader &) = delete;
+  ssize_t Buffered() const { return w - r; }
   ssize_t Read(void *buffer, ssize_t len, bela::error_code &ec) {
     if (buffer == nullptr || len == 0) {
       ec = bela::make_error_code(L"short read");

@@ -14,6 +14,7 @@ add_library(hazel STATIC
   zip/zip.cc
   elf/elf.cc
   macho/macho.cc
+  pe/file.cc
   fs.cc
   hazel.cc
   mime.cc

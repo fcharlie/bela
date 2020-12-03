@@ -17,15 +17,16 @@ std::string sectionFullName(SectionHeader32 &sh, StringTable &st) {
   return st.String(offset, ec);
 }
 
-bool readRelocs(Section &sec, FILE *fd) {
+bool readRelocs(Section &sec, HANDLE fd) {
   if (sec.Header.NumberOfRelocations == 0) {
     return true;
   }
-  if (_fseeki64(fd, static_cast<int64_t>(sec.Header.PointerToRelocations), SEEK_SET) != 0) {
+  bela::error_code ec;
+  if (!PositionAt(fd, static_cast<int64_t>(sec.Header.PointerToRelocations), ec)) {
     return false;
   }
   sec.Relocs.resize(sec.Header.NumberOfRelocations);
-  if (fread(sec.Relocs.data(), 1, sizeof(Reloc) * sec.Header.NumberOfRelocations, fd) !=
+  if (Read(fd, sec.Relocs.data(), sizeof(Reloc) * sec.Header.NumberOfRelocations, ec) !=
       sizeof(Reloc) * sec.Header.NumberOfRelocations) {
     return false;
   }
@@ -39,12 +40,13 @@ bool readRelocs(Section &sec, FILE *fd) {
   return true;
 }
 
-bool readSectionData(std::vector<char> &data, const Section &sec, FILE *fd) {
-  if (_fseeki64(fd, int64_t(sec.Header.Offset), SEEK_SET) != 0) {
+bool readSectionData(std::vector<char> &data, const Section &sec, HANDLE fd) {
+  bela::error_code ec;
+  if (!PositionAt(fd, static_cast<int64_t>(sec.Header.Offset), ec)) {
     return false;
   }
   data.resize(sec.Header.Size);
-  return fread(data.data(), 1, sec.Header.Size, fd) == sec.Header.Size;
+  return Read(fd, data.data(), sec.Header.Size, ec) == static_cast<ssize_t>(sec.Header.Size);
 }
 
 } // namespace bela::pe

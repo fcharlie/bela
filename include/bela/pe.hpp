@@ -8,6 +8,9 @@
 #include "base.hpp"
 #include "endian.hpp"
 #include "phmap.hpp"
+#include "types.hpp"
+#include "ascii.hpp"
+#include "match.hpp"
 
 namespace llvm {
 std::string demangle(const std::string &MangledName);
@@ -288,25 +291,22 @@ struct FunctionTable {
 
 using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
 
+using closer_t = std::add_pointer_t<BOOL WINAPI(HANDLE)>;
 class File {
 private:
   void Free();
-  void FileMove(File &&other);
+  bool ParseFile(bela::error_code &ec);
   bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
   bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
 
 public:
   File() = default;
+  File(HANDLE fd_) : fd(fd_) {}
   ~File() { Free(); }
   File(const File &) = delete;
-  File(File &&other) { FileMove(std::move(other)); }
   File &operator=(const File &&) = delete;
-  File &operator=(File &&other) {
-    FileMove(std::move(other));
-    return *this;
-  }
   // export FD() to support
-  FILE *FD() const { return fd; }
+  HANDLE FD() const { return fd; }
   template <typename AStringT> void SplitStringTable(std::vector<AStringT> &sa) const {
     auto sv = std::string_view{reinterpret_cast<const char *>(stringTable.data), stringTable.length};
     for (;;) {
@@ -335,20 +335,29 @@ public:
     return static_cast<bela::pe::Subsystem>(is64bit ? oh.Subsystem : Oh32()->Subsystem);
   }
   // NewFile resolve pe file
-  static std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec);
+  bool NewFile(std::wstring_view p, bela::error_code &ec);
+  bool ParseOpenedFile(HANDLE fd_, bela::error_code &ec) {
+    if (fd != INVALID_HANDLE_VALUE) {
+      ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
+      return false;
+    }
+    fd = fd_;
+    return ParseFile(ec);
+  }
+  int64_t Size() const { return size; }
 
 private:
-  FILE *fd{nullptr};
+  HANDLE fd{INVALID_HANDLE_VALUE};
   FileHeader fh;
+  int64_t size{0};
   // The OptionalHeader64 structure is larger than OptionalHeader32. Therefore, we can store OptionalHeader32 in oh64.
   // Conversion by pointer.
   OptionalHeader64 oh;
   std::vector<Section> sections;
   StringTable stringTable;
   bool is64bit{false};
+  bool needClosed{false};
 };
-
-inline std::optional<File> NewFile(std::wstring_view p, bela::error_code &ec) { return File::NewFile(p, ec); }
 
 class SymbolSearcher {
 private:
@@ -385,6 +394,22 @@ struct Version {
 };
 
 std::optional<Version> LookupVersion(std::wstring_view file, bela::error_code &ec);
+
+inline bool IsSubsystemConsole(std::wstring_view p) {
+  constexpr wchar_t *suffix[] = {L".bat", L".cmd", L".vbs", L".vbe", L".js", L".jse", L".wsf", L".wsh", L".msc"};
+  File file;
+  bela::error_code ec;
+  if (!file.NewFile(p, ec)) {
+    auto lp = bela::AsciiStrToLower(p);
+    for (const auto s : suffix) {
+      if (bela::EndsWith(lp, s)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return file.Subsystem() == Subsystem::CUI;
+}
 
 } // namespace bela::pe
 

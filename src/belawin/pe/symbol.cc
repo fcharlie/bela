@@ -12,18 +12,17 @@ std::string symbolFullName(const COFFSymbol &sm, const StringTable &st) {
   return std::string(cstring_view(sm.Name, sizeof(sm.Name)));
 }
 
-bool readCOFFSymbols(const FileHeader &fh, FILE *fd, std::vector<COFFSymbol> &symbols, bela::error_code &ec) {
+bool readCOFFSymbols(const FileHeader &fh, HANDLE fd, std::vector<COFFSymbol> &symbols, bela::error_code &ec) {
   if (fh.PointerToSymbolTable == 0 || fh.NumberOfSymbols <= 0) {
     return true;
   }
-  if (auto eno = _fseeki64(fd, int64_t(fh.PointerToSymbolTable), SEEK_SET); eno != 0) {
-    ec = bela::make_stdc_error_code(eno, L"fail to seek to symbol table: ");
+  if (!PositionAt(fd, int64_t(fh.PointerToSymbolTable), ec)) {
     return false;
   }
   symbols.resize(fh.NumberOfSymbols);
-  if (fread(symbols.data(), 1, sizeof(COFFSymbol) * fh.NumberOfSymbols, fd) !=
-      sizeof(COFFSymbol) * fh.NumberOfSymbols) {
-    ec = bela::make_stdc_error_code(ferror(fd), L"fail to read symbol table: ");
+  if (Read(fd, symbols.data(), sizeof(COFFSymbol) * fh.NumberOfSymbols, ec) !=
+      static_cast<ssize_t>(sizeof(COFFSymbol) * fh.NumberOfSymbols)) {
+    ec = bela::make_error_code(L"fail to read symbol table");
     return false;
   }
   if constexpr (bela::IsBigEndian()) {

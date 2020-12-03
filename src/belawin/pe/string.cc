@@ -28,7 +28,7 @@ std::string StringTable::String(uint32_t start, bela::error_code &ec) const {
   return std::string(cstring_view(data + start, length - start));
 }
 
-bool readStringTable(FileHeader *fh, FILE *fd, StringTable &table, bela::error_code &ec) {
+bool readStringTable(FileHeader *fh, HANDLE fd, StringTable &table, bela::error_code &ec) {
   if (table.data != nullptr) {
     ec = bela::make_error_code(L"StringTable data not nullptr");
     return false;
@@ -38,13 +38,12 @@ bool readStringTable(FileHeader *fh, FILE *fd, StringTable &table, bela::error_c
     return true;
   }
   auto offset = fh->PointerToSymbolTable + COFFSymbolSize * fh->NumberOfSymbols;
-  if (auto eno = _fseeki64(fd, static_cast<long long>(offset), SEEK_SET); eno != 0) {
-    ec = bela::make_stdc_error_code(eno, L"fail to seek to string table: ");
+  if (!PositionAt(fd, static_cast<int64_t>(offset), ec)) {
     return false;
   }
   uint32_t l = 0;
-  if (auto eno = fread(&l, sizeof(l), 1, fd); eno != 1) {
-    ec = bela::make_stdc_error_code(ferror(fd), L"fail to read string table length: ");
+  if (Read(fd, &l, sizeof(l), ec) != 4) {
+    ec = bela::make_error_code(1, L"fail to read string table length: ", ec.message);
     return false;
   }
   l = bela::swaple(l);
@@ -56,8 +55,8 @@ bool readStringTable(FileHeader *fh, FILE *fd, StringTable &table, bela::error_c
     ec = bela::make_system_error_code(L"fail to allocate string table memory: ");
     return false;
   }
-  if (auto n = fread(table.data, 1, l, fd); n != l) {
-    ec = bela::make_stdc_error_code(ferror(fd), L"fail to read string table: ");
+  if (Read(fd, table.data, l, ec) != static_cast<ssize_t>(l)) {
+    ec = bela::make_error_code(1, L"fail to read string table: ", ec.message);
     return false;
   }
   table.length = l;

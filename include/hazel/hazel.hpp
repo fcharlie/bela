@@ -12,6 +12,7 @@ namespace hazel {
 struct FileAttributeTable {
   bela::flat_hash_map<std::wstring, std::wstring> attributes;
   bela::flat_hash_map<std::wstring, std::vector<std::wstring>> multi_attributes;
+  int64_t size{0};
   types::hazel_types_t type{types::none};
   FileAttributeTable &assign(std::wstring_view desc, types::hazel_types_t t = types::none) {
     attributes.emplace(L"Description", desc);
@@ -50,7 +51,7 @@ struct FileAttributeTable {
   }
 };
 
-bool LookupFile(hazel::io::ReaderAt &ra, FileAttributeTable &fat, bela::error_code &ec);
+bool LookupFile(hazel::io::File &fd, FileAttributeTable &fat, bela::error_code &ec);
 } // namespace hazel
 
 #endif

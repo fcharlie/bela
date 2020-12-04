@@ -73,7 +73,7 @@ int findSignatureInBlock(const bela::Buffer &b) {
   }
   return -1;
 }
-bool Reader::readd64e(int64_t offset, directoryEnd &d, bela::error_code &ec) {
+bool Reader::readDirectory64End(int64_t offset, directoryEnd &d, bela::error_code &ec) {
   bela::Buffer buf(directory64EndLen);
   if (!ReadAt(buf, directory64EndLen, offset, ec)) {
     return false;
@@ -96,7 +96,7 @@ bool Reader::readd64e(int64_t offset, directoryEnd &d, bela::error_code &ec) {
   return true;
 }
 
-int64_t Reader::findd64e(int64_t directoryEndOffset, bela::error_code &ec) {
+int64_t Reader::findDirectory64End(int64_t directoryEndOffset, bela::error_code &ec) {
   auto locOffset = directoryEndOffset - directory64LocLen;
   if (locOffset < 0) {
     return -1;
@@ -120,7 +120,7 @@ int64_t Reader::findd64e(int64_t directoryEndOffset, bela::error_code &ec) {
 }
 
 // github.com\klauspost\compress@v1.11.3\zip\reader.go
-bool Reader::readde(directoryEnd &d, bela::error_code &ec) {
+bool Reader::readDirectoryEnd(directoryEnd &d, bela::error_code &ec) {
   bela::Buffer buf(16 * 1024);
   int64_t directoryEndOffset = 0;
   constexpr int64_t offrange[] = {1024, 65 * 1024};
@@ -159,9 +159,9 @@ bool Reader::readde(directoryEnd &d, bela::error_code &ec) {
   d.comment.assign(b.Data(), d.commentLen);
   if (d.directoryRecords == 0xFFFF || d.directorySize == 0xFFFF || d.directoryOffset == 0xFFFFFFFF) {
     ec.clear();
-    auto p = findd64e(directoryEndOffset, ec);
+    auto p = findDirectory64End(directoryEndOffset, ec);
     if (!ec && p > 0) {
-      readd64e(p, d, ec);
+      readDirectory64End(p, d, ec);
     }
     if (ec) {
       return false;
@@ -315,9 +315,9 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
   return true;
 }
 
-bool Reader::initialize(bela::error_code &ec) {
+bool Reader::Initialize(bela::error_code &ec) {
   directoryEnd d;
-  if (!readde(d, ec)) {
+  if (!readDirectoryEnd(d, ec)) {
     return false;
   }
   if (d.directoryRecords > static_cast<uint64_t>(size) / fileHeaderLen) {
@@ -344,17 +344,43 @@ bool Reader::initialize(bela::error_code &ec) {
   return true;
 }
 
-std::optional<Reader> Reader::NewReader(HANDLE fd, bela::error_code &ec) {
+bool Reader::OpenReader(std::wstring_view file, bela::error_code &ec) {
+  if (fd != INVALID_HANDLE_VALUE) {
+    ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
+    return false;
+  }
+  fd = CreateFileW(file.data(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
+                   FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (fd == INVALID_HANDLE_VALUE) {
+    ec = bela::make_system_error_code();
+    return false;
+  }
+  needClosed = true;
   LARGE_INTEGER li;
   if (!GetFileSizeEx(fd, &li)) {
     ec = bela::make_system_error_code(L"GetFileSizeEx: ");
-    return std::nullopt;
+    return false;
   }
-  Reader r(fd, li.QuadPart);
-  if (!r.initialize(ec)) {
-    return std::nullopt;
+  size = li.QuadPart;
+  return Initialize(ec);
+}
+
+bool Reader::OpenReader(HANDLE nfd, int64_t sz, bela::error_code &ec) {
+  if (fd != INVALID_HANDLE_VALUE) {
+    ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
+    return false;
   }
-  return std::make_optional(std::move(r));
+  fd = nfd;
+  size = sz;
+  if (size == overflowsize) {
+    LARGE_INTEGER li;
+    if (!GetFileSizeEx(fd, &li)) {
+      ec = bela::make_system_error_code(L"GetFileSizeEx: ");
+      return false;
+    }
+    size = li.QuadPart;
+  }
+  return Initialize(ec);
 }
 
 const wchar_t *Method(uint16_t m) {

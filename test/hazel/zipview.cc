@@ -42,7 +42,9 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stderr, L"file: %s not zip file\n", argv[1]);
     return 1;
   }
-  auto zr = hazel::zip::NewReader(file.FD(), ec);
+  bela::FPrintF(stderr, L"sizeof(zip::Reader) = %d %d %d\n", sizeof(hazel::zip::Reader), sizeof(std::string),
+                sizeof(std::vector<hazel::zip::File>));
+  auto zr = hazel::zip::NewReader(file.FD(), fat.size, ec);
   if (!zr) {
     bela::FPrintF(stderr, L"open zip file: %s error %s\n", path, ec.message);
     return 1;

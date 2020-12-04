@@ -153,24 +153,22 @@ struct File {
   std::string AesText() const { return bela::narrow::StringCat("AE-", aesVersion, "/", AESStrength(aesStrength)); }
 };
 
+constexpr int64_t overflowsize = -1;
+
 class Reader {
 public:
-  Reader(HANDLE fd_, int64_t sz) : fd(fd_), size(sz) {}
-  Reader(const Reader &r) { CopyFrom(r); }
-  Reader &operator=(const Reader &r) {
-    CopyFrom(r);
-    return *this;
-  }
+  Reader() = default;
   Reader(Reader &&r) { MoveFrom(std::move(r)); }
   Reader &operator=(Reader &&r) {
     MoveFrom(std::move(r));
     return *this;
   }
+  ~Reader() { Free(); }
   bool PositionAt(uint64_t pos, bela::error_code &ec) const {
     auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
     LARGE_INTEGER oli{0};
     if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
-      ec = bela::make_error_code(L"SetFilePointerEx: ");
+      ec = bela::make_system_error_code(L"SetFilePointerEx: ");
       return false;
     }
     return true;
@@ -199,30 +197,39 @@ public:
     }
     return Read(b.data(), len, b.size(), ec);
   }
-  static std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec);
+  bool OpenReader(std::wstring_view file, bela::error_code &ec);
+  bool OpenReader(HANDLE nfd, int64_t sz, bela::error_code &ec);
+  static std::optional<Reader> NewReader(HANDLE fd, int64_t sz, bela::error_code &ec) {
+    Reader r;
+    if (!r.OpenReader(fd, sz, ec)) {
+      return std::nullopt;
+    }
+    return std::make_optional(std::move(r));
+  }
   std::string_view Comment() const { return comment; }
   const auto &Files() const { return files; }
   int64_t CompressedSize() const { return compressedSize; }
   int64_t UncompressedSize() const { return uncompressedSize; }
 
 private:
-  HANDLE fd;
-  int64_t size;
-  int64_t uncompressedSize{0};
-  int64_t compressedSize{0};
   std::string comment;
   std::vector<File> files;
-  void CopyFrom(const Reader &r) {
-    fd = r.fd;
-    size = r.size;
-    comment = r.comment;
-    files = r.files;
-    uncompressedSize = r.uncompressedSize;
-    compressedSize = r.compressedSize;
+  HANDLE fd{INVALID_HANDLE_VALUE};
+  int64_t size{0};
+  int64_t uncompressedSize{0};
+  int64_t compressedSize{0};
+  bool needClosed{false};
+  void Free() {
+    if (needClosed && fd != INVALID_HANDLE_VALUE) {
+      CloseHandle(fd);
+      fd = INVALID_HANDLE_VALUE;
+    }
   }
   void MoveFrom(Reader &&r) {
+    Free();
     fd = r.fd;
     r.fd = INVALID_HANDLE_VALUE;
+    r.needClosed = false;
     size = r.size;
     uncompressedSize = r.uncompressedSize;
     compressedSize = r.compressedSize;
@@ -232,13 +239,16 @@ private:
     comment = std::move(r.comment);
     files = std::move(r.files);
   }
-
-  bool initialize(bela::error_code &ec);
-  bool readde(directoryEnd &d, bela::error_code &ec);
-  bool readd64e(int64_t offset, directoryEnd &d, bela::error_code &ec);
-  int64_t findd64e(int64_t directoryEndOffset, bela::error_code &ec);
+  bool Initialize(bela::error_code &ec);
+  bool readDirectoryEnd(directoryEnd &d, bela::error_code &ec);
+  bool readDirectory64End(int64_t offset, directoryEnd &d, bela::error_code &ec);
+  int64_t findDirectory64End(int64_t directoryEndOffset, bela::error_code &ec);
 };
-inline std::optional<Reader> NewReader(HANDLE fd, bela::error_code &ec) { return Reader::NewReader(fd, ec); }
+
+// NewReader
+inline std::optional<Reader> NewReader(HANDLE fd, int64_t size, bela::error_code &ec) {
+  return Reader::NewReader(fd, size, ec);
+}
 const wchar_t *Method(uint16_t m);
 
 // WindowsTickToUnixTime

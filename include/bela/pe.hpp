@@ -291,18 +291,20 @@ struct FunctionTable {
 
 using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
 
-using closer_t = std::add_pointer_t<BOOL WINAPI(HANDLE)>;
 class File {
 private:
-  void Free();
   bool ParseFile(bela::error_code &ec);
   bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
   bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
 
 public:
   File() = default;
-  File(HANDLE fd_) : fd(fd_) {}
-  ~File() { Free(); }
+  ~File() {
+    if (fd != INVALID_HANDLE_VALUE && needClosed) {
+      CloseHandle(fd);
+      fd = INVALID_HANDLE_VALUE;
+    }
+  }
   File(const File &) = delete;
   File &operator=(const File &&) = delete;
   // export FD() to support
@@ -336,7 +338,7 @@ public:
   }
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
-  bool ParseOpenedFile(HANDLE fd_, bela::error_code &ec) {
+  bool ParseFile(HANDLE fd_, bela::error_code &ec) {
     if (fd != INVALID_HANDLE_VALUE) {
       ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
       return false;

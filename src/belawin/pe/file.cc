@@ -105,13 +105,6 @@ inline void swaple(SectionHeader32 &sh) {
   }
 }
 
-void File::Free() {
-  if (fd != INVALID_HANDLE_VALUE && needClosed) {
-    CloseHandle(fd);
-    fd = INVALID_HANDLE_VALUE;
-  }
-}
-
 bool File::ParseFile(bela::error_code &ec) {
   LARGE_INTEGER li;
   if (!GetFileSizeEx(fd, &li) == TRUE) {

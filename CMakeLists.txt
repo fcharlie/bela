@@ -19,8 +19,8 @@ if(NOT (DEFINED CMAKE_CXX_STANDARD))
     set(CMAKE_CXX_STANDARD 20) # /std:c++latest
 endif()
 
-if(CMAKE_CXX_STANDARD LESS 17 OR CMAKE_CXX_STANDARD STREQUAL "98")
-    message(FATAL_ERROR "Bela requires C++17 or later")
+if(CMAKE_CXX_STANDARD LESS 20 OR CMAKE_CXX_STANDARD STREQUAL "98")
+    message(FATAL_ERROR "Bela requires C++20 or later")
 endif()
 
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
@@ -43,6 +43,7 @@ include_directories(
 add_subdirectory(src/bela)
 add_subdirectory(src/belawin)
 add_subdirectory(src/belashl)
+add_subdirectory(src/belatime)
 add_subdirectory(src/belahash)
 add_subdirectory(src/hazel)
 if(ENABLE_TEST)

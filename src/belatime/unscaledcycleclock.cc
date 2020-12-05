@@ -138,6 +138,16 @@ int64_t UnscaledCycleClockNow() { return __rdtsc(); }
 
 double UnscaledCycleClockFrequency() { return base_internal::NominalCPUFrequency(); }
 
+#elif defined(_M_ARM)
+// __rdpmccntr64
+#pragma intrinsic(__rdpmccntr64)
+int64_t UnscaledCycleClockNow() { return __rdpmccntr64(); }
+double UnscaledCycleClockFrequency() { return base_internal::NominalCPUFrequency(); }
+
+#elif defined(_M_ARM64)
+// https://github.com/microsoft/SymCrypt/blob/master/test/indirect_call_perf/main.cpp#L21
+int64_t UnscaledCycleClockNow() { return _ReadStatusReg(ARM64_PMCCNTR_EL0); }
+double UnscaledCycleClockFrequency() { return base_internal::NominalCPUFrequency(); }
 #endif
 
 } // namespace base_internal

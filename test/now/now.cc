@@ -44,11 +44,19 @@ int wmain() {
   GetDynamicTimeZoneInformation(&dzt);
   bela::FPrintF(stderr, L"TZ: +%d TimeZone: %s %s\n", -tz_info.Bias / 60, tz_info.StandardName, dzt.TimeZoneKeyName);
   auto dt = bela::LocalDateTime(now);
-  bela::FPrintF(stderr, L"%04d-%02d-%02d %02d:%02d:%02d\n", dt.Year(), static_cast<int>(dt.Month()), dt.Day(),
-                dt.Hour(), dt.Minute(), dt.Second());
+  bela::FPrintF(stderr, L"%04d-%02d-%02d %02d:%02d:%02d %s %s\n", dt.Year(), static_cast<int>(dt.Month()), dt.Day(),
+                dt.Hour(), dt.Minute(), dt.Second(), bela::WeekdayName(dt.Weekday(), false),
+                bela::MonthName(dt.Month()), false);
   bela::FPrintF(stderr, L"now: %d\n", bela::ToUnixSeconds(dt.Time()));
   bela::DateTime dut(now);
   bela::FPrintF(stderr, L"T: %s\nT: %s\n", dt.Format(), dt.Format(true));
   bela::FPrintF(stderr, L"T: %s\nT: %s\n", dut.Format(), dut.Format(true));
+  bela::FPrintF(stderr, L"Weekday: %s\n", bela::WeekdayName(bela::DateTime(2020, 12, 6, 19, 57, 00).Weekday(), false));
+  bela::FPrintF(stderr, L"Weekday 1970-01-01: %s\n",
+                bela::WeekdayName(bela::DateTime(1970, 1, 1, 19, 57, 00).Weekday(), false));
+  bela::FPrintF(stderr, L"Weekday 1969-12-31: %s\n",
+                bela::WeekdayName(bela::DateTime(1969, 12, 31, 19, 57, 00).Weekday(), false));
+  bela::FPrintF(stderr, L"Weekday 2000-03-01: %s\n",
+                bela::WeekdayName(bela::DateTime(2000, 03, 01, 19, 57, 00).Weekday(), false));
   return 0;
 }

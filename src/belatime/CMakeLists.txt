@@ -4,9 +4,13 @@
 
 add_library(belatime STATIC
  clock.cc
+ datetime.cc
+ dos.cc
  duration.cc
+ format.cc
  int128.cc
  time.cc
+ timezone.cc
  unscaledcycleclock.cc
 )
 

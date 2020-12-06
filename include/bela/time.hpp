@@ -530,6 +530,7 @@ int64_t ToUnixNanos(Time t);
 int64_t ToUnixMicros(Time t);
 int64_t ToUnixMillis(Time t);
 int64_t ToUnixSeconds(Time t);
+
 time_t ToTimeT(Time t);
 double ToUDate(Time t);
 int64_t ToUniversal(Time t);
@@ -755,6 +756,12 @@ constexpr Time FromUnixMicros(int64_t us) { return time_internal::FromUnixDurati
 constexpr Time FromUnixMillis(int64_t ms) { return time_internal::FromUnixDuration(Milliseconds(ms)); }
 
 constexpr Time FromUnixSeconds(int64_t s) { return time_internal::FromUnixDuration(Seconds(s)); }
+
+constexpr Time FromUnix(int64_t s, int64_t ns) {
+  const uint32_t rep_lo = static_cast<uint32_t>(ns) * time_internal::kTicksPerNanosecond;
+  const auto d = time_internal::MakeDuration(s, rep_lo);
+  return time_internal::FromUnixDuration(d);
+}
 
 constexpr Time FromTimeT(time_t t) { return time_internal::FromUnixDuration(Seconds(t)); }
 

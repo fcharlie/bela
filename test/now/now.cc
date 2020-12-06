@@ -58,6 +58,8 @@ int wmain() {
                 bela::WeekdayName(bela::DateTime(1969, 12, 31, 19, 57, 00).Weekday(), false));
   bela::FPrintF(stderr, L"Weekday 2000-03-01: %s\n",
                 bela::WeekdayName(bela::DateTime(2000, 03, 01, 19, 57, 00).Weekday(), false));
+  bela::FPrintF(stderr, L"Weekday 1601-01-01: %s\n",
+                bela::WeekdayName(bela::DateTime(1601, 01, 01, 19, 57, 00).Weekday(), false));
   constexpr auto imax = (std::numeric_limits<int>::max)();
   auto t = bela::FromUnixSeconds(imax);
   bela::FPrintF(stderr, L"int32 time: %d %s\n", imax, bela::FormatUniversalTime(t));

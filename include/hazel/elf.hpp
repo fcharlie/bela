@@ -5,7 +5,14 @@
 #include <bela/endian.hpp>
 
 namespace hazel::elf {
-#pragma pack(1)
+
+constexpr int COMPRESS_ZLIB = 1;            /* ZLIB compression. */
+constexpr int COMPRESS_LOOS = 0x60000000;   /* First OS-specific. */
+constexpr int COMPRESS_HIOS = 0x6fffffff;   /* Last OS-specific. */
+constexpr int COMPRESS_LOPROC = 0x70000000; /* First processor-specific type. */
+constexpr int COMPRESS_HIPROC = 0x7fffffff; /* Last processor-specific type. */
+
+// ELF64 file header.
 struct FileHeader {
   uint8_t Class;
   uint8_t Data;
@@ -13,11 +20,32 @@ struct FileHeader {
   uint8_t OSABI;
   uint8_t ABIVersion;
   uint8_t LSB;
-  uint16_t Type;
-  uint16_t Machine;
-  uint64_t Entry;
+  uint16_t Type;    /* File type. */
+  uint16_t Machine; /* Machine architecture. */
+  uint64_t Entry;   /* Entry point. */
 };
-#pragma pack()
+
+struct ProgHeader {
+  int Type;
+  int Flags;
+  uint64_t Off;
+  uint64_t Vaddr;
+  uint64_t Paddr;
+  uint64_t Filesz;
+  uint64_t Memsz;
+  uint64_t Align;
+};
+
+struct Symbol {
+  std::string Name;
+  std::string Version;
+  std::string Library;
+  uint64_t Value;
+  uint64_t Size;
+  int SectionIndex;
+  uint8_t Info;
+  uint8_t Other;
+};
 
 struct Section {
   std::string Name;
@@ -30,6 +58,8 @@ struct Section {
   uint32_t Info{0};
   uint64_t Addralign{0};
   uint64_t Entsize{0};
+  int64_t compressionOffset{0};
+  int compressionType{0};
 };
 
 class File {
@@ -80,6 +110,14 @@ private:
     r.fd = INVALID_HANDLE_VALUE;
     r.needClosed = false;
     size = r.size;
+    memcpy(&fh, &r.fh, sizeof(fh));
+  }
+
+  template <typename T> T SwapByte(T t) {
+    if (en == bela::endian::Endian::native) {
+      return t;
+    }
+    return bela::bswap(t);
   }
 
 public:
@@ -96,6 +134,8 @@ private:
   HANDLE fd{INVALID_HANDLE_VALUE};
   int64_t size{bela::SizeUnInitialized};
   bela::endian::Endian en{bela::endian::Endian::native};
+  FileHeader fh;
+  bool is64bit{false};
   bool needClosed{false};
 };
 } // namespace hazel::elf

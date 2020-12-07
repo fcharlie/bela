@@ -13,6 +13,7 @@ add_library(hazel STATIC
   zip/time.cc
   zip/zip.cc
   elf/elf.cc
+  elf/elfdata.cc
   macho/macho.cc
   pe/file.cc
   fs.cc

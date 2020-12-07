@@ -4,7 +4,7 @@
 #include <bela/base.hpp>
 #include <bela/buffer.hpp>
 #include <bela/narrow/strcat.hpp>
-#include <ctime>
+#include <bela/time.hpp>
 
 #define HAZEL_COMPRESS_LEVEL_DEFAULT (-1)
 #define HAZEL_COMPRESS_LEVEL_FAST (2)
@@ -139,7 +139,7 @@ struct File {
   uint64_t compressedSize{0};
   uint64_t uncompressedSize{0};
   uint64_t position{0}; // file position
-  time_t time{0};
+  bela::Time time;
   uint32_t crc32{0};
   uint32_t externalAttrs{0};
   uint16_t cversion{0};
@@ -154,14 +154,7 @@ struct File {
 };
 
 class Reader {
-public:
-  Reader() = default;
-  Reader(Reader &&r) { MoveFrom(std::move(r)); }
-  Reader &operator=(Reader &&r) {
-    MoveFrom(std::move(r));
-    return *this;
-  }
-  ~Reader() { Free(); }
+private:
   bool PositionAt(uint64_t pos, bela::error_code &ec) const {
     auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
     LARGE_INTEGER oli{0};
@@ -195,28 +188,6 @@ public:
     }
     return Read(b.data(), len, b.size(), ec);
   }
-  bool OpenReader(std::wstring_view file, bela::error_code &ec);
-  bool OpenReader(HANDLE nfd, int64_t sz, bela::error_code &ec);
-  static std::optional<Reader> NewReader(HANDLE fd, int64_t sz, bela::error_code &ec) {
-    Reader r;
-    if (!r.OpenReader(fd, sz, ec)) {
-      return std::nullopt;
-    }
-    return std::make_optional(std::move(r));
-  }
-  std::string_view Comment() const { return comment; }
-  const auto &Files() const { return files; }
-  int64_t CompressedSize() const { return compressedSize; }
-  int64_t UncompressedSize() const { return uncompressedSize; }
-
-private:
-  std::string comment;
-  std::vector<File> files;
-  HANDLE fd{INVALID_HANDLE_VALUE};
-  int64_t size{bela::SizeUnInitialized};
-  int64_t uncompressedSize{0};
-  int64_t compressedSize{0};
-  bool needClosed{false};
   void Free() {
     if (needClosed && fd != INVALID_HANDLE_VALUE) {
       CloseHandle(fd);
@@ -237,6 +208,37 @@ private:
     comment = std::move(r.comment);
     files = std::move(r.files);
   }
+
+public:
+  Reader() = default;
+  Reader(Reader &&r) { MoveFrom(std::move(r)); }
+  Reader &operator=(Reader &&r) {
+    MoveFrom(std::move(r));
+    return *this;
+  }
+  ~Reader() { Free(); }
+  bool OpenReader(std::wstring_view file, bela::error_code &ec);
+  bool OpenReader(HANDLE nfd, int64_t sz, bela::error_code &ec);
+  std::string_view Comment() const { return comment; }
+  const auto &Files() const { return files; }
+  int64_t CompressedSize() const { return compressedSize; }
+  int64_t UncompressedSize() const { return uncompressedSize; }
+  static std::optional<Reader> NewReader(HANDLE fd, int64_t sz, bela::error_code &ec) {
+    Reader r;
+    if (!r.OpenReader(fd, sz, ec)) {
+      return std::nullopt;
+    }
+    return std::make_optional(std::move(r));
+  }
+
+private:
+  std::string comment;
+  std::vector<File> files;
+  HANDLE fd{INVALID_HANDLE_VALUE};
+  int64_t size{bela::SizeUnInitialized};
+  int64_t uncompressedSize{0};
+  int64_t compressedSize{0};
+  bool needClosed{false};
   bool Initialize(bela::error_code &ec);
   bool readDirectoryEnd(directoryEnd &d, bela::error_code &ec);
   bool readDirectory64End(int64_t offset, directoryEnd &d, bela::error_code &ec);
@@ -247,19 +249,8 @@ private:
 inline std::optional<Reader> NewReader(HANDLE fd, int64_t size, bela::error_code &ec) {
   return Reader::NewReader(fd, size, ec);
 }
-const wchar_t *Method(uint16_t m);
 
-// WindowsTickToUnixTime
-// https://stackoverflow.com/questions/20370920/convert-current-time-from-windows-to-unix-timestamp-in-c-or-c
-inline time_t WindowsTickToUnixTime(uint64_t tick) {
-  constexpr auto tickPerSecond = 10'000'000ll;
-  constexpr auto unixTimeStart = 116444736000000000ui64;
-  return static_cast<time_t>(tick - unixTimeStart) / tickPerSecond;
-}
-// DosDateTimeToUnixTime dos time to unix time
-// https://msdn.microsoft.com/en-us/library/ms724247(v=VS.85).aspx
-// Windows Epoch start 1601
-time_t DosDateTimeToUnixTime(uint16_t dosDate, uint16_t dosTime);
+const wchar_t *Method(uint16_t m);
 } // namespace hazel::zip
 
 #endif

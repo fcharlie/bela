@@ -3,6 +3,7 @@ add_executable(zipview
 )
 
 target_link_libraries(zipview
+  belatime
   belawin
   hazel
 )

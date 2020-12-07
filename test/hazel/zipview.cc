@@ -3,6 +3,7 @@
 #include <hazel/zip.hpp>
 #include <bela/terminal.hpp>
 #include <bela/path.hpp>
+#include <bela/datetime.hpp>
 
 inline std::string TimeString(time_t t) {
   if (t < 0) {
@@ -54,14 +55,13 @@ int wmain(int argc, wchar_t **argv) {
   }
 
   for (const auto &file : zr->Files()) {
-    auto ts = TimeString(file.time);
     if (file.IsEncrypted()) {
-      bela::FPrintF(stderr, L"File: %s [%s] (%s %s) %d\n", file.name, ts, hazel::zip::Method(file.method),
-                    file.AesText(), file.uncompressedSize);
+      bela::FPrintF(stderr, L"File: %s [%s] (%s %s) %d\n", file.name, bela::FormatTime(file.time),
+                    hazel::zip::Method(file.method), file.AesText(), file.uncompressedSize);
       continue;
     }
-    bela::FPrintF(stderr, L"File: %s [%s] (%s) %d\n", file.name, ts, hazel::zip::Method(file.method),
-                  file.uncompressedSize);
+    bela::FPrintF(stderr, L"File: %s [%s|%s] (%s) %d\n", file.name, bela::FormatTime(file.time),
+                  bela::FormatUniversalTime(file.time), hazel::zip::Method(file.method), file.uncompressedSize);
   }
   bela::FPrintF(stderr, L"Files: %d\n", zr->Files().size());
   return 0;

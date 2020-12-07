@@ -33,14 +33,68 @@ struct Section {
 };
 
 class File {
+private:
+  bool ParseFile(bela::error_code &ec);
+  bool PositionAt(uint64_t pos, bela::error_code &ec) const {
+    auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
+    LARGE_INTEGER oli{0};
+    if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
+      ec = bela::make_system_error_code(L"SetFilePointerEx: ");
+      return false;
+    }
+    return true;
+  }
+  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
+    DWORD dwSize = {0};
+    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
+      ec = bela::make_system_error_code(L"ReadFile: ");
+      return false;
+    }
+    outlen = static_cast<size_t>(len);
+    return true;
+  }
+  bool ReadAt(void *buffer, size_t len, uint64_t pos, size_t &outlen, bela::error_code &ec) {
+    if (!PositionAt(pos, ec)) {
+      return false;
+    }
+    return Read(buffer, len, outlen, ec);
+  }
+  bool ReadAt(bela::Buffer &b, size_t len, uint64_t pos, bela::error_code &ec) const {
+    if (len > b.capacity()) {
+      b.grow(bela::align_length(len));
+    }
+    if (!PositionAt(pos, ec)) {
+      return false;
+    }
+    return Read(b.data(), len, b.size(), ec);
+  }
+  void Free() {
+    if (needClosed && fd != INVALID_HANDLE_VALUE) {
+      CloseHandle(fd);
+      fd = INVALID_HANDLE_VALUE;
+    }
+  }
+  void MoveFrom(File &&r) {
+    Free();
+    fd = r.fd;
+    r.fd = INVALID_HANDLE_VALUE;
+    r.needClosed = false;
+    size = r.size;
+  }
+
 public:
-  File(HANDLE fd_, int64_t size_) : fd(fd_), size(size_) {}
+  File() = default;
   File(const File &) = delete;
   File &operator=(const File &) = delete;
+  ~File() { Free(); }
+  // NewFile resolve pe file
+  bool NewFile(std::wstring_view p, bela::error_code &ec);
+  bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
+  int64_t Size() const { return size; }
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};
-  int64_t size{0};
+  int64_t size{bela::SizeUnInitialized};
   bela::endian::Endian en{bela::endian::Endian::native};
   bool needClosed{false};
 };

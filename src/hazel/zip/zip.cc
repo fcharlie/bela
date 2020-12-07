@@ -218,7 +218,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
   auto needOffset = file.position == OffsetMin;
   file.utf8 = (file.flags & 0x800) != 0;
 
-  time_t modified = {0};
+  bela::Time modified;
 
   bela::endian::LittenEndian extra(file.extra.data(), file.extra.size());
   for (; extra.Size() >= 4;) {
@@ -270,7 +270,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
         if (attrTag != 1 || attrSize != 24) {
           break;
         }
-        modified = WindowsTickToUnixTime(ab.Read<uint64_t>());
+        modified = bela::FromWindowsPreciseTime(ab.Read<uint64_t>());
       }
       continue;
     }
@@ -279,14 +279,14 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
         continue;
       }
       fb.Discard(4);
-      file.time = static_cast<time_t>(fb.Read<uint32_t>());
+      file.time = bela::FromUnixSeconds(static_cast<int64_t>(fb.Read<uint32_t>()));
       continue;
     }
     if (fieldTag == extTimeExtraID) {
       if (fb.Size() < 5 || (fb.Pick() & 1) == 0) {
         continue;
       }
-      modified = static_cast<time_t>(fb.Read<uint32_t>());
+      modified = bela::FromUnixSeconds(static_cast<int64_t>(fb.Read<uint32_t>()));
       continue;
     }
     // https://www.winzip.com/win/en/aes_info.html
@@ -302,10 +302,8 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
     }
     ///
   }
-  if (auto t = DosDateTimeToUnixTime(dosDate, dosTime); t >= 0) {
-    file.time = t;
-  }
-  if (modified != 0) {
+  file.time = bela::FromDosDateTime(dosDate, dosTime);
+  if (bela::ToUnixSeconds(modified) != 0) {
     file.time = modified;
   }
   if (needSize || needOffset) {

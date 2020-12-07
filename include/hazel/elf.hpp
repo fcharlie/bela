@@ -42,6 +42,7 @@ private:
   HANDLE fd{INVALID_HANDLE_VALUE};
   int64_t size{0};
   bela::endian::Endian en{bela::endian::Endian::native};
+  bool needClosed{false};
 };
 } // namespace hazel::elf
 

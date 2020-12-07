@@ -106,12 +106,14 @@ inline void swaple(SectionHeader32 &sh) {
 }
 
 bool File::ParseFile(bela::error_code &ec) {
-  LARGE_INTEGER li;
-  if (!GetFileSizeEx(fd, &li) == TRUE) {
-    ec = bela::make_system_error_code(L"GetFileSizeEx: ");
-    return false;
+  if (size == SizeUnInitialized) {
+    LARGE_INTEGER li;
+    if (!GetFileSizeEx(fd, &li) == TRUE) {
+      ec = bela::make_system_error_code(L"GetFileSizeEx: ");
+      return false;
+    }
+    size = li.QuadPart;
   }
-  size = li.QuadPart;
   DosHeader dh;
   if (Read(fd, &dh, sizeof(DosHeader), ec) != sizeof(DosHeader)) {
     ec = bela::make_error_code(1, L"pe: not a valid pe file ", ec.message);

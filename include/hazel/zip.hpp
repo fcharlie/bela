@@ -153,8 +153,6 @@ struct File {
   std::string AesText() const { return bela::narrow::StringCat("AE-", aesVersion, "/", AESStrength(aesStrength)); }
 };
 
-constexpr int64_t overflowsize = -1;
-
 class Reader {
 public:
   Reader() = default;
@@ -215,7 +213,7 @@ private:
   std::string comment;
   std::vector<File> files;
   HANDLE fd{INVALID_HANDLE_VALUE};
-  int64_t size{0};
+  int64_t size{bela::SizeUnInitialized};
   int64_t uncompressedSize{0};
   int64_t compressedSize{0};
   bool needClosed{false};

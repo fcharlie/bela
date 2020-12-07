@@ -338,12 +338,13 @@ public:
   }
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
-  bool ParseFile(HANDLE fd_, bela::error_code &ec) {
+  bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec) {
     if (fd != INVALID_HANDLE_VALUE) {
       ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
       return false;
     }
     fd = fd_;
+    size = sz;
     return ParseFile(ec);
   }
   int64_t Size() const { return size; }
@@ -351,7 +352,7 @@ public:
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};
   FileHeader fh;
-  int64_t size{0};
+  int64_t size{SizeUnInitialized};
   // The OptionalHeader64 structure is larger than OptionalHeader32. Therefore, we can store OptionalHeader32 in oh64.
   // Conversion by pointer.
   OptionalHeader64 oh;

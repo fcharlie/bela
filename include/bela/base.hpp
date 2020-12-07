@@ -168,6 +168,8 @@ template <class F> inline final_act<F> finally(const F &f) noexcept { return fin
 
 template <class F> inline final_act<F> finally(F &&f) noexcept { return final_act<F>(std::forward<F>(f)); }
 
+constexpr int64_t SizeUnInitialized{-1};
+
 } // namespace bela
 
 #endif

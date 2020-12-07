@@ -372,7 +372,7 @@ bool Reader::OpenReader(HANDLE nfd, int64_t sz, bela::error_code &ec) {
   }
   fd = nfd;
   size = sz;
-  if (size == overflowsize) {
+  if (size == bela::SizeUnInitialized) {
     LARGE_INTEGER li;
     if (!GetFileSizeEx(fd, &li)) {
       ec = bela::make_system_error_code(L"GetFileSizeEx: ");

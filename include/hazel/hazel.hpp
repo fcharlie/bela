@@ -8,6 +8,7 @@
 #include "io.hpp"
 
 namespace hazel {
+
 // file attribute table
 struct FileAttributeTable {
   bela::flat_hash_map<std::wstring, std::wstring> attributes;

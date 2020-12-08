@@ -314,6 +314,12 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
 }
 
 bool Reader::Initialize(bela::error_code &ec) {
+  LARGE_INTEGER li;
+  if (!GetFileSizeEx(fd, &li)) {
+    ec = bela::make_system_error_code(L"GetFileSizeEx: ");
+    return false;
+  }
+  size = li.QuadPart;
   directoryEnd d;
   if (!readDirectoryEnd(d, ec)) {
     return false;
@@ -354,12 +360,6 @@ bool Reader::OpenReader(std::wstring_view file, bela::error_code &ec) {
     return false;
   }
   needClosed = true;
-  LARGE_INTEGER li;
-  if (!GetFileSizeEx(fd, &li)) {
-    ec = bela::make_system_error_code(L"GetFileSizeEx: ");
-    return false;
-  }
-  size = li.QuadPart;
   return Initialize(ec);
 }
 
@@ -370,14 +370,6 @@ bool Reader::OpenReader(HANDLE nfd, int64_t sz, bela::error_code &ec) {
   }
   fd = nfd;
   size = sz;
-  if (size == bela::SizeUnInitialized) {
-    LARGE_INTEGER li;
-    if (!GetFileSizeEx(fd, &li)) {
-      ec = bela::make_system_error_code(L"GetFileSizeEx: ");
-      return false;
-    }
-    size = li.QuadPart;
-  }
   return Initialize(ec);
 }
 

@@ -50,7 +50,7 @@ struct Symbol {
 struct Section {
   std::string Name;
   uint32_t Type{0};
-  uint32_t Flags{0};
+  uint64_t Flags{0};
   uint64_t Addr{0};
   uint64_t Offset{0};
   uint64_t Size{0};
@@ -58,8 +58,10 @@ struct Section {
   uint32_t Info{0};
   uint64_t Addralign{0};
   uint64_t Entsize{0};
+  uint64_t FileSize{0};
   int64_t compressionOffset{0};
   int compressionType{0};
+  uint32_t nameIndex;
 };
 
 class File {
@@ -110,6 +112,8 @@ private:
     r.fd = INVALID_HANDLE_VALUE;
     r.needClosed = false;
     size = r.size;
+    sections = std::move(r.sections);
+    progs = std::move(r.progs);
     memcpy(&fh, &r.fh, sizeof(fh));
   }
 
@@ -129,12 +133,16 @@ public:
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
   int64_t Size() const { return size; }
+  const auto &Sections() const { return sections; }
+  const auto &Progs() const { return progs; }
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};
   int64_t size{bela::SizeUnInitialized};
   bela::endian::Endian en{bela::endian::Endian::native};
   FileHeader fh;
+  std::vector<Section> sections;
+  std::vector<ProgHeader> progs;
   bool is64bit{false};
   bool needClosed{false};
 };

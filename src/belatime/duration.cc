@@ -460,8 +460,9 @@ double FDivDuration(Duration num, Duration den) {
     return (num < ZeroDuration()) == (den < ZeroDuration()) ? std::numeric_limits<double>::infinity()
                                                             : -std::numeric_limits<double>::infinity();
   }
-  if (time_internal::IsInfiniteDuration(den))
+  if (time_internal::IsInfiniteDuration(den)) {
     return 0.0;
+  }
 
   double a = static_cast<double>(time_internal::GetRepHi(num)) * kTicksPerSecond + time_internal::GetRepLo(num);
   double b = static_cast<double>(time_internal::GetRepHi(den)) * kTicksPerSecond + time_internal::GetRepLo(den);
@@ -528,26 +529,32 @@ int64_t ToInt64Milliseconds(Duration d) {
 }
 int64_t ToInt64Seconds(Duration d) {
   int64_t hi = time_internal::GetRepHi(d);
-  if (time_internal::IsInfiniteDuration(d))
+  if (time_internal::IsInfiniteDuration(d)) {
     return hi;
-  if (hi < 0 && time_internal::GetRepLo(d) != 0)
+  }
+  if (hi < 0 && time_internal::GetRepLo(d) != 0) {
     ++hi;
+  }
   return hi;
 }
 int64_t ToInt64Minutes(Duration d) {
   int64_t hi = time_internal::GetRepHi(d);
-  if (time_internal::IsInfiniteDuration(d))
+  if (time_internal::IsInfiniteDuration(d)) {
     return hi;
-  if (hi < 0 && time_internal::GetRepLo(d) != 0)
+  }
+  if (hi < 0 && time_internal::GetRepLo(d) != 0) {
     ++hi;
+  }
   return hi / 60;
 }
 int64_t ToInt64Hours(Duration d) {
   int64_t hi = time_internal::GetRepHi(d);
-  if (time_internal::IsInfiniteDuration(d))
+  if (time_internal::IsInfiniteDuration(d)) {
     return hi;
-  if (hi < 0 && time_internal::GetRepLo(d) != 0)
+  }
+  if (hi < 0 && time_internal::GetRepLo(d) != 0) {
     ++hi;
+  }
   return hi / (60 * 60);
 }
 

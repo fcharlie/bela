@@ -140,6 +140,7 @@ inline std::wstring FormatTime(bela::Time t, bool nano = false) {
   auto dt = LocalDateTime(t);
   return dt.Format(nano);
 }
+// Coordinated Universal Time 
 inline std::wstring FormatUniversalTime(bela::Time t, bool nano = false) { return DateTime(t).Format(nano); }
 
 std::wstring_view WeekdayName(Weekday wd, bool shortname = true) noexcept;

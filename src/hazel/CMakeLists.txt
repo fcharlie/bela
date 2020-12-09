@@ -13,8 +13,10 @@ add_library(
   ina/text.cc
   zip/time.cc
   zip/zip.cc
+  elf/dynamic.cc
   elf/elf.cc
   elf/elfdata.cc
+  elf/symbol.cc
   macho/macho.cc
   pe/file.cc
   fs.cc

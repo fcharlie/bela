@@ -1,35 +1,9 @@
 ///
 #include <hazel/hazel.hpp>
-#include <hazel/elf.hpp>
-#include "elf.h"
+#include "internal.hpp"
 
 namespace hazel::elf {
 //
-
-inline std::string_view cstring_view(const char *data, size_t len) {
-  std::string_view sv{data, len};
-  if (auto p = sv.find('\0'); p != std::string_view::npos) {
-    return sv.substr(0, p);
-  }
-  return sv;
-}
-
-inline std::string_view cstring_view(const uint8_t *data, size_t len) {
-  return cstring_view(reinterpret_cast<const char *>(data), len);
-}
-
-// getString extracts a string from symbol string table.
-inline std::string getString(std::vector<char> &buffer, int start) {
-  if (start < 0 || static_cast<size_t>(start) >= buffer.size()) {
-    return "";
-  }
-  for (auto end = static_cast<size_t>(start); end < buffer.size(); end++) {
-    if (buffer[end] == 0) {
-      return std::string(buffer.data() + start, end - start);
-    }
-  }
-  return "";
-}
 
 bool File::NewFile(std::wstring_view p, bela::error_code &ec) {
   if (fd != INVALID_HANDLE_VALUE) {
@@ -247,7 +221,7 @@ bool File::ParseFile(bela::error_code &ec) {
       p->nameIndex = SwapByte(sh.sh_name);
     } else {
       Elf64_Shdr sh;
-      //constexpr auto n=sizeof(Elf64_Shdr);
+      // constexpr auto n=sizeof(Elf64_Shdr);
       if (!ReadAt(&sh, sizeof(sh), off, outlen, ec)) {
         return false;
       }

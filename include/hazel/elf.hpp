@@ -3,6 +3,7 @@
 #define HAZEL_ELF_HPP
 #include "hazel.hpp"
 #include <bela/endian.hpp>
+#include "elf.h"
 
 namespace hazel::elf {
 
@@ -123,6 +124,16 @@ private:
     }
     return bela::bswap(t);
   }
+  const Section *SectionByType(uint32_t st) const {
+    for (const auto &s : sections) {
+      if (s.Type == st) {
+        return &s;
+      }
+    }
+    return nullptr;
+  }
+  bool getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &buffer, bela::error_code &ec);
+  bool getSymbols32(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &buffer, bela::error_code &ec);
 
 public:
   File() = default;
@@ -135,6 +146,8 @@ public:
   int64_t Size() const { return size; }
   const auto &Sections() const { return sections; }
   const auto &Progs() const { return progs; }
+  bool DynString(int tag, std::vector<std::string> &sv, bela::error_code &ec);
+  bool Importeds(std::vector<std::string> &libs, bela::error_code &ec) { return DynString(DT_NEEDED, libs, ec); }
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};

@@ -14,7 +14,7 @@ int wmain(int argc, wchar_t **argv) {
     return 1;
   }
   for (const auto &s : file.Sections()) {
-    bela::FPrintF(stderr, L"%s: %08x %d %d %d\n", s.Name, s.Addr, s.Size, s.Entsize, s.Flags);
+    bela::FPrintF(stderr, L"%s: %08x (%d) %d %d\n", s.Name, s.Addr, s.Size, s.Entsize, s.Flags);
   }
 
   return 0;

@@ -684,13 +684,16 @@ template <typename T> T ToChronoDuration(Duration d) {
   using Rep = typename T::rep;
   using Period = typename T::period;
   static_assert(IsValidRep64<Rep>(0), "duration::rep is invalid");
-  if (time_internal::IsInfiniteDuration(d))
+  if (time_internal::IsInfiniteDuration(d)) {
     return d < ZeroDuration() ? (T::min)() : (T::max)();
+  }
   const auto v = ToInt64(d, Period{});
-  if (v > (std::numeric_limits<Rep>::max)())
+  if (v > (std::numeric_limits<Rep>::max)()) {
     return (T::max)();
-  if (v < (std::numeric_limits<Rep>::min)())
+  }
+  if (v < (std::numeric_limits<Rep>::min)()) {
     return (T::min)();
+  }
   return T{v};
 }
 

@@ -1,6 +1,7 @@
 # bela hazel library
 
-add_library(hazel STATIC
+add_library(
+  hazel STATIC
   ina/archive.cc
   ina/binexeobj.cc
   ina/docs.cc
@@ -18,12 +19,9 @@ add_library(hazel STATIC
   pe/file.cc
   fs.cc
   hazel.cc
-  mime.cc
-)
+  mime.cc)
 
-target_link_libraries(hazel
-  bela
-)
+target_link_libraries(hazel bela)
 
 if(BELA_ENABLE_LTO)
   set_property(TARGET hazel PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)

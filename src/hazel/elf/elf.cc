@@ -38,7 +38,7 @@ bool File::ParseFile(bela::error_code &ec) {
     return false;
   }
   if (outlen != 16) {
-    ec = bela::make_error_code(L"elf: not a valid elf file ");
+    ec = bela::make_error_code(L"elf: not a valid elf file");
     return false;
   }
   constexpr uint8_t elfmagic[4] = {'\x7f', 'E', 'L', 'F'};
@@ -88,7 +88,7 @@ bool File::ParseFile(bela::error_code &ec) {
       return false;
     }
     if (outlen != sizeof(hdr)) {
-      ec = bela::make_error_code(L"elf: not a valid elf file ");
+      ec = bela::make_error_code(L"elf: not a valid elf file");
       return false;
     }
     fh.Type = SwapByte(hdr.e_type);
@@ -113,7 +113,7 @@ bool File::ParseFile(bela::error_code &ec) {
       return false;
     }
     if (outlen != sizeof(hdr)) {
-      ec = bela::make_error_code(L"elf: not a valid elf file ");
+      ec = bela::make_error_code(L"elf: not a valid elf file");
       return false;
     }
     fh.Type = SwapByte(hdr.e_type);
@@ -158,7 +158,7 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       if (outlen != sizeof(ph)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file ");
+        ec = bela::make_error_code(L"elf: not a valid elf file");
         return false;
       }
       p->Type = SwapByte(ph.p_type);
@@ -175,7 +175,7 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       if (outlen != sizeof(ph)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file ");
+        ec = bela::make_error_code(L"elf: not a valid elf file");
         return false;
       }
       p->Type = SwapByte(ph.p_type);
@@ -206,7 +206,7 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       if (outlen != sizeof(sh)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file ");
+        ec = bela::make_error_code(L"elf: not a valid elf file");
         return false;
       }
       p->Type = SwapByte(sh.sh_type);
@@ -226,7 +226,7 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       if (outlen != sizeof(sh)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file ");
+        ec = bela::make_error_code(L"elf: not a valid elf file");
         return false;
       }
       p->Type = SwapByte(sh.sh_type);
@@ -250,7 +250,7 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       if (outlen != sizeof(ch)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file ");
+        ec = bela::make_error_code(L"elf: not a valid elf file");
         return false;
       }
       p->compressionType = SwapByte(ch.ch_type);
@@ -263,7 +263,7 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       if (outlen != sizeof(ch)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file ");
+        ec = bela::make_error_code(L"elf: not a valid elf file");
         return false;
       }
       p->compressionType = SwapByte(ch.ch_type);
@@ -275,18 +275,12 @@ bool File::ParseFile(bela::error_code &ec) {
   if (shstrndx < 0) {
     return false;
   }
-  auto size = sections[shstrndx].Size;
-  std::vector<char> buffer;
-  buffer.resize(size);
-  if (!ReadAt(buffer.data(), size, sections[shstrndx].Offset, outlen, ec)) {
-    return false;
-  }
-  if (outlen != buffer.size()) {
-    ec = bela::make_error_code(L"elf: not a valid elf file ");
+  bela::Buffer buffer(sections[shstrndx].Size + 8);
+  if (!sectionData(sections[shstrndx], buffer, ec)) {
     return false;
   }
   for (auto i = 0; i < shnum; i++) {
-    sections[i].Name = getString(buffer, static_cast<int>(sections[i].nameIndex));
+    sections[i].Name = getString(buffer.Span(), static_cast<int>(sections[i].nameIndex));
   }
   return true;
 }

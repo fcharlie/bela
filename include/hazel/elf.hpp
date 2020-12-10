@@ -132,6 +132,17 @@ private:
     }
     return nullptr;
   }
+  bool sectionData(const Section &sec, bela::Buffer &buf, bela::error_code &ec) {
+    buf.grow(sec.Size);
+    if (!ReadAt(buf, sec.Size, sec.Offset, ec)) {
+      return false;
+    }
+    if (buf.size() != static_cast<size_t>(sec.Size)) {
+      ec = bela::make_error_code(1, L"section ", sec.Type, L" cannot read enough data. size ", sec.Size);
+      return false;
+    }
+    return true;
+  }
   bool getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &buffer, bela::error_code &ec);
   bool getSymbols32(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &buffer, bela::error_code &ec);
 

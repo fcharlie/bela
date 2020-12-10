@@ -2,6 +2,7 @@
 #ifndef HAZEL_INTERNAL_HPP
 #define HAZEL_INTERNAL_HPP
 #include <hazel/elf.hpp>
+#include <bela/span.hpp>
 
 namespace hazel::elf {
 inline std::string_view cstring_view(const char *data, size_t len) {
@@ -17,13 +18,13 @@ inline std::string_view cstring_view(const uint8_t *data, size_t len) {
 }
 
 // getString extracts a string from symbol string table.
-inline std::string getString(std::vector<char> &buffer, int start) {
+inline std::string getString(bela::Span<uint8_t> buffer, int start) {
   if (start < 0 || static_cast<size_t>(start) >= buffer.size()) {
     return "";
   }
   for (auto end = static_cast<size_t>(start); end < buffer.size(); end++) {
     if (buffer[end] == 0) {
-      return std::string(buffer.data() + start, end - start);
+      return std::string(reinterpret_cast<const char *>(buffer.data() + start), end - start);
     }
   }
   return "";

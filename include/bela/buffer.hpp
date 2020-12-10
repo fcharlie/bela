@@ -32,6 +32,9 @@ private:
   allocator_type alloc_;
 
 public:
+  Buffer() : data_(nullptr), size_(0), capacity_(0) {
+    //
+  }
   Buffer(size_t maxsize) {
     data_ = get_allocator().allocate(maxsize);
     capacity_ = maxsize;
@@ -56,7 +59,9 @@ public:
     if (size_ != 0) {
       memcpy(b, data_, sizeof(T) * n);
     }
-    get_allocator().deallocate(data_, capacity_);
+    if (data_ != nullptr) {
+      get_allocator().deallocate(data_, capacity_);
+    }
     data_ = b;
     capacity_ = n;
   }

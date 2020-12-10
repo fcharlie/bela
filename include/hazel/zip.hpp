@@ -164,29 +164,29 @@ private:
     }
     return true;
   }
-  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
-    DWORD dwSize = {0};
-    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
-      ec = bela::make_system_error_code(L"ReadFile: ");
-      return false;
+  bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
+    auto p = reinterpret_cast<uint8_t *>(buffer);
+    size_t total = 0;
+    while (total < len) {
+      DWORD dwSize = 0;
+      if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
+        ec = bela::make_system_error_code(L"ReadFile: ");
+        return false;
+      }
+      if (dwSize == 0) {
+        ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
+        return false;
+      }
+      total += dwSize;
     }
-    outlen = static_cast<size_t>(len);
     return true;
   }
-  bool ReadAt(void *buffer, size_t len, uint64_t pos, size_t &outlen, bela::error_code &ec) {
+  // ReadAt ReadFull
+  bool ReadAt(void *buffer, size_t len, uint64_t pos, bela::error_code &ec) const {
     if (!PositionAt(pos, ec)) {
       return false;
     }
-    return Read(buffer, len, outlen, ec);
-  }
-  bool ReadAt(bela::Buffer &b, size_t len, uint64_t pos, bela::error_code &ec) const {
-    if (len > b.capacity()) {
-      b.grow(bela::align_length(len));
-    }
-    if (!PositionAt(pos, ec)) {
-      return false;
-    }
-    return Read(b.data(), len, b.size(), ec);
+    return ReadFull(buffer, len, ec);
   }
   void Free() {
     if (needClosed && fd != INVALID_HANDLE_VALUE) {

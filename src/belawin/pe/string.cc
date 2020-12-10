@@ -28,22 +28,19 @@ std::string StringTable::String(uint32_t start, bela::error_code &ec) const {
   return std::string(cstring_view(data + start, length - start));
 }
 
-bool readStringTable(FileHeader *fh, HANDLE fd, StringTable &table, bela::error_code &ec) {
-  if (table.data != nullptr) {
+bool File::readStringTable(bela::error_code &ec) {
+  if (stringTable.data != nullptr) {
     ec = bela::make_error_code(L"StringTable data not nullptr");
     return false;
   }
-  if (fh->PointerToSymbolTable <= 0) {
+  if (fh.PointerToSymbolTable <= 0) {
     // table nullptr
     return true;
   }
-  auto offset = fh->PointerToSymbolTable + COFFSymbolSize * fh->NumberOfSymbols;
-  if (!PositionAt(fd, static_cast<int64_t>(offset), ec)) {
-    return false;
-  }
+  auto offset = fh.PointerToSymbolTable + COFFSymbolSize * fh.NumberOfSymbols;
   uint32_t l = 0;
-  if (Read(fd, &l, sizeof(l), ec) != 4) {
-    ec = bela::make_error_code(1, L"fail to read string table length: ", ec.message);
+
+  if (!ReadAt(&l, sizeof(l), offset, ec)) {
     return false;
   }
   l = bela::swaple(l);
@@ -51,15 +48,15 @@ bool readStringTable(FileHeader *fh, HANDLE fd, StringTable &table, bela::error_
     return false;
   }
   l -= 4;
-  if (table.data = reinterpret_cast<uint8_t *>(HeapAlloc(GetProcessHeap(), 0, l)); table.data == nullptr) {
+  if (stringTable.data = reinterpret_cast<uint8_t *>(HeapAlloc(GetProcessHeap(), 0, l)); stringTable.data == nullptr) {
     ec = bela::make_system_error_code(L"fail to allocate string table memory: ");
     return false;
   }
-  if (Read(fd, table.data, l, ec) != static_cast<ssize_t>(l)) {
+  if (!ReadFull(stringTable.data, l, ec)) {
     ec = bela::make_error_code(1, L"fail to read string table: ", ec.message);
     return false;
   }
-  table.length = l;
+  stringTable.length = l;
   return true;
 }
 } // namespace bela::pe

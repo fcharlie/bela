@@ -69,9 +69,8 @@ class File {
 private:
   bool ParseFile(bela::error_code &ec);
   bool PositionAt(uint64_t pos, bela::error_code &ec) const {
-    auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
     LARGE_INTEGER oli{0};
-    if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
+    if (SetFilePointerEx(fd, *reinterpret_cast<LARGE_INTEGER *>(&pos), &oli, SEEK_SET) != TRUE) {
       ec = bela::make_system_error_code(L"SetFilePointerEx: ");
       return false;
     }
@@ -86,21 +85,31 @@ private:
     outlen = static_cast<size_t>(len);
     return true;
   }
-  bool ReadAt(void *buffer, size_t len, uint64_t pos, size_t &outlen, bela::error_code &ec) {
+  bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
+    auto p = reinterpret_cast<uint8_t *>(buffer);
+    size_t total = 0;
+    while (total < len) {
+      DWORD dwSize = 0;
+      if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
+        ec = bela::make_system_error_code(L"ReadFile: ");
+        return false;
+      }
+      if (dwSize == 0) {
+        ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
+        return false;
+      }
+      total += dwSize;
+    }
+    return true;
+  }
+  // ReadAt ReadFull
+  bool ReadAt(void *buffer, size_t len, uint64_t pos, bela::error_code &ec) {
     if (!PositionAt(pos, ec)) {
       return false;
     }
-    return Read(buffer, len, outlen, ec);
+    return ReadFull(buffer, len, ec);
   }
-  bool ReadAt(bela::Buffer &b, size_t len, uint64_t pos, bela::error_code &ec) const {
-    if (len > b.capacity()) {
-      b.grow(bela::align_length(len));
-    }
-    if (!PositionAt(pos, ec)) {
-      return false;
-    }
-    return Read(b.data(), len, b.size(), ec);
-  }
+
   void Free() {
     if (needClosed && fd != INVALID_HANDLE_VALUE) {
       CloseHandle(fd);
@@ -118,11 +127,19 @@ private:
     memcpy(&fh, &r.fh, sizeof(fh));
   }
 
-  template <typename T> T SwapByte(T t) {
+  template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
+  Integer EndianCast(Integer t) {
     if (en == bela::endian::Endian::native) {
       return t;
     }
     return bela::bswap(t);
+  }
+  template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
+  Integer EndianCastPtr(const void *p) {
+    if (en == bela::endian::Endian::native) {
+      return *reinterpret_cast<const Integer *>(p);
+    }
+    return bela::bswap(*reinterpret_cast<const Integer *>(p));
   }
   const Section *SectionByType(uint32_t st) const {
     for (const auto &s : sections) {
@@ -134,15 +151,23 @@ private:
   }
   bool sectionData(const Section &sec, bela::Buffer &buf, bela::error_code &ec) {
     buf.grow(sec.Size);
-    if (!ReadAt(buf, sec.Size, sec.Offset, ec)) {
+    if (!PositionAt(sec.Offset, ec)) {
       return false;
     }
-    if (buf.size() != static_cast<size_t>(sec.Size)) {
-      ec = bela::make_error_code(1, L"section ", sec.Type, L" cannot read enough data. size ", sec.Size);
+    if (!ReadFull(buf.data(), sec.Size, ec)) {
       return false;
     }
+    buf.size() = sec.Size;
     return true;
   }
+  bool stringTable(uint32_t link, bela::Buffer &buf, bela::error_code &ec) {
+    if (link <= 0 || link >= static_cast<uint32_t>(sections.size())) {
+      ec = bela::make_error_code(L"section has invalid string table link");
+      return false;
+    }
+    return sectionData(sections[link], buf, ec);
+  }
+
   bool getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &buffer, bela::error_code &ec);
   bool getSymbols32(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &buffer, bela::error_code &ec);
 
@@ -154,11 +179,24 @@ public:
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
+  bool Is64Bit() const { return fh.Class == ELFCLASS64; }
   int64_t Size() const { return size; }
   const auto &Sections() const { return sections; }
   const auto &Progs() const { return progs; }
   bool DynString(int tag, std::vector<std::string> &sv, bela::error_code &ec);
-  bool Importeds(std::vector<std::string> &libs, bela::error_code &ec) { return DynString(DT_NEEDED, libs, ec); }
+  // depend libs
+  bool Depends(std::vector<std::string> &libs, bela::error_code &ec) { return DynString(DT_NEEDED, libs, ec); }
+  std::optional<std::string> LibSoName(bela::error_code &ec) {
+    std::vector<std::string> so;
+    if (!DynString(DT_SONAME, so, ec)) {
+      return std::nullopt;
+    }
+    if (so.empty()) {
+      ec = bela::make_error_code(L"elf no soname");
+      return std::nullopt;
+    }
+    return std::make_optional(std::move(so.front()));
+  };
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};

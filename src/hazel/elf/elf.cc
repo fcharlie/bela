@@ -32,13 +32,8 @@ bool File::NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec) {
 
 bool File::ParseFile(bela::error_code &ec) {
   uint8_t ident[16];
-  size_t outlen = 0;
   constexpr auto x = sizeof(FileHeader);
-  if (!ReadAt(ident, sizeof(ident), 0, outlen, ec)) {
-    return false;
-  }
-  if (outlen != 16) {
-    ec = bela::make_error_code(L"elf: not a valid elf file");
+  if (!ReadAt(ident, sizeof(ident), 0, ec)) {
     return false;
   }
   constexpr uint8_t elfmagic[4] = {'\x7f', 'E', 'L', 'F'};
@@ -84,53 +79,45 @@ bool File::ParseFile(bela::error_code &ec) {
   switch (fh.Class) {
   case ELFCLASS32: {
     Elf32_Ehdr hdr;
-    if (!ReadAt(&hdr, sizeof(hdr), 0, outlen, ec)) {
+    if (!ReadAt(&hdr, sizeof(hdr), 0, ec)) {
       return false;
     }
-    if (outlen != sizeof(hdr)) {
-      ec = bela::make_error_code(L"elf: not a valid elf file");
-      return false;
-    }
-    fh.Type = SwapByte(hdr.e_type);
-    fh.Machine = SwapByte(hdr.e_machine);
-    fh.Entry = SwapByte(hdr.e_entry);
-    if (auto version = SwapByte(hdr.e_version); version != static_cast<uint32_t>(fh.Version)) {
+    fh.Type = EndianCast(hdr.e_type);
+    fh.Machine = EndianCast(hdr.e_machine);
+    fh.Entry = EndianCast(hdr.e_entry);
+    if (auto version = EndianCast(hdr.e_version); version != static_cast<uint32_t>(fh.Version)) {
       ec = bela::make_error_code(1, L"mismatched ELF version, got ", version, L" want ",
                                  static_cast<uint32_t>(fh.Version));
       return false;
     }
-    phoff = SwapByte(hdr.e_phoff);
-    phentsize = SwapByte(hdr.e_phentsize);
-    phnum = SwapByte(hdr.e_phnum);
-    shoff = SwapByte(hdr.e_shoff);
-    shentsize = SwapByte(hdr.e_shentsize);
-    shnum = SwapByte(hdr.e_shnum);
-    shstrndx = SwapByte(hdr.e_shstrndx);
+    phoff = EndianCast(hdr.e_phoff);
+    phentsize = EndianCast(hdr.e_phentsize);
+    phnum = EndianCast(hdr.e_phnum);
+    shoff = EndianCast(hdr.e_shoff);
+    shentsize = EndianCast(hdr.e_shentsize);
+    shnum = EndianCast(hdr.e_shnum);
+    shstrndx = EndianCast(hdr.e_shstrndx);
   } break;
   case ELFCLASS64: {
     Elf64_Ehdr hdr;
-    if (!ReadAt(&hdr, sizeof(hdr), 0, outlen, ec)) {
+    if (!ReadAt(&hdr, sizeof(hdr), 0, ec)) {
       return false;
     }
-    if (outlen != sizeof(hdr)) {
-      ec = bela::make_error_code(L"elf: not a valid elf file");
-      return false;
-    }
-    fh.Type = SwapByte(hdr.e_type);
-    fh.Machine = SwapByte(hdr.e_machine);
-    fh.Entry = SwapByte(hdr.e_entry);
-    if (auto version = SwapByte(hdr.e_version); version != static_cast<uint32_t>(fh.Version)) {
+    fh.Type = EndianCast(hdr.e_type);
+    fh.Machine = EndianCast(hdr.e_machine);
+    fh.Entry = EndianCast(hdr.e_entry);
+    if (auto version = EndianCast(hdr.e_version); version != static_cast<uint32_t>(fh.Version)) {
       ec = bela::make_error_code(1, L"mismatched ELF version, got ", version, L" want ",
                                  static_cast<uint32_t>(fh.Version));
       return false;
     }
-    phoff = SwapByte(hdr.e_phoff);
-    phentsize = SwapByte(hdr.e_phentsize);
-    phnum = SwapByte(hdr.e_phnum);
-    shoff = SwapByte(hdr.e_shoff);
-    shentsize = SwapByte(hdr.e_shentsize);
-    shnum = SwapByte(hdr.e_shnum);
-    shstrndx = SwapByte(hdr.e_shstrndx);
+    phoff = EndianCast(hdr.e_phoff);
+    phentsize = EndianCast(hdr.e_phentsize);
+    phnum = EndianCast(hdr.e_phnum);
+    shoff = EndianCast(hdr.e_shoff);
+    shentsize = EndianCast(hdr.e_shentsize);
+    shnum = EndianCast(hdr.e_shnum);
+    shstrndx = EndianCast(hdr.e_shstrndx);
   } break;
   default:
     break;
@@ -154,38 +141,30 @@ bool File::ParseFile(bela::error_code &ec) {
     auto p = &progs[i];
     if (fh.Class == ELFCLASS32) {
       Elf32_Phdr ph;
-      if (!ReadAt(&ph, sizeof(ph), off, outlen, ec)) {
+      if (!ReadAt(&ph, sizeof(ph), off, ec)) {
         return false;
       }
-      if (outlen != sizeof(ph)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file");
-        return false;
-      }
-      p->Type = SwapByte(ph.p_type);
-      p->Flags = SwapByte(ph.p_flags);
-      p->Off = SwapByte(ph.p_offset);
-      p->Vaddr = SwapByte(ph.p_vaddr);
-      p->Paddr = SwapByte(ph.p_paddr);
-      p->Filesz = SwapByte(ph.p_filesz);
-      p->Memsz = SwapByte(ph.p_memsz);
-      p->Align = SwapByte(ph.p_align);
+      p->Type = EndianCast(ph.p_type);
+      p->Flags = EndianCast(ph.p_flags);
+      p->Off = EndianCast(ph.p_offset);
+      p->Vaddr = EndianCast(ph.p_vaddr);
+      p->Paddr = EndianCast(ph.p_paddr);
+      p->Filesz = EndianCast(ph.p_filesz);
+      p->Memsz = EndianCast(ph.p_memsz);
+      p->Align = EndianCast(ph.p_align);
     } else {
       Elf64_Phdr ph;
-      if (!ReadAt(&ph, sizeof(ph), off, outlen, ec)) {
+      if (!ReadAt(&ph, sizeof(ph), off, ec)) {
         return false;
       }
-      if (outlen != sizeof(ph)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file");
-        return false;
-      }
-      p->Type = SwapByte(ph.p_type);
-      p->Flags = SwapByte(ph.p_flags);
-      p->Off = SwapByte(ph.p_offset);
-      p->Vaddr = SwapByte(ph.p_vaddr);
-      p->Paddr = SwapByte(ph.p_paddr);
-      p->Filesz = SwapByte(ph.p_filesz);
-      p->Memsz = SwapByte(ph.p_memsz);
-      p->Align = SwapByte(ph.p_align);
+      p->Type = EndianCast(ph.p_type);
+      p->Flags = EndianCast(ph.p_flags);
+      p->Off = EndianCast(ph.p_offset);
+      p->Vaddr = EndianCast(ph.p_vaddr);
+      p->Paddr = EndianCast(ph.p_paddr);
+      p->Filesz = EndianCast(ph.p_filesz);
+      p->Memsz = EndianCast(ph.p_memsz);
+      p->Align = EndianCast(ph.p_align);
     }
   }
   if (shnum == 0) {
@@ -202,43 +181,35 @@ bool File::ParseFile(bela::error_code &ec) {
     auto p = &sections[i];
     if (fh.Class == ELFCLASS32) {
       Elf32_Shdr sh;
-      if (!ReadAt(&sh, sizeof(sh), off, outlen, ec)) {
+      if (!ReadAt(&sh, sizeof(sh), off, ec)) {
         return false;
       }
-      if (outlen != sizeof(sh)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file");
-        return false;
-      }
-      p->Type = SwapByte(sh.sh_type);
-      p->Flags = SwapByte(sh.sh_flags);
-      p->Addr = SwapByte(sh.sh_addr);
-      p->Offset = SwapByte(sh.sh_offset);
-      p->FileSize = SwapByte(sh.sh_size);
-      p->Link = SwapByte(sh.sh_link);
-      p->Info = SwapByte(sh.sh_info);
-      p->Addralign = SwapByte(sh.sh_addralign);
-      p->Entsize = SwapByte(sh.sh_entsize);
-      p->nameIndex = SwapByte(sh.sh_name);
+      p->Type = EndianCast(sh.sh_type);
+      p->Flags = EndianCast(sh.sh_flags);
+      p->Addr = EndianCast(sh.sh_addr);
+      p->Offset = EndianCast(sh.sh_offset);
+      p->FileSize = EndianCast(sh.sh_size);
+      p->Link = EndianCast(sh.sh_link);
+      p->Info = EndianCast(sh.sh_info);
+      p->Addralign = EndianCast(sh.sh_addralign);
+      p->Entsize = EndianCast(sh.sh_entsize);
+      p->nameIndex = EndianCast(sh.sh_name);
     } else {
       Elf64_Shdr sh;
       // constexpr auto n=sizeof(Elf64_Shdr);
-      if (!ReadAt(&sh, sizeof(sh), off, outlen, ec)) {
+      if (!ReadAt(&sh, sizeof(sh), off, ec)) {
         return false;
       }
-      if (outlen != sizeof(sh)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file");
-        return false;
-      }
-      p->Type = SwapByte(sh.sh_type);
-      p->Flags = SwapByte(sh.sh_flags);
-      p->Addr = SwapByte(sh.sh_addr);
-      p->Offset = SwapByte(sh.sh_offset);
-      p->FileSize = SwapByte(sh.sh_size);
-      p->Link = SwapByte(sh.sh_link);
-      p->Info = SwapByte(sh.sh_info);
-      p->Addralign = SwapByte(sh.sh_addralign);
-      p->Entsize = SwapByte(sh.sh_entsize);
-      p->nameIndex = SwapByte(sh.sh_name);
+      p->Type = EndianCast(sh.sh_type);
+      p->Flags = EndianCast(sh.sh_flags);
+      p->Addr = EndianCast(sh.sh_addr);
+      p->Offset = EndianCast(sh.sh_offset);
+      p->FileSize = EndianCast(sh.sh_size);
+      p->Link = EndianCast(sh.sh_link);
+      p->Info = EndianCast(sh.sh_info);
+      p->Addralign = EndianCast(sh.sh_addralign);
+      p->Entsize = EndianCast(sh.sh_entsize);
+      p->nameIndex = EndianCast(sh.sh_name);
     }
     if ((p->Flags & SHF_COMPRESSED) == 0) {
       p->Size = p->FileSize;
@@ -246,29 +217,21 @@ bool File::ParseFile(bela::error_code &ec) {
     }
     if (fh.Class == ELFCLASS32) {
       Elf32_Chdr ch;
-      if (!ReadAt(&ch, sizeof(ch), off, outlen, ec)) {
+      if (!ReadAt(&ch, sizeof(ch), off, ec)) {
         return false;
       }
-      if (outlen != sizeof(ch)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file");
-        return false;
-      }
-      p->compressionType = SwapByte(ch.ch_type);
-      p->Size = SwapByte(ch.ch_size);
-      p->Addralign = SwapByte(ch.ch_addralign);
+      p->compressionType = EndianCast(ch.ch_type);
+      p->Size = EndianCast(ch.ch_size);
+      p->Addralign = EndianCast(ch.ch_addralign);
       p->compressionOffset = sizeof(ch);
     } else {
       Elf64_Chdr ch;
-      if (!ReadAt(&ch, sizeof(ch), off, outlen, ec)) {
+      if (!ReadAt(&ch, sizeof(ch), off, ec)) {
         return false;
       }
-      if (outlen != sizeof(ch)) {
-        ec = bela::make_error_code(L"elf: not a valid elf file");
-        return false;
-      }
-      p->compressionType = SwapByte(ch.ch_type);
-      p->Size = SwapByte(ch.ch_size);
-      p->Addralign = SwapByte(ch.ch_addralign);
+      p->compressionType = EndianCast(ch.ch_type);
+      p->Size = EndianCast(ch.ch_size);
+      p->Addralign = EndianCast(ch.ch_addralign);
       p->compressionOffset = sizeof(ch);
     }
   }

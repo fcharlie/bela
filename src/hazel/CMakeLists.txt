@@ -11,7 +11,6 @@ add_library(
   ina/media.cc
   ina/shl.cc
   ina/text.cc
-  zip/time.cc
   zip/zip.cc
   elf/dynamic.cc
   elf/elf.cc

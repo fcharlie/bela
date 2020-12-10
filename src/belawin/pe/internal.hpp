@@ -5,35 +5,6 @@
 
 namespace bela::pe {
 
-inline bool PositionAt(HANDLE fd, uint64_t pos, bela::error_code &ec) {
-  auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
-  LARGE_INTEGER oli{0};
-  if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
-    ec = bela::make_error_code(L"SetFilePointerEx: ");
-    return false;
-  }
-  return true;
-}
-
-inline ssize_t Read(HANDLE fd, void *buffer, size_t len, bela::error_code &ec) {
-  DWORD drSize = {0};
-  if (::ReadFile(fd, buffer, static_cast<DWORD>(len), &drSize, nullptr) != TRUE) {
-    ec = bela::make_system_error_code(L"ReadFile: ");
-    return -1;
-  }
-  return static_cast<ssize_t>(len);
-}
-
-inline ssize_t ReadAt(HANDLE fd, void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-  auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
-  LARGE_INTEGER oli{0};
-  if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
-    ec = bela::make_error_code(L"SetFilePointerEx: ");
-    return -1;
-  }
-  return Read(fd, buffer, len, ec);
-}
-
 inline std::string_view cstring_view(const char *data, size_t len) {
   std::string_view sv{data, len};
   if (auto p = sv.find('\0'); p != std::string_view::npos) {
@@ -81,11 +52,6 @@ struct ImportDelayDirectory {
 
   std::string DllName;
 };
-
-std::string sectionFullName(SectionHeader32 &sh, StringTable &st);
-bool readRelocs(Section &sec, HANDLE fd);
-bool readSectionData(std::vector<char> &data, const Section &sec, HANDLE fd);
-bool readStringTable(FileHeader *fh, HANDLE fd, StringTable &table, bela::error_code &ec);
 } // namespace bela::pe
 
 #endif

@@ -294,6 +294,52 @@ using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
 class File {
 private:
   bool ParseFile(bela::error_code &ec);
+  bool PositionAt(uint64_t pos, bela::error_code &ec) const {
+    LARGE_INTEGER oli{0};
+    if (SetFilePointerEx(fd, *reinterpret_cast<LARGE_INTEGER *>(&pos), &oli, SEEK_SET) != TRUE) {
+      ec = bela::make_system_error_code(L"SetFilePointerEx: ");
+      return false;
+    }
+    return true;
+  }
+  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
+    DWORD dwSize = {0};
+    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
+      ec = bela::make_system_error_code(L"ReadFile: ");
+      return false;
+    }
+    outlen = static_cast<size_t>(len);
+    return true;
+  }
+  bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
+    auto p = reinterpret_cast<uint8_t *>(buffer);
+    size_t total = 0;
+    while (total < len) {
+      DWORD dwSize = 0;
+      if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
+        ec = bela::make_system_error_code(L"ReadFile: ");
+        return false;
+      }
+      if (dwSize == 0) {
+        ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
+        return false;
+      }
+      total += dwSize;
+    }
+    return true;
+  }
+  // ReadAt ReadFull
+  bool ReadAt(void *buffer, size_t len, uint64_t pos, bela::error_code &ec) const {
+    if (!PositionAt(pos, ec)) {
+      return false;
+    }
+    return ReadFull(buffer, len, ec);
+  }
+  std::string sectionFullName(SectionHeader32 &sh) const;
+  bool readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const;
+  bool readRelocs(Section &sec) const;
+  bool readSectionData(const Section &sec, std::vector<char> &data) const;
+  bool readStringTable(bela::error_code &ec);
   bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
   bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
 

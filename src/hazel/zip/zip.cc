@@ -74,12 +74,11 @@ int findSignatureInBlock(const bela::Buffer &b) {
   return -1;
 }
 bool Reader::readDirectory64End(int64_t offset, directoryEnd &d, bela::error_code &ec) {
-  bela::Buffer buf(directory64EndLen);
-  if (!ReadAt(buf, directory64EndLen, offset, ec)) {
+  uint8_t buffer[256];
+  if (!ReadAt(buffer, directory64EndLen, offset, ec)) {
     return false;
   }
-  bela::endian::LittenEndian b(buf.data(), buf.size());
-
+  bela::endian::LittenEndian b(buffer, directory64EndLen);
   if (auto sig = b.Read<uint32_t>(); sig != directory64EndSignature) {
     ec = bela::make_error_code(L"zip: not a valid zip file");
     return false;
@@ -101,11 +100,11 @@ int64_t Reader::findDirectory64End(int64_t directoryEndOffset, bela::error_code 
   if (locOffset < 0) {
     return -1;
   }
-  bela::Buffer buf(directory64LocLen);
-  if (!ReadAt(buf, directory64LocLen, locOffset, ec)) {
+  uint8_t buffer[256];
+  if (!ReadAt(buffer, directory64LocLen, locOffset, ec)) {
     return -1;
   }
-  bela::endian::LittenEndian b(buf.data(), buf.size());
+  bela::endian::LittenEndian b(buffer, directory64LocLen);
   if (auto sig = b.Read<uint32_t>(); sig != directory64LocSignature) {
     return -1;
   }
@@ -121,7 +120,7 @@ int64_t Reader::findDirectory64End(int64_t directoryEndOffset, bela::error_code 
 
 // github.com\klauspost\compress@v1.11.3\zip\reader.go
 bool Reader::readDirectoryEnd(directoryEnd &d, bela::error_code &ec) {
-  bela::Buffer buf(16 * 1024);
+  bela::Buffer buffer(16 * 1024);
   int64_t directoryEndOffset = 0;
   constexpr int64_t offrange[] = {1024, 65 * 1024};
   bela::endian::LittenEndian b;
@@ -130,12 +129,13 @@ bool Reader::readDirectoryEnd(directoryEnd &d, bela::error_code &ec) {
     if (blen > size) {
       blen = size;
     }
-    buf.grow(blen);
-    if (!ReadAt(buf, blen, size - blen, ec)) {
+    buffer.grow(blen);
+    if (!ReadAt(buffer.data(), blen, size - blen, ec)) {
       return false;
     }
-    if (auto p = findSignatureInBlock(buf); p >= 0) {
-      b.Reset(reinterpret_cast<const char *>(buf.data()) + p, buf.size() - p);
+    buffer.size() = blen;
+    if (auto p = findSignatureInBlock(buffer); p >= 0) {
+      b.Reset(reinterpret_cast<const char *>(buffer.data()) + p, blen - p);
       directoryEndOffset = size - blen + p;
       break;
     }

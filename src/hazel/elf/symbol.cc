@@ -9,12 +9,7 @@ bool File::getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &bu
     ec = bela::make_error_code(L"no symbol section");
     return false;
   }
-  buffer.grow(symSec->Size);
-  if (!ReadAt(buffer, size, symSec->Offset, ec)) {
-    return false;
-  }
-  if (buffer.size() != symSec->Size) {
-    ec = bela::make_error_code(L"cannot load symbol section");
+  if (!sectionData(*symSec, buffer, ec)) {
     return false;
   }
   // if(buffer.size()%)

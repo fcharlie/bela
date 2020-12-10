@@ -15,6 +15,7 @@ add_library(
   elf/dynamic.cc
   elf/elf.cc
   elf/elfdata.cc
+  elf/gnu.cc
   elf/symbol.cc
   macho/macho.cc
   pe/file.cc

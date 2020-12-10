@@ -65,6 +65,11 @@ struct Section {
   uint32_t nameIndex;
 };
 
+struct verneed {
+  std::string file;
+  std::string name;
+};
+
 class File {
 private:
   bool ParseFile(bela::error_code &ec);
@@ -109,6 +114,16 @@ private:
     }
     return ReadFull(buffer, len, ec);
   }
+  bool ReadAt(bela::Buffer &buffer, size_t len, uint64_t pos, bela::error_code &ec) {
+    if (!PositionAt(pos, ec)) {
+      return false;
+    }
+    if (!ReadFull(buffer.data(), len, ec)) {
+      return false;
+    }
+    buffer.size() = len;
+    return true;
+  }
 
   void Free() {
     if (needClosed && fd != INVALID_HANDLE_VALUE) {
@@ -149,16 +164,9 @@ private:
     }
     return nullptr;
   }
-  bool sectionData(const Section &sec, bela::Buffer &buf, bela::error_code &ec) {
-    buf.grow(sec.Size);
-    if (!PositionAt(sec.Offset, ec)) {
-      return false;
-    }
-    if (!ReadFull(buf.data(), sec.Size, ec)) {
-      return false;
-    }
-    buf.size() = sec.Size;
-    return true;
+  bool sectionData(const Section &sec, bela::Buffer &buffer, bela::error_code &ec) {
+    buffer.grow(sec.Size);
+    return ReadAt(buffer, sec.Size, sec.Offset, ec);
   }
   bool stringTable(uint32_t link, bela::Buffer &buf, bela::error_code &ec) {
     if (link <= 0 || link >= static_cast<uint32_t>(sections.size())) {
@@ -167,9 +175,9 @@ private:
     }
     return sectionData(sections[link], buf, ec);
   }
-
-  bool getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &buffer, bela::error_code &ec);
-  bool getSymbols32(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &buffer, bela::error_code &ec);
+  bool gnuVersionInit(bela::Span<uint8_t> str);
+  bool getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &strdata, bela::error_code &ec);
+  bool getSymbols32(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &strdata, bela::error_code &ec);
 
 public:
   File() = default;
@@ -205,6 +213,8 @@ private:
   FileHeader fh;
   std::vector<Section> sections;
   std::vector<ProgHeader> progs;
+  std::vector<verneed> gnuNeed;
+  bela::Buffer gnuVersym;
   bool is64bit{false};
   bool needClosed{false};
 };

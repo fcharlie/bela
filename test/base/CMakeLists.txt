@@ -34,3 +34,14 @@ add_executable(strsplit_test
 target_link_libraries(strsplit_test
   bela
 )
+
+
+
+# base
+add_executable(startswith_test
+  startswith.cc
+)
+
+target_link_libraries(startswith_test
+  bela
+)

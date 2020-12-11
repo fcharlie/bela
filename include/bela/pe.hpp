@@ -423,6 +423,22 @@ public:
   std::optional<std::string> LookupOrdinalFunctionName(std::string_view dllname, int ordinal, bela::error_code &ec);
 };
 
+struct FileInfo {
+  DWORD dwSignature;        /* e.g. 0xfeef04bd */
+  DWORD dwStrucVersion;     /* e.g. 0x00000042 = "0.42" */
+  DWORD dwFileVersionMS;    /* e.g. 0x00030075 = "3.75" */
+  DWORD dwFileVersionLS;    /* e.g. 0x00000031 = "0.31" */
+  DWORD dwProductVersionMS; /* e.g. 0x00030010 = "3.10" */
+  DWORD dwProductVersionLS; /* e.g. 0x00000031 = "0.31" */
+  DWORD dwFileFlagsMask;    /* = 0x3F for version "0.42" */
+  DWORD dwFileFlags;        /* e.g. VFF_DEBUG | VFF_PRERELEASE */
+  DWORD dwFileOS;           /* e.g. VOS_DOS_WINDOWS16 */
+  DWORD dwFileType;         /* e.g. VFT_DRIVER */
+  DWORD dwFileSubtype;      /* e.g. VFT2_DRV_KEYBOARD */
+  DWORD dwFileDateMS;       /* e.g. 0 */
+  DWORD dwFileDateLS;       /* e.g. 0 */
+};
+
 // https://docs.microsoft.com/en-us/windows/win32/api/winver/nf-winver-getfileversioninfoexw
 // https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-getfileversioninfosizeexw
 // https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-verqueryvaluew
@@ -442,7 +458,7 @@ struct Version {
   std::wstring SpecialBuild;
 };
 
-std::optional<Version> LookupVersion(std::wstring_view file, bela::error_code &ec);
+std::optional<Version> Lookup(std::wstring_view file, bela::error_code &ec);
 
 inline bool IsSubsystemConsole(std::wstring_view p) {
   constexpr const wchar_t *suffix[] = {L".bat", L".cmd", L".vbs", L".vbe", L".js", L".jse", L".wsf", L".wsh", L".msc"};

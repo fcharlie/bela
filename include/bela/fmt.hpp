@@ -240,24 +240,24 @@ size_t StrAppendFormatInternal(std::wstring *buf, const wchar_t *fmt, const Form
 } // namespace format_internal
 
 size_t StrAppendFormat(std::wstring *buf, const wchar_t *fmt);
-template <typename... Args> size_t StrAppendFormat(std::wstring *buf, const wchar_t *fmt, Args... args) {
+template <typename... Args> size_t StrAppendFormat(std::wstring *buf, const wchar_t *fmt, const Args &... args) {
   const format_internal::FormatArg arg_array[] = {args...};
   return format_internal::StrAppendFormatInternal(buf, fmt, arg_array, sizeof...(args));
 }
 
-template <typename... Args> ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt, Args... args) {
+template <typename... Args> ssize_t StrFormat(wchar_t *buf, size_t N, const wchar_t *fmt, const Args &... args) {
   const format_internal::FormatArg arg_array[] = {args...};
   return format_internal::StrFormatInternal(buf, N, fmt, arg_array, sizeof...(args));
 }
 
-template <size_t N, typename... Args> ssize_t StrFormat(wchar_t (&buf)[N], const wchar_t *fmt, Args... args) {
+template <size_t N, typename... Args> ssize_t StrFormat(wchar_t (&buf)[N], const wchar_t *fmt, const Args &... args) {
   // Use Arg() object to record type information and then copy arguments to an
   // array to make it easier to iterate over them.
   const format_internal::FormatArg arg_array[] = {args...};
   return format_internal::StrFormatInternal(buf, N, fmt, arg_array, sizeof...(args));
 }
 
-template <typename... Args> std::wstring StrFormat(const wchar_t *fmt, Args... args) {
+template <typename... Args> std::wstring StrFormat(const wchar_t *fmt, const Args &... args) {
   const format_internal::FormatArg arg_array[] = {args...};
   return format_internal::StrFormatInternal(fmt, arg_array, sizeof...(args));
 }

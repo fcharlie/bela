@@ -55,11 +55,11 @@ inline bool StrContains(std::wstring_view haystack, wchar_t needle) noexcept {
 }
 
 inline bool StartsWith(std::wstring_view text, std::wstring_view prefix) noexcept {
-  return prefix.empty() || (text.size() >= prefix.size() && memequal(text.data(), prefix.data(), prefix.size()) == 0);
+  return prefix.empty() || (text.size() >= prefix.size() && memequal(text.data(), prefix.data(), prefix.size()));
 }
 inline bool EndsWith(std::wstring_view text, std::wstring_view suffix) noexcept {
   return suffix.empty() || (text.size() >= suffix.size() &&
-                            memequal(text.data() + (text.size() - suffix.size()), suffix.data(), suffix.size()) == 0);
+                            memequal(text.data() + (text.size() - suffix.size()), suffix.data(), suffix.size()));
 }
 bool EqualsIgnoreCase(std::wstring_view piece1, std::wstring_view piece2) noexcept;
 bool StartsWithIgnoreCase(std::wstring_view text, std::wstring_view prefix) noexcept;

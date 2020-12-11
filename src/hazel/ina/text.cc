@@ -146,6 +146,7 @@ status_t lookup_text(bela::MemView mv, FileAttributeTable &fat) {
   }
   return None;
 }
+
 //////// --------------> use chardet
 status_t lookup_chardet(bela::MemView mv, FileAttributeTable &fat) {
   if (buffer_is_binary(mv)) {
@@ -161,16 +162,52 @@ status_t LookupText(bela::MemView mv, FileAttributeTable &fat) {
     lookup_chardet(mv, fat);
   }
   // check text
-  std::string_view line;
+  std::wstring shebangline;
   switch (fat.type) {
-  case types::utf8:
-    line = mv.sv();
-    break;
-  case types::utf8bom:
-    line = mv.submv(3).sv();
+  case types::utf8: {
+    // Note that we may get truncated UTF-8 data
+    auto line = mv.sv();
+    auto pos = line.find_first_of("\r\n");
+    if (pos != std::string_view::npos) {
+      line = line.substr(0, pos);
+    }
+    shebangline = bela::ToWide(line);
+  }
+
+  break;
+  case types::utf8bom: {
+    // Note that we may get truncated UTF-8 data
+    auto line = mv.submv(3).sv();
+    auto pos = line.find_first_of("\r\n");
+    if (pos != std::string_view::npos) {
+      line = line.substr(0, pos);
+    }
+    shebangline = bela::ToWide(line);
+  }
+  case types::utf16le: {
+    auto line = mv.submv(2).wsv();
+    auto pos = line.find_first_of(L"\r\n");
+    if (pos != std::wstring_view::npos) {
+      line = line.substr(0, pos);
+    }
+    shebangline = line;
+  } break;
+  case types::utf16be: {
+    auto besb = mv.submv(2).wsv();
+    shebangline.resize(besb.size());
+    for (size_t i = 0; i < besb.size(); i++) {
+      shebangline[i] = static_cast<wchar_t>(bela::swap16(static_cast<uint16_t>(besb[i])));
+    }
+    auto pos = shebangline.find_first_of(L"\r\n");
+    if (pos != std::wstring::npos) {
+      shebangline.resize(pos);
+    }
+  } break;
   default:
     return Found;
   }
+
+  hazel::internal::LookupShebang(shebangline, fat);
   // shlbang
   return Found;
 }

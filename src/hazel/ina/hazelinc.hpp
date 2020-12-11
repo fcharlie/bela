@@ -23,6 +23,7 @@ status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat);
 status_t LookupMedia(bela::MemView mv, FileAttributeTable &fat);
 status_t LookupImages(bela::MemView mv, FileAttributeTable &fat);
 status_t LookupText(bela::MemView mv, FileAttributeTable &fat);
+void LookupShebang(const std::wstring_view line, FileAttributeTable &fat);
 } // namespace hazel::internal
 
 #endif

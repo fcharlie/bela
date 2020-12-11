@@ -9,6 +9,7 @@ add_library(
   ina/git.cc
   ina/image.cc
   ina/media.cc
+  ina/shebang.cc
   ina/shl.cc
   ina/text.cc
   zip/zip.cc
@@ -18,7 +19,6 @@ add_library(
   elf/gnu.cc
   elf/symbol.cc
   macho/macho.cc
-  pe/file.cc
   fs.cc
   hazel.cc
   mime.cc)

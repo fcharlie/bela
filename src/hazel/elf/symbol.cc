@@ -39,7 +39,6 @@ bool File::getSymbols32(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &st
     symbol->Size = EndianCast(sym->st_size);
     symtab.remove_prefix(Sym32Size);
     i++;
-    symtab.remove_prefix(Sym32Size);
   }
   return true;
 }
@@ -75,11 +74,9 @@ bool File::getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &st
     symbol->Other = EndianCast(sym->st_other);
     symbol->Value = EndianCast(sym->st_shndx);
     symbol->Size = EndianCast(sym->st_size);
-    symtab.remove_prefix(Sym32Size);
+    symtab.remove_prefix(Sym64Size);
     i++;
-    symtab.remove_prefix(Sym32Size);
   }
   return true;
 }
-
 } // namespace hazel::elf

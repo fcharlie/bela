@@ -48,6 +48,12 @@ struct Symbol {
   uint8_t Other;
 };
 
+struct ImportedSymbol {
+  std::string Name;
+  std::string Version;
+  std::string Library;
+};
+
 struct Section {
   std::string Name;
   uint32_t Type{0};
@@ -176,8 +182,26 @@ private:
     return sectionData(sections[link], buf, ec);
   }
   bool gnuVersionInit(bela::Span<uint8_t> str);
+  void gnuVersion(int i, std::string &lib, std::string &ver) {
+    i = (i + 1) * 2;
+    if (i >= static_cast<int>(gnuVersym.size())) {
+      return;
+    }
+    auto j = static_cast<size_t>(EndianCastPtr<uint16_t>(gnuVersym.data() + i));
+    if (j < 2 || j >= gnuNeed.size()) {
+      return;
+    }
+    lib = gnuNeed[j].file;
+    ver = gnuNeed[j].name;
+  }
   bool getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &strdata, bela::error_code &ec);
   bool getSymbols32(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &strdata, bela::error_code &ec);
+  bool getSymbols(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &strdata, bela::error_code &ec) {
+    if (is64bit) {
+      return getSymbols64(st, syms, strdata, ec);
+    }
+    return getSymbols32(st, syms, strdata, ec);
+  }
 
 public:
   File() = default;
@@ -192,6 +216,12 @@ public:
   const auto &Sections() const { return sections; }
   const auto &Progs() const { return progs; }
   bool DynString(int tag, std::vector<std::string> &sv, bela::error_code &ec);
+  bool DynamicSymbols(std::vector<Symbol> &syms, bela::error_code &ec);
+  bool ImportedSymbols(std::vector<ImportedSymbol> &symbols, bela::error_code &ec);
+  bool Symbols(std::vector<Symbol> &syms, bela::error_code &ec) {
+    bela::Buffer strdata;
+    return getSymbols(SHT_SYMTAB, syms, strdata, ec);
+  }
   // depend libs
   bool Depends(std::vector<std::string> &libs, bela::error_code &ec) { return DynString(DT_NEEDED, libs, ec); }
   std::optional<std::string> LibSoName(bela::error_code &ec) {

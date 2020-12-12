@@ -409,4 +409,68 @@ const wchar_t *Method(uint16_t m) {
   return L"NONE";
 }
 
+bool Reader::Contains(bela::Span<std::string_view> paths, std::size_t limit) const {
+  if (paths.empty()) {
+    return false;
+  }
+  size_t found = 0;
+  bela::flat_hash_map<std::string_view, bool> pms;
+  for (const auto p : paths) {
+    pms.emplace(p, false);
+  }
+  auto maxsize = (std::min)(limit, files.size());
+  for (size_t i = 0; i < maxsize; i++) {
+    if (auto it = pms.find(files[i].name); it != pms.end()) {
+      if (!it->second) {
+        it->second = true;
+        found++;
+      }
+    }
+    if (found == paths.size()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Reader::Contains(std::string_view p, std::size_t limit) const {
+  auto maxsize = (std::min)(limit, files.size());
+  for (size_t i = 0; i < maxsize; i++) {
+    if (files[i].name == p) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline bool StartsWith(std::string_view text, std::string_view prefix) noexcept {
+  return prefix.empty() || (text.size() >= prefix.size() && memcmp(text.data(), prefix.data(), prefix.size())) == 0;
+}
+
+msoffice_t Reader::LooksLikeOffice() const {
+  // [Content_Types].xml
+  std::string_view paths[] = {"[Content_Types].xml", "_rels/.rels"};
+  if (!Contains(paths, 200)) {
+    return OfficeNone;
+  }
+  for (const auto &file : files) {
+    if (StartsWith(file.name, "word/")) {
+      return OfficeDocx;
+    }
+    if (StartsWith(file.name, "word/")) {
+      return OfficeDocx;
+    }
+    if (StartsWith(file.name, "word/")) {
+      return OfficeDocx;
+    }
+  }
+  return OfficeNone;
+}
+
+bool Reader::LooksLikeOFD() const {
+  std::string_view paths[] = {"OFD.xml"};
+
+  return Contains(bela::MakeSpan(paths), 10000);
+}
+
 } // namespace hazel::zip

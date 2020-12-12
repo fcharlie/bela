@@ -236,6 +236,11 @@ public:
   File() = default;
   File(const File &) = delete;
   File &operator=(const File &) = delete;
+  File(File &&r) { MoveFrom(std::move(r)); }
+  File &operator=(File &&r) {
+    MoveFrom(std::move(r));
+    return *this;
+  }
   ~File() { Free(); }
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);

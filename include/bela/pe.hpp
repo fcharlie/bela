@@ -465,12 +465,12 @@ inline bool IsSubsystemConsole(std::wstring_view p) {
       // console suffix
       L".bat", // batch
       L".cmd", // batch
-      L".vbs", //
-      L".vbe", //
-      L".js",  //
-      L".jse", //
+      L".vbs", // Visual Basic script files
+      L".vbe", // Visual Basic script files (encrypted)
+      L".js",  // JavaScript
+      L".jse", // JavaScript (encrypted)
       L".wsf", // WScript
-      L".wsh", //
+      L".wsh", // Windows Script Host Settings File
   };
   File file;
   bela::error_code ec;

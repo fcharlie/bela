@@ -143,7 +143,131 @@ struct Dysymtab {
   std::vector<uint32_t> IndirectSyms;
 };
 
+class FatFile;
+
+constexpr long ErrNotFat = static_cast<long>(MagicFat);
+
 class File {
+private:
+  bool ParseFile(bela::error_code &ec);
+  bool PositionAt(uint64_t pos, bela::error_code &ec) const {
+    LARGE_INTEGER oli{0};
+    if (SetFilePointerEx(fd, *reinterpret_cast<LARGE_INTEGER *>(&pos), &oli, SEEK_SET) != TRUE) {
+      ec = bela::make_system_error_code(L"SetFilePointerEx: ");
+      return false;
+    }
+    return true;
+  }
+  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
+    DWORD dwSize = {0};
+    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
+      ec = bela::make_system_error_code(L"ReadFile: ");
+      return false;
+    }
+    outlen = static_cast<size_t>(len);
+    return true;
+  }
+  bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
+    auto p = reinterpret_cast<uint8_t *>(buffer);
+    size_t total = 0;
+    while (total < len) {
+      DWORD dwSize = 0;
+      if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
+        ec = bela::make_system_error_code(L"ReadFile: ");
+        return false;
+      }
+      if (dwSize == 0) {
+        ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
+        return false;
+      }
+      total += dwSize;
+    }
+    return true;
+  }
+  // ReadAt ReadFull
+  bool ReadAt(void *buffer, size_t len, uint64_t pos, bela::error_code &ec) {
+    if (!PositionAt(pos + baseOffset, ec)) {
+      return false;
+    }
+    return ReadFull(buffer, len, ec);
+  }
+  bool ReadAt(bela::Buffer &buffer, size_t len, uint64_t pos, bela::error_code &ec) {
+    if (!PositionAt(pos + baseOffset, ec)) {
+      return false;
+    }
+    if (!ReadFull(buffer.data(), len, ec)) {
+      return false;
+    }
+    buffer.size() = len;
+    return true;
+  }
+
+  void Free() {
+    if (needClosed && fd != INVALID_HANDLE_VALUE) {
+      CloseHandle(fd);
+      fd = INVALID_HANDLE_VALUE;
+    }
+  }
+  void MoveFrom(File &&r) {
+    Free();
+    fd = r.fd;
+    r.fd = INVALID_HANDLE_VALUE;
+    r.needClosed = false;
+    size = r.size;
+    memcpy(&fh, &r.fh, sizeof(fh));
+  }
+
+  template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
+  Integer EndianCast(Integer t) {
+    if (en == bela::endian::Endian::native) {
+      return t;
+    }
+    return bela::bswap(t);
+  }
+  template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
+  Integer EndianCastPtr(const void *p) {
+    if (en == bela::endian::Endian::native) {
+      return *reinterpret_cast<const Integer *>(p);
+    }
+    return bela::bswap(*reinterpret_cast<const Integer *>(p));
+  }
+
+public:
+  File() = default;
+  File(const File &) = delete;
+  File &operator=(const File &) = delete;
+  ~File() { Free(); }
+  // NewFile resolve pe file
+  bool NewFile(std::wstring_view p, bela::error_code &ec);
+  bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
+  bool Is64Bit() const { return is64bit; }
+  int64_t Size() const { return size; }
+
+private:
+  friend class FatFile;
+  HANDLE fd{INVALID_HANDLE_VALUE};
+  int64_t baseOffset{0}; // when support fat
+  int64_t size{bela::SizeUnInitialized};
+  bela::endian::Endian en{bela::endian::Endian::native};
+  FileHeader fh;
+  bool is64bit{false};
+  bool needClosed{false};
+};
+
+struct FatArchHeader {
+  uint32_t Cpu;
+  uint32_t SubCpu;
+  uint32_t Offset;
+  uint32_t Size;
+  uint32_t Align;
+};
+
+struct FatArch {
+  FatArchHeader fh;
+  File file;
+};
+
+class FatFile {
 private:
   bool ParseFile(bela::error_code &ec);
   bool PositionAt(uint64_t pos, bela::error_code &ec) const {
@@ -210,43 +334,26 @@ private:
     r.fd = INVALID_HANDLE_VALUE;
     r.needClosed = false;
     size = r.size;
-    memcpy(&fh, &r.fh, sizeof(fh));
-  }
-
-  template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer EndianCast(Integer t) {
-    if (en == bela::endian::Endian::native) {
-      return t;
-    }
-    return bela::bswap(t);
-  }
-  template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer EndianCastPtr(const void *p) {
-    if (en == bela::endian::Endian::native) {
-      return *reinterpret_cast<const Integer *>(p);
-    }
-    return bela::bswap(*reinterpret_cast<const Integer *>(p));
+    arches = std::move(arches);
   }
 
 public:
-  File() = default;
-  File(const File &) = delete;
-  File &operator=(const File &) = delete;
-  ~File() { Free(); }
+  FatFile() = default;
+  FatFile(const FatFile &) = delete;
+  FatFile &operator=(const FatFile &) = delete;
+  ~FatFile() { Free(); }
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
-  bool Is64Bit() const { return is64bit; }
-  int64_t Size() const { return size; }
+  const auto &Archs() const { return arches; }
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};
   int64_t size{bela::SizeUnInitialized};
-  bela::endian::Endian en{bela::endian::Endian::native};
-  FileHeader fh;
-  bool is64bit{false};
+  std::vector<FatArch> arches;
   bool needClosed{false};
 };
+
 } // namespace hazel::macho
 
 #endif

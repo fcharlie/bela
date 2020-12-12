@@ -37,6 +37,39 @@ bool File::ParseFile(bela::error_code &ec) {
     }
     size = li.QuadPart;
   }
+  uint8_t ident[4] = {0};
+  if (!ReadAt(ident, sizeof(ident), 0, ec)) {
+    return false;
+  }
+  auto resolveMagic = [&]() -> bool {
+    auto le = bela::readle<uint32_t>(ident);
+    if (le == MH_MAGIC) {
+      en = bela::endian::Endian::little;
+      return true;
+    }
+    if (le == MH_MAGIC_64) {
+      en = bela::endian::Endian::little;
+      is64bit = true;
+      return true;
+    }
+    auto be = bela::readle<uint32_t>(ident);
+    if (be == MH_MAGIC) {
+      en = bela::endian::Endian::big;
+      return true;
+    }
+    if (le == MH_MAGIC_64) {
+      en = bela::endian::Endian::big;
+      is64bit = true;
+      return true;
+    }
+    return false;
+  };
+  if (!resolveMagic()) {
+    ec = bela::make_error_code(1, L"macho: bad magic number ['", static_cast<int>(ident[0]), L"', '",
+                               static_cast<int>(ident[1]), L"', '", static_cast<int>(ident[2]), L"', '",
+                               static_cast<int>(ident[3]), L"']");
+    return false;
+  }
 
   return false;
 }

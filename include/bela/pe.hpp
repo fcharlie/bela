@@ -461,7 +461,7 @@ struct Version {
 std::optional<Version> Lookup(std::wstring_view file, bela::error_code &ec);
 
 inline bool IsSubsystemConsole(std::wstring_view p) {
-  constexpr const wchar_t *suffix[] = {L".bat", L".cmd", L".vbs", L".vbe", L".js", L".jse", L".wsf", L".wsh", L".msc"};
+  constexpr const wchar_t *suffix[] = {L".bat", L".cmd", L".vbs", L".vbe", L".js", L".jse", L".wsf", L".wsh"};
   File file;
   bela::error_code ec;
   if (!file.NewFile(p, ec)) {

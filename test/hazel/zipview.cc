@@ -79,6 +79,14 @@ int wmain(int argc, wchar_t **argv) {
   if (zr->LooksLikeOFD()) {
     bela::FPrintF(stderr, L"File is Open Fixed-layout Document (GB/T 33190-2016)\n");
   }
+  if (zr->LooksLikeAppx()) {
+    bela::FPrintF(stderr, L"File is Windows App Packages\n");
+  }
+  if (zr->LooksLikeApk()) {
+    bela::FPrintF(stderr, L"File is Android APK\n");
+  } else if (zr->LooksLikeJar()) {
+    bela::FPrintF(stderr, L"File is Java Jar\n");
+  }
   bela::FPrintF(stderr, L"Files: %d\n", zr->Files().size());
   return 0;
 }

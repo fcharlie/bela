@@ -443,10 +443,6 @@ bool Reader::Contains(std::string_view p, std::size_t limit) const {
   return false;
 }
 
-inline bool StartsWith(std::string_view text, std::string_view prefix) noexcept {
-  return prefix.empty() || (text.size() >= prefix.size() && memcmp(text.data(), prefix.data(), prefix.size())) == 0;
-}
-
 msoffice_t Reader::LooksLikeOffice() const {
   // [Content_Types].xml
   std::string_view paths[] = {"[Content_Types].xml", "_rels/.rels"};
@@ -454,13 +450,13 @@ msoffice_t Reader::LooksLikeOffice() const {
     return OfficeNone;
   }
   for (const auto &file : files) {
-    if (StartsWith(file.name, "word/")) {
+    if (bela::StartsWith(file.name, "word/")) {
       return OfficeDocx;
     }
-    if (StartsWith(file.name, "word/")) {
+    if (bela::StartsWith(file.name, "word/")) {
       return OfficeDocx;
     }
-    if (StartsWith(file.name, "word/")) {
+    if (bela::StartsWith(file.name, "word/")) {
       return OfficeDocx;
     }
   }
@@ -468,9 +464,30 @@ msoffice_t Reader::LooksLikeOffice() const {
 }
 
 bool Reader::LooksLikeOFD() const {
-  std::string_view paths[] = {"OFD.xml"};
+  std::string_view paths[] = {"OFD.xml", "Doc_1/DocumentRes.xml", "Doc_1/PublicRes.xml", "Doc_1/Annotations.xml",
+                              "Doc_1/Document.xml"};
+  return Contains(paths, 10000);
+}
 
-  return Contains(bela::MakeSpan(paths), 10000);
+bool Reader::LooksLikeAppx() const {
+  std::string_view paths = {"[Content_Types].xml", "AppxManifest.xml"};
+  return Contains(paths);
+}
+bool Reader::LooksLikeApk() const {
+  std::string_view paths[] = {"AndroidManifest.xml", "META-INF/MANIFEST.MF"};
+  return Contains(paths);
+}
+
+bool Reader::LooksLikeJar() const {
+  if (!Contains("META-INF/MANIFEST.MF")) {
+    return false;
+  }
+  for (const auto &file : files) {
+    if (bela::EndsWith(file.name, ".class")) {
+      return true;
+    }
+  }
+  return false;
 }
 
 } // namespace hazel::zip

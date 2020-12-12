@@ -76,7 +76,9 @@ int wmain(int argc, wchar_t **argv) {
   default:
     break;
   }
-
+  if (zr->LooksLikeOFD()) {
+    bela::FPrintF(stderr, L"File is Open Fixed-layout Document (GB/T 33190-2016)\n");
+  }
   bela::FPrintF(stderr, L"Files: %d\n", zr->Files().size());
   return 0;
 }

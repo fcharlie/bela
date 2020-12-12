@@ -244,10 +244,13 @@ public:
   bool Contains(bela::Span<std::string_view> paths, std::size_t limit = size_max) const;
   bool Contains(std::string_view p, std::size_t limit = size_max) const;
   msoffice_t LooksLikeOffice() const;
-  bool LooksLikeOFD() const;
   bool LooksLikePptx() const { return LooksLikeOffice() == OfficePptx; }
   bool LooksLikeDocx() const { return LooksLikeOffice() == OfficeDocx; }
   bool LooksLikeXlsx() const { return LooksLikeOffice() == OfficeXlsx; }
+  bool LooksLikeOFD() const;
+  bool LooksLikeJar() const;
+  bool LooksLikeAppx() const;
+  bool LooksLikeApk() const;
 
 private:
   std::string comment;

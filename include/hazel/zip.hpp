@@ -208,13 +208,14 @@ private:
     Free();
     fd = r.fd;
     r.fd = INVALID_HANDLE_VALUE;
+    needClosed = r.needClosed;
     r.needClosed = false;
     size = r.size;
-    uncompressedSize = r.uncompressedSize;
-    compressedSize = r.compressedSize;
-    r.uncompressedSize = 0;
-    r.compressedSize = 0;
     r.size = 0;
+    uncompressedSize = r.uncompressedSize;
+    r.uncompressedSize = 0;
+    compressedSize = r.compressedSize;
+    r.compressedSize = 0;
     comment = std::move(r.comment);
     files = std::move(r.files);
   }

@@ -141,11 +141,14 @@ private:
     Free();
     fd = r.fd;
     r.fd = INVALID_HANDLE_VALUE;
+    needClosed = r.needClosed;
     r.needClosed = false;
     size = r.size;
+    r.size = 0;
     sections = std::move(r.sections);
     progs = std::move(r.progs);
     memcpy(&fh, &r.fh, sizeof(fh));
+    memset(&r.fh, 0, sizeof(r.fh));
   }
 
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>

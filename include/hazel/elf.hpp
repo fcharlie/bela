@@ -1,9 +1,9 @@
 //
 #ifndef HAZEL_ELF_HPP
 #define HAZEL_ELF_HPP
-#include "hazel.hpp"
 #include <bela/endian.hpp>
-#include "elf.h"
+#include "hazel.hpp"
+#include "details/elf.h"
 
 namespace hazel::elf {
 
@@ -211,7 +211,7 @@ public:
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
-  bool Is64Bit() const { return fh.Class == ELFCLASS64; }
+  bool Is64Bit() const { return is64bit; }
   int64_t Size() const { return size; }
   const auto &Sections() const { return sections; }
   const auto &Progs() const { return progs; }

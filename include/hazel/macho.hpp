@@ -7,18 +7,6 @@
 
 namespace hazel::macho {
 
-#pragma pack(4)
-struct FileHeader {
-  uint32_t Magic;
-  uint32_t Cpu;
-  uint32_t SubCpu;
-  uint32_t Type;
-  uint32_t Ncmd;
-  uint32_t Cmdsz;
-  uint32_t Flags;
-};
-#pragma pack()
-
 constexpr size_t fileHeaderSize32 = 7 * 4;
 constexpr size_t fileHeaderSize64 = 8 * 4;
 
@@ -31,6 +19,165 @@ constexpr uint32_t MachoExec = 2;
 constexpr uint32_t MachoDylib = 6;
 constexpr uint32_t MachoBundle = 8;
 constexpr uint32_t Machine64 = 0x01000000;
+
+enum LoadCmd : uint32_t {
+  LoadCmdSegment = 0x1,
+  LoadCmdSymtab = 0x2,
+  LoadCmdThread = 0x4,
+  LoadCmdUnixThread = 0x5, // thread+stack
+  LoadCmdDysymtab = 0xb,
+  LoadCmdDylib = 0xc,    // load dylib command
+  LoadCmdDylinker = 0xf, // id dylinker command (not load dylinker command)
+  LoadCmdSegment64 = 0x19,
+  LoadCmdRpath = 0x8000001c,
+};
+
+#pragma pack(4)
+struct FileHeader {
+  uint32_t Magic;
+  uint32_t Cpu;
+  uint32_t SubCpu;
+  uint32_t Type;
+  uint32_t Ncmd;
+  uint32_t Cmdsz;
+  uint32_t Flags;
+};
+
+// A Segment32 is a 32-bit Mach-O segment load command.
+struct Segment32 {
+  LoadCmd Cmd;
+  uint32_t Len;
+  uint8_t Name[16];
+  uint32_t Addr;
+  uint32_t Memsz;
+  uint32_t Offset;
+  uint32_t Filesz;
+  uint32_t Maxprot;
+  uint32_t Prot;
+  uint32_t Nsect;
+  uint32_t Flag;
+};
+
+// A Segment64 is a 64-bit Mach-O segment load command.
+struct Segment64 {
+  LoadCmd Cmd;
+  uint32_t Len;
+  uint8_t Name[16];
+  uint64_t Addr;
+  uint64_t Memsz;
+  uint64_t Offset;
+  uint64_t Filesz;
+  uint32_t Maxprot;
+  uint32_t Prot;
+  uint32_t Nsect;
+  uint32_t Flag;
+};
+
+// A SymtabCmd is a Mach-O symbol table command.
+struct SymtabCmd {
+  LoadCmd Cmd;
+  uint32_t Len;
+  uint32_t Symoff;
+  uint32_t Nsyms;
+  uint32_t Stroff;
+  uint32_t Strsize;
+};
+
+// A DysymtabCmd is a Mach-O dynamic symbol table command.
+struct DysymtabCmd {
+  LoadCmd Cmd;
+  uint32_t Len;
+  uint32_t Ilocalsym;
+  uint32_t Nlocalsym;
+  uint32_t Iextdefsym;
+  uint32_t Nextdefsym;
+  uint32_t Iundefsym;
+  uint32_t Nundefsym;
+  uint32_t Tocoffset;
+  uint32_t Ntoc;
+  uint32_t Modtaboff;
+  uint32_t Nmodtab;
+  uint32_t Extrefsymoff;
+  uint32_t Nextrefsyms;
+  uint32_t Indirectsymoff;
+  uint32_t Nindirectsyms;
+  uint32_t Extreloff;
+  uint32_t Nextrel;
+  uint32_t Locreloff;
+  uint32_t Nlocrel;
+};
+
+struct RpathCmd {
+  uint32_t Cmd;
+  uint32_t Len;
+  uint32_t Path;
+};
+struct DylibCmd {
+  uint32_t Cmd;
+  uint32_t Len;
+  uint32_t Name;
+  uint32_t Time;
+  uint32_t CurrentVersion;
+  uint32_t CompatVersion;
+};
+
+struct Thread {
+  LoadCmd Cmd;
+  uint32_t Len;
+  uint32_t Type;
+  uint32_t Data[1]; // Variable length array
+};
+
+// A Section32 is a 32-bit Mach-O section header.
+struct Section32 {
+  uint8_t Name[16];
+  uint8_t Seg[16];
+  uint32_t Addr;
+  uint32_t Size;
+  uint32_t Offset;
+  uint32_t Align;
+  uint32_t Reloff;
+  uint32_t Nreloc;
+  uint32_t Flags;
+  uint32_t Reserve1;
+  uint32_t Reserve2;
+};
+
+// A Section64 is a 64-bit Mach-O section header.
+struct Section64 {
+  uint8_t Name[16];
+  uint8_t Seg[16];
+  uint64_t Addr;
+  uint64_t Size;
+  uint32_t Offset;
+  uint32_t Align;
+  uint32_t Reloff;
+  uint32_t Nreloc;
+  uint32_t Flags;
+  uint32_t Reserve1;
+  uint32_t Reserve2;
+  uint32_t Reserve3;
+};
+
+// An Nlist32 is a Mach-O 32-bit symbol table entry.
+struct Nlist32 {
+  uint32_t Name;
+  uint8_t Type;
+  uint8_t Sect;
+  uint16_t Desc;
+  uint32_t Value;
+};
+
+// An Nlist64 is a Mach-O 64-bit symbol table entry.
+struct Nlist64 {
+  uint32_t Name;
+  uint8_t Type;
+  uint8_t Sect;
+  uint16_t Desc;
+  uint64_t Value;
+};
+
+#pragma pack()
 
 enum Machine : uint32_t {
   VAX = 1,
@@ -49,10 +196,10 @@ enum Machine : uint32_t {
 };
 
 struct Segment {
-  bela::Buffer LoadBytes;
+  std::string Bytes;
+  std::string Name;
   uint32_t Cmd;
   uint32_t Len;
-  std::string Name;
   uint64_t Addr;
   uint64_t Memsz;
   uint64_t Offset;
@@ -87,7 +234,6 @@ struct Section {
 };
 
 struct Dylib {
-  bela::Buffer LoadBytes;
   std::string Name;
   uint32_t NameIndex;
   uint32_t CurrentVersion;
@@ -103,7 +249,7 @@ struct Symbol {
 };
 
 struct Symtab {
-  bela::Buffer LoadBytes;
+  std::string Bytes;
   uint32_t Cmd;
   uint32_t Len;
   uint32_t Symoff;
@@ -113,13 +259,8 @@ struct Symtab {
   std::vector<Symbol> Syms;
 };
 
-struct Rpath {
-  bela::Buffer LoadBytes;
-  std::string Path;
-};
-
 struct Dysymtab {
-  bela::Buffer LoadBytes;
+  std::string Bytes;
   uint32_t Cmd;
   uint32_t Len;
   uint32_t Ilocalsym;
@@ -143,9 +284,76 @@ struct Dysymtab {
   std::vector<uint32_t> IndirectSyms;
 };
 
+struct DyLib {
+  std::string Name;
+  uint32_t Time;
+  uint32_t CurrentVersion;
+  uint32_t CompatVersion;
+};
+
+struct Load {
+  void Free() {
+    switch (Cmd) {
+    case LoadCmdRpath:
+      delete Path;
+      break;
+    case LoadCmdDylib:
+      delete DyLib;
+      break;
+    case LoadCmdSegment64:
+      [[fallthrough]];
+    case LoadCmdSegment:
+      delete Segment;
+      break;
+    default:
+      break;
+    }
+  }
+  Load() { Path = nullptr; }
+  Load(const Load &r) = delete;
+  Load &operator=(const Load &r) = delete;
+  Load(Load &&r) { MoveFrom(std::move(r)); }
+  Load &operator=(Load &&r) {
+    MoveFrom(std::move(r));
+    return *this;
+  }
+  void MoveFrom(Load &&r) {
+    bytes = std::move(r.bytes);
+    switch (Cmd) {
+    case LoadCmdRpath:
+      delete Path;
+      Path = r.Path;
+      r.Path = nullptr;
+      break;
+    case LoadCmdDylib:
+      delete DyLib;
+      DyLib = r.DyLib;
+      r.DyLib = nullptr;
+      break;
+    case LoadCmdSegment64:
+      [[fallthrough]];
+    case LoadCmdSegment:
+      delete Segment;
+      Segment = r.Segment;
+      r.Segment = nullptr;
+      break;
+    default:
+      break;
+    }
+  }
+  ~Load() { Free(); }
+  std::string bytes;
+  uint32_t Cmd{0};
+  union {
+    std::string *Path;
+    hazel::macho::DyLib *DyLib;
+    hazel::macho::Segment *Segment;
+  };
+};
+
 class FatFile;
 
-constexpr long ErrNotFat = static_cast<long>(MagicFat);
+constexpr auto ErrNotFat = static_cast<long>(MagicFat);
 
 class File {
 private:
@@ -218,24 +426,32 @@ private:
     r.size = 0;
     baseOffset = r.baseOffset;
     r.baseOffset = 0;
+    loads = std::move(r.loads);
+    dysymtab = std::move(r.dysymtab);
+    symtab = std::move(r.symtab);
+    sections = std::move(r.sections);
     memcpy(&fh, &r.fh, sizeof(fh));
     memset(&r.fh, 0, sizeof(r.fh));
   }
 
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer EndianCast(Integer t) {
+  Integer endian_cast(Integer t) {
     if (en == bela::endian::Endian::native) {
       return t;
     }
     return bela::bswap(t);
   }
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer EndianCastPtr(const void *p) {
+  Integer endian_cast_ptr(const void *p) {
     if (en == bela::endian::Endian::native) {
       return *reinterpret_cast<const Integer *>(p);
     }
     return bela::bswap(*reinterpret_cast<const Integer *>(p));
   }
+  bool readFileHeader(int64_t &offset, bela::error_code &ec);
+  bool parseSymtab(std::string_view symdat, std::string_view strtab, std::string_view cmddat, const SymtabCmd &hdr,
+                   int64_t offset, bela::error_code &ec);
+  bool pushSection(Section *sh, bela::error_code &ec);
 
 public:
   File() = default;
@@ -259,7 +475,11 @@ private:
   int64_t baseOffset{0}; // when support fat
   int64_t size{bela::SizeUnInitialized};
   bela::endian::Endian en{bela::endian::Endian::native};
+  std::vector<Load> loads;
+  std::vector<Section> sections;
   FileHeader fh;
+  Symtab symtab;
+  Dysymtab dysymtab;
   bool is64bit{false};
   bool needClosed{false};
 };

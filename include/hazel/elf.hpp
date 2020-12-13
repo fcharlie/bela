@@ -152,14 +152,14 @@ private:
   }
 
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer EndianCast(Integer t) {
+  Integer endian_cast(Integer t) {
     if (en == bela::endian::Endian::native) {
       return t;
     }
     return bela::bswap(t);
   }
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer EndianCastPtr(const void *p) {
+  Integer endian_cast_ptr(const void *p) {
     if (en == bela::endian::Endian::native) {
       return *reinterpret_cast<const Integer *>(p);
     }
@@ -190,7 +190,7 @@ private:
     if (i >= static_cast<int>(gnuVersym.size())) {
       return;
     }
-    auto j = static_cast<size_t>(EndianCastPtr<uint16_t>(gnuVersym.data() + i));
+    auto j = static_cast<size_t>(endian_cast_ptr<uint16_t>(gnuVersym.data() + i));
     if (j < 2 || j >= gnuNeed.size()) {
       return;
     }

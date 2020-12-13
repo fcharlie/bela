@@ -53,12 +53,51 @@ bool FatFile::ParseFile(bela::error_code &ec) {
     return false;
   }
   narch = bela::swapbe(narch);
+  uint32_t mt{0};
   offset += 4;
   if (narch < 1) {
     ec = bela::make_error_code(L"file contains no images");
     return false;
   }
-  return false;
+  bela::flat_hash_map<uint64_t, bool> seenArches;
+  arches.resize(narch);
+  for (uint32_t i = 0; i < narch; i++) {
+    auto p = &arches[i];
+    fat_arch fa;
+    if (ReadFull(&fa, sizeof(fa), ec)) {
+      ec = bela::make_error_code(ec.code, L"invalid fat_arch header: ", ec.message);
+      return false;
+    }
+    fa.align = bela::swapbe(fa.align);
+    fa.cpusubtype = bela::swapbe(fa.cpusubtype);
+    fa.cputype = bela::swapbe(fa.cputype);
+    fa.offset = bela::swapbe(fa.offset);
+    fa.size = bela::swapbe(fa.size);
+    offset += sizeof(fa);
+    p->file.baseOffset = fa.offset;
+    if (!p->file.NewFile(fd, p->file.size, ec)) {
+      return false;
+    }
+    auto seenArch = (static_cast<uint64_t>(fa.cputype) << 32) | static_cast<uint64_t>(fa.cpusubtype);
+    if (auto it = seenArches.find(seenArch); it != seenArches.end()) {
+      ec = bela::make_error_code(1, L"duplicate architecture cpu=", fa.cputype, L", subcpu=#",
+                                 bela::AlphaNum(bela::Hex(fa.cpusubtype)));
+      return false;
+    }
+    seenArches[seenArch] = true;
+    auto machoType = p->file.fh.Type;
+    if (i == 0) {
+      mt = machoType;
+      continue;
+    }
+    if (machoType != mt) {
+      ec = bela::make_error_code(1, L"Mach-O type for architecture #", i, L" (type=#",
+                                 bela::AlphaNum(bela::Hex(machoType)), L") does not match first (type=#",
+                                 bela::AlphaNum(bela::Hex(mt)), L")");
+      return false;
+    }
+  }
+  return true;
 }
 
 } // namespace hazel::macho

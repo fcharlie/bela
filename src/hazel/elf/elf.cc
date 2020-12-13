@@ -33,7 +33,7 @@ bool File::NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec) {
 bool File::ParseFile(bela::error_code &ec) {
   if (size == bela::SizeUnInitialized) {
     LARGE_INTEGER li;
-    if (!GetFileSizeEx(fd, &li) == TRUE) {
+    if (GetFileSizeEx(fd, &li) != TRUE) {
       ec = bela::make_system_error_code(L"GetFileSizeEx: ");
       return false;
     }

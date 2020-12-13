@@ -12,10 +12,6 @@
 #include "ascii.hpp"
 #include "match.hpp"
 
-namespace llvm {
-std::string demangle(const std::string &MangledName);
-}
-
 namespace bela::pe {
 enum class Machine : uint16_t {
   UNKNOWN = 0,

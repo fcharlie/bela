@@ -224,7 +224,7 @@ bool File::pushSection(hazel::macho::Section *sh, bela::error_code &ec) {
 bool File::ParseFile(bela::error_code &ec) {
   if (size == bela::SizeUnInitialized) {
     LARGE_INTEGER li;
-    if (!GetFileSizeEx(fd, &li) == TRUE) {
+    if (GetFileSizeEx(fd, &li) != TRUE) {
       ec = bela::make_system_error_code(L"GetFileSizeEx: ");
       return false;
     }
@@ -353,8 +353,8 @@ bool File::ParseFile(bela::error_code &ec) {
       if (!ReadAt(dysymtab.IndirectSyms.data(), dysymtab.Nindirectsyms * 4, dysymtab.Indirectsymoff, ec)) {
         return false;
       }
-      for (uint32_t i = 0; i < dysymtab.Nindirectsyms; i++) {
-        dysymtab.IndirectSyms[i] = endian_cast(dysymtab.IndirectSyms[i]);
+      for (uint32_t j = 0; j < dysymtab.Nindirectsyms; j++) {
+        dysymtab.IndirectSyms[j] = endian_cast(dysymtab.IndirectSyms[j]);
       }
     } break;
     case LoadCmdSegment: {
@@ -423,14 +423,14 @@ bool File::ParseFile(bela::error_code &ec) {
       s->Flag = endian_cast(p->Flag);
       auto b = cmddat.substr(sizeof(Segment64));
       sections.resize(s->Nsect);
-      for (uint32_t i = 0; i < s->Nsect; i++) {
+      for (uint32_t j = 0; j < s->Nsect; j++) {
         if (b.size() < sizeof(Section64)) {
           ec = bela::make_error_code(L"invalid block in Section64 data");
           return false;
         }
         auto se = reinterpret_cast<const Section64 *>(b.data());
         b.remove_prefix(sizeof(Section64));
-        auto sh = &(sections[i]);
+        auto sh = &(sections[j]);
         sh->Name = cstring({reinterpret_cast<const char *>(se->Name), sizeof(se->Name)});
         sh->Seg = cstring({reinterpret_cast<const char *>(se->Seg), sizeof(se->Seg)});
         sh->Addr = endian_cast(se->Addr);
@@ -454,7 +454,7 @@ bool File::ParseFile(bela::error_code &ec) {
 }
 bool File::Depends(std::vector<std::string> &libs, bela::error_code &ec) {
   for (const auto &l : loads) {
-    if (l.Cmd == LoadCmdDylib) {
+    if (l.Cmd == LoadCmdDylib && l.DyLib != nullptr) {
       libs.emplace_back(l.DyLib->Name);
     }
   }

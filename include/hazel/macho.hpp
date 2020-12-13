@@ -451,7 +451,7 @@ private:
   bool readFileHeader(int64_t &offset, bela::error_code &ec);
   bool parseSymtab(std::string_view symdat, std::string_view strtab, std::string_view cmddat, const SymtabCmd &hdr,
                    int64_t offset, bela::error_code &ec);
-  bool pushSection(Section *sh, bela::error_code &ec);
+  bool pushSection(hazel::macho::Section *sh, bela::error_code &ec);
 
 public:
   File() = default;
@@ -468,6 +468,26 @@ public:
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
   bool Is64Bit() const { return is64bit; }
   int64_t Size() const { return size; }
+  bool Depends(std::vector<std::string> &libs, bela::error_code &ec);
+  bool ImportedSymbols(std::vector<std::string> &symbols, bela::error_code &ec);
+  const hazel::macho::Section *Section(std::string_view name) const {
+    for (const auto &s : sections) {
+      if (s.Name == name) {
+        return &s;
+      }
+    }
+    return nullptr;
+  }
+  const hazel::macho::Segment *Segment(std::string_view name) const {
+    for (const auto &l : loads) {
+      if ((l.Cmd == LoadCmdSegment || l.Cmd == LoadCmdSegment64) && l.Segment != nullptr) {
+        if (l.Segment->Name == name) {
+          return l.Segment;
+        }
+      }
+    }
+    return nullptr;
+  }
 
 private:
   friend class FatFile;
@@ -476,7 +496,7 @@ private:
   int64_t size{bela::SizeUnInitialized};
   bela::endian::Endian en{bela::endian::Endian::native};
   std::vector<Load> loads;
-  std::vector<Section> sections;
+  std::vector<hazel::macho::Section> sections;
   FileHeader fh;
   Symtab symtab;
   Dysymtab dysymtab;

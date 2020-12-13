@@ -168,9 +168,55 @@ bool File::parseSymtab(std::string_view symdat, std::string_view strtab, std::st
   symtab.Bytes = cmddat;
   return true;
 }
-
-bool File::pushSection(Section *sh, bela::error_code &ec) {
+#pragma pack(4)
+// struct relocInfo {
+//   uint32_t Addr;
+//   uint32_t Symnum;
+// };
+// #pragma pack()
+bool File::pushSection(hazel::macho::Section *sh, bela::error_code &ec) {
   if (sh->Nreloc > 0) {
+    bela::Buffer reldat(sh->Nreloc * 8);
+    if (!ReadAt(reldat, sh->Nreloc * 8, sh->Reloff, ec)) {
+      return false;
+    }
+    std::string_view b{reinterpret_cast<const char *>(reldat.data()), reldat.size()};
+    sh->Relocs.resize(sh->Nreloc);
+    for (uint32_t i = 0; i < sh->Nreloc; i++) {
+      auto &rel = (sh->Relocs[i]);
+      auto addr = endian_cast_ptr<uint32_t>(b.data());
+      auto symnum = endian_cast_ptr<uint32_t>(b.data() + 4);
+      b.remove_prefix(8);
+      if ((addr & (1 << 31)) != 0) {
+        rel.Addr = addr & ((1 << 24) - 1);
+        rel.Type = static_cast<uint8_t>((addr >> 24) & ((1 << 4) - 1));
+        rel.Len = static_cast<uint8_t>((addr >> 28) & ((1 << 2) - 1));
+        rel.Pcrel = (addr & (1 << 30)) != 0;
+        rel.Value = symnum;
+        rel.Scattered = true;
+        continue;
+      }
+      if (en == bela::endian::Endian::little) {
+        rel.Addr = addr;
+        rel.Value = symnum & ((1 << 24) - 1);
+        rel.Pcrel = (symnum & (1 << 24)) != 0;
+        rel.Len = static_cast<uint8_t>((symnum >> 25) & ((1 << 2) - 1));
+        rel.Extern = (symnum & (1 << 27)) != 0;
+        rel.Type = static_cast<uint8_t>((symnum >> 28) & ((1 << 4) - 1));
+        continue;
+      }
+      if (en == bela::endian::Endian::big) {
+        rel.Addr = addr;
+        rel.Value = symnum >> 8;
+        rel.Pcrel = (symnum & (1 << 7)) != 0;
+        rel.Len = static_cast<uint8_t>((symnum >> 5) & ((1 << 2) - 1));
+        rel.Extern = (symnum & (1 << 4)) != 0;
+        rel.Type = static_cast<uint8_t>(symnum & ((1 << 4) - 1));
+        continue;
+      }
+      ec = bela::make_error_code(L"unreachable");
+      return false;
+    }
   }
   return true;
 }
@@ -317,7 +363,7 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       auto p = reinterpret_cast<const Segment32 *>(cmddat.data());
-      loads[i].Segment = new Segment();
+      loads[i].Segment = new hazel::macho::Segment();
       auto s = loads[i].Segment;
       s->Bytes = cmddat;
       s->Cmd = cmd;
@@ -361,7 +407,7 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       auto p = reinterpret_cast<const Segment64 *>(cmddat.data());
-      loads[i].Segment = new Segment();
+      loads[i].Segment = new hazel::macho::Segment();
       auto s = loads[i].Segment;
       s->Bytes = cmddat;
       s->Cmd = cmd;
@@ -376,6 +422,7 @@ bool File::ParseFile(bela::error_code &ec) {
       s->Nsect = endian_cast(p->Nsect);
       s->Flag = endian_cast(p->Flag);
       auto b = cmddat.substr(sizeof(Segment64));
+      sections.resize(s->Nsect);
       for (uint32_t i = 0; i < s->Nsect; i++) {
         if (b.size() < sizeof(Section64)) {
           ec = bela::make_error_code(L"invalid block in Section64 data");
@@ -383,7 +430,6 @@ bool File::ParseFile(bela::error_code &ec) {
         }
         auto se = reinterpret_cast<const Section64 *>(b.data());
         b.remove_prefix(sizeof(Section64));
-        sections.emplace_back(Section{});
         auto sh = &(sections[i]);
         sh->Name = cstring({reinterpret_cast<const char *>(se->Name), sizeof(se->Name)});
         sh->Seg = cstring({reinterpret_cast<const char *>(se->Seg), sizeof(se->Seg)});
@@ -406,4 +452,25 @@ bool File::ParseFile(bela::error_code &ec) {
   }
   return true;
 }
+bool File::Depends(std::vector<std::string> &libs, bela::error_code &ec) {
+  for (const auto &l : loads) {
+    if (l.Cmd == LoadCmdDylib) {
+      libs.emplace_back(l.DyLib->Name);
+    }
+  }
+  return true;
+}
+
+bool File::ImportedSymbols(std::vector<std::string> &symbols, bela::error_code &ec) {
+  if (dysymtab.Cmd == 0 || symtab.Cmd == 0) {
+    ec = bela::make_error_code(L"missing symbol table");
+    return false;
+  }
+  auto end = (std::min)(dysymtab.Iundefsym + dysymtab.Nundefsym, static_cast<uint32_t>(symtab.Syms.size()));
+  for (uint32_t i = dysymtab.Iundefsym; i < end; i++) {
+    symbols.emplace_back(symtab.Syms[i].Name);
+  }
+  return true;
+}
+
 } // namespace hazel::macho

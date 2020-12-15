@@ -3,8 +3,8 @@
 
 // Copyright (c) Microsoft Corporation.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-#ifndef BELA_DETAILS_CHARCONV_FWD_HPP
-#define BELA_DETAILS_CHARCONV_FWD_HPP
+#ifndef BELA_CHARCONV_FWD_HPP
+#define BELA_CHARCONV_FWD_HPP
 #include <type_traits>
 #include <system_error>
 #include <cstring>

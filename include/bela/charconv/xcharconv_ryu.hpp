@@ -27,11 +27,11 @@
 // FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-#ifndef BELA_DETAILS_CHARCONV_RYU_HPP
-#define BELA_DETAILS_CHARCONV_RYU_HPP
+#ifndef BELA_CHARCONV_RYU_HPP
+#define BELA_CHARCONV_RYU_HPP
 #include <cstring>
-#include "charconv_fwd.hpp"
-#include "charconv_ryu_tables.hpp"
+#include "xcharconv.hpp"
+#include "xcharconv_ryu_tables.hpp"
 #ifdef _M_X64
 #include <intrin0.h> // for _umul128() and __shiftright128()
 #endif               // _M_X64

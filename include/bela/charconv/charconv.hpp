@@ -1,15 +1,16 @@
 // Porting from MSVC STL
 
-#ifndef BELA_DETAILS_CHARCONV_BASE_HPP
-#define BELA_DETAILS_CHARCONV_BASE_HPP
+#ifndef BELA_CHARCONV_BASE_HPP
+#define BELA_CHARCONV_BASE_HPP
 #include <cstdint>
 #include <iterator>
 #include <cassert>
 #include <climits>
 #include <cstring>
 #include <cfloat>
-#include "charconv_fwd.hpp"
-#include "charconv_ryu.hpp"
+#include <bit>
+#include "xcharconv.hpp"
+#include "xcharconv_ryu.hpp"
 
 namespace bela {
 // to chars
@@ -171,27 +172,6 @@ inline to_chars_result to_chars(wchar_t *const _First, wchar_t *const _Last, con
                                 const int _Base = 10) noexcept { // strengthened
   return _Integer_to_chars(_First, _Last, _Value, _Base);
 }
-
-#if defined(_MSC_VER) && _MSC_VER >= 1926
-// FUNCTION TEMPLATE _Bit_cast
-template <class _To, class _From,
-          std::enable_if_t<sizeof(_To) == sizeof(_From) && std::is_trivially_copyable_v<_To> &&
-                               std::is_trivially_copyable_v<_From>,
-                           int> = 0>
-[[nodiscard]] constexpr _To _Bit_cast(const _From &_Val) noexcept {
-  return __builtin_bit_cast(_To, _Val);
-}
-#else
-template <class _To, class _From,
-          std::enable_if_t<sizeof(_To) == sizeof(_From) && std::is_trivially_copyable_v<_To> &&
-                               std::is_trivially_copyable_v<_From>,
-                           int> = 0>
-[[nodiscard]] /*constexpr*/ _To _Bit_cast(const _From &_From_obj) noexcept {
-  _To _To_obj; // assumes default-init
-  std::memcpy(std::addressof(_To_obj), std::addressof(_From_obj), sizeof(_To));
-  return _To_obj;
-}
-#endif
 
 to_chars_result to_chars(wchar_t *_First, wchar_t *_Last, bool _Value, int _Base = 10) = delete;
 
@@ -1218,7 +1198,7 @@ void _Assemble_floating_point_zero(const bool _Is_negative, _FloatingType &_Resu
   _Uint_type _Sign_component = _Is_negative;
   _Sign_component <<= _Floating_traits::_Sign_shift;
 
-  _Result = _Bit_cast<_FloatingType>(_Sign_component);
+  _Result = std::bit_cast<_FloatingType>(_Sign_component);
 }
 
 // Stores a positive or negative infinity into the _Result object
@@ -1232,7 +1212,7 @@ void _Assemble_floating_point_infinity(const bool _Is_negative, _FloatingType &_
 
   const _Uint_type _Exponent_component = _Floating_traits::_Shifted_exponent_mask;
 
-  _Result = _Bit_cast<_FloatingType>(_Sign_component | _Exponent_component);
+  _Result = std::bit_cast<_FloatingType>(_Sign_component | _Exponent_component);
 }
 
 // Determines whether a mantissa should be rounded up according to
@@ -1361,7 +1341,7 @@ _Assemble_floating_point_value_t(const bool _Is_negative, const int32_t _Exponen
   _Uint_type _Exponent_component = static_cast<uint32_t>(_Exponent + _Floating_traits::_Exponent_bias);
   _Exponent_component <<= _Floating_traits::_Exponent_shift;
 
-  _Result = _Bit_cast<_FloatingType>(_Sign_component | _Exponent_component | _Mantissa);
+  _Result = std::bit_cast<_FloatingType>(_Sign_component | _Exponent_component | _Mantissa);
 
   return std::errc{};
 }
@@ -2159,7 +2139,7 @@ template <class _Floating>
     _Uint_value |= 1;
   }
 
-  _Value = _Bit_cast<_Floating>(_Uint_value);
+  _Value = std::bit_cast<_Floating>(_Uint_value);
 
   return {_Next, std::errc{}};
 }
@@ -2261,7 +2241,7 @@ template <class _Floating>
   using _Traits = _Floating_type_traits<_Floating>;
   using _Uint_type = typename _Traits::_Uint_type;
 
-  const _Uint_type _Uint_value = _Bit_cast<_Uint_type>(_Value);
+  const _Uint_type _Uint_value = std::bit_cast<_Uint_type>(_Value);
   const _Uint_type _Ieee_mantissa = _Uint_value & _Traits::_Denormal_mantissa_mask;
   const int32_t _Ieee_exponent = static_cast<int32_t>(_Uint_value >> _Traits::_Exponent_shift);
 
@@ -2496,7 +2476,7 @@ template <class _Floating>
   using _Traits = _Floating_type_traits<_Floating>;
   using _Uint_type = typename _Traits::_Uint_type;
 
-  const _Uint_type _Uint_value = _Bit_cast<_Uint_type>(_Value);
+  const _Uint_type _Uint_value = std::bit_cast<_Uint_type>(_Value);
 
   if (_Uint_value == 0) { // zero detected; write "0p+0" and return
     // C11 7.21.6.1 "The fprintf function"/8: "If the value is zero, the
@@ -2763,7 +2743,7 @@ template <class _Floating>
   using _Traits = _Floating_type_traits<_Floating>;
   using _Uint_type = typename _Traits::_Uint_type;
 
-  const _Uint_type _Uint_value = _Bit_cast<_Uint_type>(_Value);
+  const _Uint_type _Uint_value = std::bit_cast<_Uint_type>(_Value);
 
   if (_Uint_value == 0) { // zero detected; write "0" and return; _Precision is
                           // irrelevant due to zero-trimming
@@ -2934,7 +2914,7 @@ template <_Floating_to_chars_overload _Overload, class _Floating>
   using _Traits = _Floating_type_traits<_Floating>;
   using _Uint_type = typename _Traits::_Uint_type;
 
-  _Uint_type _Uint_value = _Bit_cast<_Uint_type>(_Value);
+  _Uint_type _Uint_value = std::bit_cast<_Uint_type>(_Value);
   const bool _Was_negative = (_Uint_value & _Traits::_Shifted_sign_mask) != 0;
   if (_Was_negative) { // sign bit detected; write minus sign and clear sign bit
     if (_First == _Last) {
@@ -2944,7 +2924,7 @@ template <_Floating_to_chars_overload _Overload, class _Floating>
     *_First++ = '-';
 
     _Uint_value &= ~_Traits::_Shifted_sign_mask;
-    _Value = _Bit_cast<_Floating>(_Uint_value);
+    _Value = std::bit_cast<_Floating>(_Uint_value);
   }
 
   if ((_Uint_value & _Traits::_Shifted_exponent_mask) == _Traits::_Shifted_exponent_mask) {

@@ -3,6 +3,7 @@
 #define BELA_BUFFER_HPP
 #include <memory>
 #include <optional>
+#include <span>
 #include "span.hpp"
 
 namespace bela {
@@ -70,7 +71,7 @@ public:
   [[nodiscard]] T operator[](const size_t _Off) const noexcept { return *(data_ + _Off); }
   [[nodiscard]] T *data() { return data_; }
   bela::Span<T> Span() const { return bela::MakeSpan(data_, data_ + size_); }
-
+  // std::span<T> Span
 private:
   T *data_{nullptr};
   size_t size_{0};

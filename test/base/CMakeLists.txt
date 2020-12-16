@@ -8,6 +8,15 @@ target_link_libraries(base_test
 )
 
 # base
+add_executable(ascii_test
+  ascii.cc
+)
+
+target_link_libraries(ascii_test
+  bela
+)
+
+# base
 add_executable(fnmatch_test
   fnmatch.cc
 )

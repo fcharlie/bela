@@ -291,11 +291,13 @@ inline void StripTrailingAsciiWhitespace(std::string *str) {
 }
 
 // Returns std::wstring_view with whitespace stripped from both ends of the
-// given string_view.
+// given wstring_view.
 inline std::wstring_view StripAsciiWhitespace(std::wstring_view str) {
   return StripTrailingAsciiWhitespace(StripLeadingAsciiWhitespace(str));
 }
 
+// Returns std::string_view with whitespace stripped from both ends of the
+// given string_view.
 inline std::string_view StripAsciiWhitespace(std::string_view str) {
   return StripTrailingAsciiWhitespace(StripLeadingAsciiWhitespace(str));
 }
@@ -314,6 +316,7 @@ inline void StripAsciiWhitespace(std::string *str) {
 
 // Removes leading, trailing, and consecutive internal whitespace.
 void RemoveExtraAsciiWhitespace(std::wstring *);
+void RemoveExtraAsciiWhitespace(std::string *);
 } // namespace bela
 
 #endif

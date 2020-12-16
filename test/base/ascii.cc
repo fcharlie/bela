@@ -21,6 +21,9 @@ void parseLine2(std::wstring sv) {
   std::wstring s3(sv);
   bela::StripAsciiWhitespace(&s3);
   bela::FPrintF(stderr, L"StripAsciiWhitespace:         [%s]\n", s3);
+  std::wstring s4(sv);
+  bela::RemoveExtraAsciiWhitespace(&s4);
+  bela::FPrintF(stderr, L"RemoveExtraAsciiWhitespace:   [%s]\n", s4);
   bela::FPrintF(stderr, L"AsciiStrToLower:              [%s]\n", bela::AsciiStrToLower(sv));
   bela::FPrintF(stderr, L"AsciiStrToUpper:              [%s]\n", bela::AsciiStrToUpper(sv));
 }
@@ -45,20 +48,25 @@ void parseLine4(std::string sv) {
   std::string s3(sv);
   bela::StripAsciiWhitespace(&s3);
   bela::FPrintF(stderr, L"StripAsciiWhitespace:         [%s]\n", s3);
+  std::string s4(sv);
+  bela::RemoveExtraAsciiWhitespace(&s4);
+  bela::FPrintF(stderr, L"RemoveExtraAsciiWhitespace:   [%s]\n", s4);
   bela::FPrintF(stderr, L"AsciiStrToLower:              [%s]\n", bela::AsciiStrToLower(sv));
   bela::FPrintF(stderr, L"AsciiStrToUpper:              [%s]\n", bela::AsciiStrToUpper(sv));
 }
 
 int wmain() {
   constexpr const wchar_t *sv[] = {
-      L"ABCABC---- ", L"\r\nABC   ", L"ABC ABC", L"IKKKKKK   ", L"long time ago   ",
+      L"ABCABC---- ", L"abcabc    ABC ABC", L"\r\nABC   ",       L" Whitespace \t  in\v   middle  ",
+      L"ABC ABC",     L"IKKKKKK   ",        L"long time ago   ",
   };
   for (const auto s : sv) {
     parseLine1(s);
     parseLine2(s);
   }
   constexpr const char *sv2[] = {
-      "ABCABC---- ", "\r\nABC   ", "ABC ABC", "IKKKKKK   ", "long time ago   ",
+      "ABCABC---- ", "abcabc    ABC ABC", "\r\nABC   ",       " Whitespace \t  in\v   middle  ",
+      "ABC ABC",     "IKKKKKK   ",         "long time ago   ",
   };
   for (const auto s : sv2) {
     parseLine3(s);

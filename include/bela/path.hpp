@@ -2,7 +2,7 @@
 #ifndef BELA_WIN_PATH_HPP
 #define BELA_WIN_PATH_HPP
 #pragma once
-#include "strcat.hpp"
+#include "str_cat.hpp"
 #include "match.hpp"
 #include "span.hpp"
 #include "base.hpp"

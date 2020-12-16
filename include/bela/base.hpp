@@ -17,7 +17,7 @@
 #include <vector>
 #include <system_error>
 #include <memory>
-#include "strcat.hpp"
+#include "str_cat.hpp"
 
 namespace bela {
 enum bela_extend_error_category : long {

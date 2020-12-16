@@ -2,7 +2,7 @@
 // BZ 7z Rar!
 #include <string_view>
 #include <optional>
-#include <bela/strcat.hpp>
+#include <bela/str_cat.hpp>
 #include "hazelinc.hpp"
 
 namespace hazel::internal {

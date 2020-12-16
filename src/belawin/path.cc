@@ -2,7 +2,7 @@
 #include <vector>
 #include <bela/path.hpp>
 #include <bela/strip.hpp>
-#include <bela/strcat.hpp>
+#include <bela/str_cat.hpp>
 #include <bela/str_split.hpp>
 #include <bela/ascii.hpp>
 #include <bela/base.hpp>

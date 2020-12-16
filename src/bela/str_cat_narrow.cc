@@ -15,7 +15,7 @@
 #include <cassert>
 #include <cstring>
 #include <bit>
-#include <bela/narrow/str_cat.hpp>
+#include <bela/str_cat_narrow.hpp>
 #include <bela/endian.hpp>
 #ifdef __SSE4_2__
 #include <x86intrin.h>

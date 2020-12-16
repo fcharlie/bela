@@ -3,7 +3,7 @@
 #define HAZEL_ZIP_HPP
 #include <bela/base.hpp>
 #include <bela/buffer.hpp>
-#include <bela/narrow/str_cat.hpp>
+#include <bela/str_cat_narrow.hpp>
 #include <bela/time.hpp>
 #include <bela/span.hpp>
 #include <bela/phmap.hpp>

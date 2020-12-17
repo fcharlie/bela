@@ -78,10 +78,10 @@ status_t lookup_xarinternal(bela::MemView mv, FileAttributeTable &fat) {
     return None;
   }
   auto xhd = mv.cast<xar_header>(0);
-  if (xhd == nullptr || bela::swapbe(xhd->size) < 28) {
+  if (xhd == nullptr || bela::frombe(xhd->size) < 28) {
     return None;
   }
-  auto ver = bela::swapbe(xhd->version);
+  auto ver = bela::frombe(xhd->version);
   auto name = bela::StringCat(L"eXtensible ARchive format, version ", ver);
   fat.assign(std::move(name), types::xar);
   return Found;
@@ -130,10 +130,10 @@ status_t lookup_dmginternal(bela::MemView mv, FileAttributeTable &fat) {
   }
   auto hd = mv.cast<apple_disk_image_header>(0);
   constexpr auto hsize = sizeof(apple_disk_image_header);
-  if (hd == nullptr || bela::swapbe(hd->HeaderSize) != hsize) {
+  if (hd == nullptr || bela::frombe(hd->HeaderSize) != hsize) {
     return None;
   }
-  auto ver = bela::swapbe(hd->Version);
+  auto ver = bela::frombe(hd->Version);
   auto name = bela::StringCat(L"Apple Disk Image, version ", ver);
   fat.assign(std::move(name), types::dmg);
   return Found;
@@ -222,12 +222,12 @@ status_t lookup_wiminternal(bela::MemView mv, FileAttributeTable &fat) {
   auto hd = mv.cast<wim_header_t>(0);
 
   constexpr const size_t hdsize = sizeof(wim_header_t);
-  if (hd == nullptr || bela::swaple(hd->cbSize) < hdsize) {
+  if (hd == nullptr || bela::fromle(hd->cbSize) < hdsize) {
     return None;
   }
 
-  auto name = bela::StringCat(L"Windows Imaging Format, version ", bela::swaple(hd->dwVersion));
-  auto flag = bela::swaple(hd->dwFlags);
+  auto name = bela::StringCat(L"Windows Imaging Format, version ", bela::fromle(hd->dwVersion));
+  auto flag = bela::fromle(hd->dwFlags);
   if ((flag & WimReadOnly) != 0) {
     name.append(L" ReadOnly");
   }
@@ -252,9 +252,9 @@ status_t lookup_wiminternal(bela::MemView mv, FileAttributeTable &fat) {
     fat.append(L"Compression", std::move(compression));
   }
 
-  fat.append(L"Imagecount", bela::AlphaNum(bela::swaple(hd->dwImageCount)).Piece());
-  fat.append(L"TotalParts", bela::AlphaNum(bela::swaple(hd->usTotalParts)).Piece());
-  fat.append(L"PartNumber", bela::AlphaNum(bela::swaple(hd->usPartNumber)).Piece());
+  fat.append(L"Imagecount", bela::AlphaNum(bela::fromle(hd->dwImageCount)).Piece());
+  fat.append(L"TotalParts", bela::AlphaNum(bela::fromle(hd->usTotalParts)).Piece());
+  fat.append(L"PartNumber", bela::AlphaNum(bela::fromle(hd->usPartNumber)).Piece());
 
   return Found;
 }

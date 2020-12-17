@@ -94,16 +94,16 @@ template <typename T> inline T ntohs(T v) {
   return bswap(v);
 }
 
-template <typename T> inline T swaple(T i) {
-  static_assert(std::is_integral<T>::value, "swaple requires integer");
+template <typename T> inline T fromle(T i) {
+  static_assert(std::is_integral<T>::value, "fromle requires integer");
   if constexpr (IsBigEndian()) {
     return bswap(i);
   }
   return i;
 }
 
-template <typename T> inline T swapbe(T i) {
-  static_assert(std::is_integral<T>::value, "swapbe requires integer");
+template <typename T> inline T frombe(T i) {
+  static_assert(std::is_integral<T>::value, "frombe requires integer");
   if constexpr (IsBigEndian()) {
     return i;
   }
@@ -117,8 +117,8 @@ template <typename T> inline T unaligned_load(const void *p) {
   return t;
 }
 
-template <typename T> inline T readle(const void *p) {
-  static_assert(std::is_integral_v<T>, "readle requires integer");
+template <typename T> inline T cast_fromle(const void *p) {
+  static_assert(std::is_integral_v<T>, "cast_fromle requires integer");
   auto v = unaligned_load<T>(p);
   if constexpr (IsLittleEndian()) {
     return v;
@@ -126,8 +126,8 @@ template <typename T> inline T readle(const void *p) {
   return bswap(v);
 }
 
-template <typename T> inline T readbe(const void *p) {
-  static_assert(std::is_integral_v<T>, "readbe requires integer");
+template <typename T> inline T cast_frombe(const void *p) {
+  static_assert(std::is_integral_v<T>, "cast_frombe requires integer");
   auto v = unaligned_load<T>(p);
   if constexpr (IsBigEndian()) {
     return v;

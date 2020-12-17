@@ -43,8 +43,8 @@ status_t explore_git_file(bela::MemView mv, FileAttributeTable &fat) {
     if (hd == nullptr) {
       return None;
     }
-    auto name = bela::StringCat(L"Git pack file, version ", bela::swapbe(hd->version), L", objects ",
-                                bela::swapbe(hd->objsize));
+    auto name = bela::StringCat(L"Git pack file, version ", bela::frombe(hd->version), L", objects ",
+                                bela::frombe(hd->objsize));
     fat.assign(std::move(name), types::gitpack);
     return Found;
   }
@@ -54,16 +54,16 @@ status_t explore_git_file(bela::MemView mv, FileAttributeTable &fat) {
       return None;
     }
     std::wstring name;
-    auto ver = bela::swapbe(hd->version);
+    auto ver = bela::frombe(hd->version);
     switch (ver) {
     case 2:
       name =
-          bela::StringCat(L"Git pack indexs file, version ", ver, L", total objects ", bela::swapbe(hd->fanout[255]));
+          bela::StringCat(L"Git pack indexs file, version ", ver, L", total objects ", bela::frombe(hd->fanout[255]));
       break;
     case 3: {
       auto hd3 = mv.cast<git_index3_header_t>(0);
       name =
-          bela::StringCat(L"Git pack indexs file, version ", ver, L", total objects ", bela::swapbe(hd3->packobjects));
+          bela::StringCat(L"Git pack indexs file, version ", ver, L", total objects ", bela::frombe(hd3->packobjects));
     } break;
     default:
       name = bela::StringCat(L"Git pack indexs file, version ", ver);
@@ -80,7 +80,7 @@ status_t explore_git_file(bela::MemView mv, FileAttributeTable &fat) {
     }
     fat.assign(bela::StringCat(L"Git multi-pack-index, version ", (int)hd->version, L", oid version ",
                                (int)hd->oidversion, L", chunks ", (int)hd->chunks, L", pack files ",
-                               bela::swapbe(hd->packfiles)),
+                               bela::frombe(hd->packfiles)),
                types::gitpack);
     return Found;
   }

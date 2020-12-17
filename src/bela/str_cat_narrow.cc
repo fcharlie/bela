@@ -52,7 +52,7 @@ constexpr const char kHexTable[513] =
 // since 0 has one digit).
 inline size_t FastHexToBufferZeroPad16(uint64_t val, char *out) {
 #ifdef __SSE4_2__
-  uint64_t be = bela::swapbe(val);
+  uint64_t be = bela::htons(val);
   const auto kNibbleMask = _mm_set1_epi8(0xf);
   const auto kHexDigits = _mm_setr_epi8('0', '1', '2', '3', '4', '5', '6', '7',
                                         '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');

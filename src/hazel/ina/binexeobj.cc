@@ -253,7 +253,7 @@ status_t LookupExecutableFile(bela::MemView mv, FileAttributeTable &fat) {
     }
     if (mv.StartsWith("MZ") && mv.size() >= 0x3c + 4) {
       // read32le
-      uint32_t off = bela::readle<uint32_t>(mv.data() + 0x3c);
+      uint32_t off = bela::cast_fromle<uint32_t>(mv.data() + 0x3c);
       auto sv = mv.submv(off);
       if (sv.StartsWith(PEMagic)) {
         fat.assign(L"PE executable file", types::pecoff_executable);

@@ -33,7 +33,7 @@ bool File::readFileHeader(int64_t &offset, bela::error_code &ec) {
   if (!ReadAt(ident, sizeof(ident), 0, ec)) {
     return false;
   }
-  auto le = bela::readle<uint32_t>(ident);
+  auto le = bela::cast_fromle<uint32_t>(ident);
   if (le == MH_MAGIC) {
     en = std::endian::little;
     mach_header mh;
@@ -67,7 +67,7 @@ bool File::readFileHeader(int64_t &offset, bela::error_code &ec) {
     return true;
   }
 
-  auto be = bela::readle<uint32_t>(ident);
+  auto be = bela::cast_fromle<uint32_t>(ident);
   if (be == MH_MAGIC) {
     en = std::endian::big;
     mach_header mh;

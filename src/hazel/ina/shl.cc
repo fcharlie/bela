@@ -75,14 +75,14 @@ public:
     if (size_ < sizeof(shl::shell_link_t)) {
       return false;
     }
-    auto dwSize = bela::readle<uint32_t>(data_);
+    auto dwSize = bela::cast_fromle<uint32_t>(data_);
     if (dwSize != 0x0000004C) {
       return false;
     }
     if (memcmp(data_ + 4, shuuid, hazel::internal::ArrayLength(shuuid)) != 0) {
       return false;
     }
-    linkflags_ = bela::readle<uint32_t>(data_ + 20);
+    linkflags_ = bela::cast_fromle<uint32_t>(data_ + 20);
     IsUnicode = (linkflags_ & shl::IsUnicode) != 0;
     return true;
   }
@@ -111,7 +111,7 @@ public:
     // default code page, or a Unicode string with a length specified by the
     // CountCharacters field. This string MUST NOT be NULL-terminated.
 
-    auto len = bela::readle<uint16_t>(data_ + pos); /// Ch
+    auto len = bela::cast_fromle<uint16_t>(data_ + pos); /// Ch
     if (IsUnicode) {
       sdlen = len * 2 + 2;
       if (sdlen + pos >= size_) {
@@ -121,7 +121,7 @@ public:
       sd.clear();
       for (size_t i = 0; i < len; i++) {
         // Winodws UTF16LE
-        sd.push_back(bela::swaple(p[i]));
+        sd.push_back(bela::fromle(p[i]));
       }
       return true;
     }
@@ -155,7 +155,7 @@ public:
       if (*it == 0) {
         return true;
       }
-      su.push_back(bela::swaple(*it));
+      su.push_back(bela::fromle(*it));
     }
     return false;
   }
@@ -239,7 +239,7 @@ status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat) {
     if (shm.size() <= offset + 2) {
       return None;
     }
-    auto l = bela::readle<uint16_t>(shm.data() + offset);
+    auto l = bela::cast_fromle<uint16_t>(shm.data() + offset);
     if (l + 2 + offset >= shm.size()) {
       return None;
     }
@@ -256,17 +256,17 @@ status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat) {
     if (li == nullptr) {
       return Found;
     }
-    auto liflag = bela::swaple(li->dwFlags);
+    auto liflag = bela::fromle(li->dwFlags);
     if ((liflag & shl::VolumeIDAndLocalBasePath) != 0) {
       std::wstring su;
       bool isunicode;
       size_t pos;
-      if (bela::swaple(li->cbHeaderSize) < 0x00000024) {
+      if (bela::fromle(li->cbHeaderSize) < 0x00000024) {
         isunicode = false;
-        pos = offset + bela::swaple(li->cbLocalBasePathOffset);
+        pos = offset + bela::fromle(li->cbLocalBasePathOffset);
       } else {
         isunicode = true;
-        pos = offset + bela::swaple(li->cbLocalBasePathUnicodeOffset);
+        pos = offset + bela::fromle(li->cbLocalBasePathUnicodeOffset);
       }
 
       if (!shm.stringvalue(pos, isunicode, su)) {
@@ -276,7 +276,7 @@ status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat) {
     } else if ((liflag & shl::CommonNetworkRelativeLinkAndPathSuffix) != 0) {
       //// NetworkRelative
     }
-    offset += bela::swaple(li->cbSize);
+    offset += bela::fromle(li->cbSize);
   }
   // StringData https://msdn.microsoft.com/en-us/library/dd871306.aspx
   static const shl::link_value_flags_t sdv[] = {

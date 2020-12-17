@@ -38,7 +38,7 @@ status_t LookupImages(bela::MemView mv, FileAttributeTable &fat) {
   case 0x38:
     if (mv.StartsWith(psdMagic) && mv.size() > psdhlen) {
       // Version: always equal to 1.
-      auto ver = bela::readbe<uint16_t>((void *)(mv.data() + 4));
+      auto ver = bela::cast_frombe<uint16_t>((void *)(mv.data() + 4));
       if (ver == 1) {
         fat.assign(L"Photoshop document file extension", types::psd);
         return Found;

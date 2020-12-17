@@ -63,14 +63,9 @@ int wmain() {
   for (const auto s : sv) {
     parseLine1(s);
     parseLine2(s);
-  }
-  constexpr const char *sv2[] = {
-      "ABCABC---- ", "abcabc    ABC ABC", "\r\nABC   ",       " Whitespace \t  in\v   middle  ",
-      "ABC ABC",     "IKKKKKK   ",         "long time ago   ",
-  };
-  for (const auto s : sv2) {
-    parseLine3(s);
-    parseLine4(s);
+    auto ns = bela::ToNarrow(s);
+    parseLine3(ns);
+    parseLine4(ns);
   }
   return 0;
 }

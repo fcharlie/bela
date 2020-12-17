@@ -48,7 +48,7 @@
 // https://devblogs.microsoft.com/oldnewthing/?p=94836
 // What is __wchar_t (with the leading double underscores) and why am I getting
 // errors about it? Since the intrinsic wchar_t is a 16-bit unsigned integer in
-// Visual C++, it is binary-compatible with unsigned short,
+// Visual C++, it is binary-compatible with unsigned short.
 
 namespace bela {
 namespace ascii_internal {
@@ -84,6 +84,7 @@ inline bool ascii_isalpha(char8_t c) { return (ascii_internal::kPropertyBits[c] 
 // Determines whether the given character is an alphanumeric character.
 inline bool ascii_isalnum(wchar_t c) { return c < 0xFF && (ascii_internal::kPropertyBits[c] & 0x04) != 0; }
 inline bool ascii_isalnum(char8_t c) { return (ascii_internal::kPropertyBits[c] & 0x04) != 0; }
+
 // ascii_isspace()
 //
 // Determines whether the given character is a whitespace character (space,
@@ -105,53 +106,63 @@ inline bool ascii_isspace(char8_t c) { return (ascii_internal::kPropertyBits[c] 
 // Determines whether the given character is a punctuation character.
 inline bool ascii_ispunct(wchar_t c) { return c < 0xFF && (ascii_internal::kPropertyBits[c] & 0x10) != 0; }
 inline bool ascii_ispunct(char8_t c) { return (ascii_internal::kPropertyBits[c] & 0x10) != 0; }
+
 // ascii_isblank()
 //
 // Determines whether the given character is a blank character (tab or space).
 inline bool ascii_isblank(wchar_t c) { return c < 0xFF && (ascii_internal::kPropertyBits[c] & 0x20) != 0; }
 inline bool ascii_isblank(char8_t c) { return (ascii_internal::kPropertyBits[c] & 0x20) != 0; }
+
 // ascii_iscntrl()
 // wchar_t on Windows is 2Byte
 // Determines whether the given character is a control character.
 inline bool ascii_iscntrl(wchar_t c) { return c < 0xFF && (ascii_internal::kPropertyBits[c] & 0x40) != 0; }
 inline bool ascii_iscntrl(char8_t c) { return (ascii_internal::kPropertyBits[c] & 0x40) != 0; }
+
 // ascii_isxdigit()
 //
 // Determines whether the given character can be represented as a hexadecimal
 // digit character (i.e. {0-9} or {A-F}).
 inline bool ascii_isxdigit(wchar_t c) { return c < 0xFF && (ascii_internal::kPropertyBits[c] & 0x80) != 0; }
 inline bool ascii_isxdigit(char8_t c) { return (ascii_internal::kPropertyBits[c] & 0x80) != 0; }
+
 // ascii_isdigit()
 //
 // Determines whether the given character can be represented as a decimal
 // digit character (i.e. {0-9}).
 inline bool ascii_isdigit(wchar_t c) { return c >= '0' && c <= '9'; }
 inline bool ascii_isdigit(char8_t c) { return c >= '0' && c <= '9'; }
+
 // ascii_isprint()
 //
 // Determines whether the given character is printable, including whitespace.
 inline bool ascii_isprint(wchar_t c) { return c >= 32 && c < 127; }
 inline bool ascii_isprint(char8_t c) { return c >= 32 && c < 127; }
+
 // ascii_isgraph()
 //
 // Determines whether the given character has a graphical representation.
 inline bool ascii_isgraph(wchar_t c) { return c > 32 && c < 127; }
 inline bool ascii_isgraph(char8_t c) { return c > 32 && c < 127; }
+
 // ascii_isupper()
 //
 // Determines whether the given character is uppercase.
 inline bool ascii_isupper(wchar_t c) { return c >= 'A' && c <= 'Z'; }
 inline bool ascii_isupper(char8_t c) { return c >= 'A' && c <= 'Z'; }
+
 // ascii_islower()
 //
 // Determines whether the given character is lowercase.
 inline bool ascii_islower(wchar_t c) { return c >= 'a' && c <= 'z'; }
 inline bool ascii_islower(char8_t c) { return c >= 'a' && c <= 'z'; }
+
 // ascii_isascii()
 //
 // Determines whether the given character is ASCII.
 inline bool ascii_isascii(wchar_t c) { return c < 128; }
 inline bool ascii_isascii(char8_t c) { return c < 128; }
+
 // ascii_tolower()
 //
 // Returns an ASCII character, converting to lowercase if uppercase is
@@ -195,16 +206,12 @@ inline std::string AsciiStrToUpper(std::string_view s) {
   return result;
 }
 
-
 // Returns std::wstring_view with whitespace stripped from the beginning of the
-// given string_view.
+// given wstring_view.
 inline std::wstring_view StripLeadingAsciiWhitespace(std::wstring_view str) {
-  // auto it = std::find_if_not(str.begin(), str.end(), ascii_isspace);
   for (auto it = str.begin(); it != str.end(); it++) {
     if (!ascii_isspace(*it)) {
-      auto n = it - str.begin();
-      str.remove_prefix(n);
-      break;
+      return str.substr(it - str.begin());
     }
   }
   return str;
@@ -213,38 +220,33 @@ inline std::wstring_view StripLeadingAsciiWhitespace(std::wstring_view str) {
 // Returns std::string_view with whitespace stripped from the beginning of the
 // given string_view.
 inline std::string_view StripLeadingAsciiWhitespace(std::string_view str) {
-  // auto it = std::find_if_not(str.begin(), str.end(), ascii_isspace);
   for (auto it = str.begin(); it != str.end(); it++) {
     if (!ascii_isspace(static_cast<char8_t>(*it))) {
-      str.remove_prefix(it - str.begin());
-      break;
+      return str.substr(it - str.begin());
     }
   }
   return str;
 }
 
-// Strips in place whitespace from the beginning of the given string.
+// Strips in place whitespace from the beginning of the given wstring.
 inline void StripLeadingAsciiWhitespace(std::wstring *str) {
-  // auto it = std::find_if_not(str->begin(), str->end(), ascii_isspace);
   for (auto it = str->begin(); it != str->end(); it++) {
     if (!ascii_isspace(*it)) {
       str->erase(str->begin(), it);
-      break;
+      return;
     }
   }
 }
 
 // Strips in place whitespace from the beginning of the given string.
 inline void StripLeadingAsciiWhitespace(std::string *str) {
-  // auto it = std::find_if_not(str->begin(), str->end(), ascii_isspace);
   for (auto it = str->begin(); it != str->end(); it++) {
     if (!ascii_isspace(static_cast<char8_t>(*it))) {
       str->erase(str->begin(), it);
-      break;
+      return;
     }
   }
 }
-
 
 // Returns std::wstring_view with whitespace stripped from the end of the given
 // string_view.

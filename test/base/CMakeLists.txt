@@ -54,3 +54,12 @@ add_executable(startswith_test
 target_link_libraries(startswith_test
   bela
 )
+
+# base
+add_executable(static_string_test
+  static_string.cc
+)
+
+target_link_libraries(static_string_test
+  bela
+)

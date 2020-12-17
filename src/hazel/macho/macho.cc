@@ -35,7 +35,7 @@ bool File::readFileHeader(int64_t &offset, bela::error_code &ec) {
   }
   auto le = bela::readle<uint32_t>(ident);
   if (le == MH_MAGIC) {
-    en = bela::endian::Endian::little;
+    en = std::endian::little;
     mach_header mh;
     if (!ReadAt(&mh, sizeof(mh), 0, ec)) {
       return false;
@@ -51,7 +51,7 @@ bool File::readFileHeader(int64_t &offset, bela::error_code &ec) {
     return true;
   }
   if (le == MH_MAGIC_64) {
-    en = bela::endian::Endian::little;
+    en = std::endian::little;
     mach_header_64 mh;
     if (!ReadAt(&mh, sizeof(mh), 0, ec)) {
       return false;
@@ -69,7 +69,7 @@ bool File::readFileHeader(int64_t &offset, bela::error_code &ec) {
 
   auto be = bela::readle<uint32_t>(ident);
   if (be == MH_MAGIC) {
-    en = bela::endian::Endian::big;
+    en = std::endian::big;
     mach_header mh;
     if (!ReadAt(&mh, sizeof(mh), 0, ec)) {
       return false;
@@ -85,7 +85,7 @@ bool File::readFileHeader(int64_t &offset, bela::error_code &ec) {
     return true;
   }
   if (be == MH_MAGIC_64) {
-    en = bela::endian::Endian::big;
+    en = std::endian::big;
     mach_header_64 mh;
     if (!ReadAt(&mh, sizeof(mh), 0, ec)) {
       return false;
@@ -196,7 +196,7 @@ bool File::pushSection(hazel::macho::Section *sh, bela::error_code &ec) {
         rel.Scattered = true;
         continue;
       }
-      if (en == bela::endian::Endian::little) {
+      if (en == std::endian::little) {
         rel.Addr = addr;
         rel.Value = symnum & ((1 << 24) - 1);
         rel.Pcrel = (symnum & (1 << 24)) != 0;
@@ -205,7 +205,7 @@ bool File::pushSection(hazel::macho::Section *sh, bela::error_code &ec) {
         rel.Type = static_cast<uint8_t>((symnum >> 28) & ((1 << 4) - 1));
         continue;
       }
-      if (en == bela::endian::Endian::big) {
+      if (en == std::endian::big) {
         rel.Addr = addr;
         rel.Value = symnum >> 8;
         rel.Pcrel = (symnum & (1 << 7)) != 0;

@@ -153,14 +153,14 @@ private:
 
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
   Integer endian_cast(Integer t) {
-    if (en == bela::endian::Endian::native) {
+    if (en == std::endian::native) {
       return t;
     }
     return bela::bswap(t);
   }
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
   Integer endian_cast_ptr(const void *p) {
-    if (en == bela::endian::Endian::native) {
+    if (en == std::endian::native) {
       return *reinterpret_cast<const Integer *>(p);
     }
     return bela::bswap(*reinterpret_cast<const Integer *>(p));
@@ -242,7 +242,7 @@ public:
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};
   int64_t size{bela::SizeUnInitialized};
-  bela::endian::Endian en{bela::endian::Endian::native};
+  std::endian en{std::endian::native};
   FileHeader fh;
   std::vector<Section> sections;
   std::vector<ProgHeader> progs;

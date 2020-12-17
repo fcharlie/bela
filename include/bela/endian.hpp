@@ -4,39 +4,11 @@
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
-
-#if defined(__linux__) || defined(__GNU__) || defined(__HAIKU__)
-#include <endian.h>
-#elif defined(_AIX)
-#include <sys/machine.h>
-#elif defined(__sun)
-/* Solaris provides _BIG_ENDIAN/_LITTLE_ENDIAN selector in sys/types.h */
-#include <sys/types.h>
-#define BIG_ENDIAN 4321
-#define LITTLE_ENDIAN 1234
-#if defined(_BIG_ENDIAN)
-#define BYTE_ORDER BIG_ENDIAN
-#else
-#define BYTE_ORDER LITTLE_ENDIAN
-#endif
-#else
-#if !defined(BYTE_ORDER) && !defined(_WIN32)
-#include <machine/endian.h>
-#endif
-#endif
+#include <bit>
 
 namespace bela {
-#if defined(BYTE_ORDER) && defined(BIG_ENDIAN) && BYTE_ORDER == BIG_ENDIAN
-#define IS_BIG_ENDIAN 1
-#define BELA_IS_BIG_ENDIAN 1
-constexpr bool IsBigEndianHost = true;
-constexpr bool IsLittleEndianHost = false;
-#else
-#define IS_BIG_ENDIAN 0
-#define BELA_IS_LITTLE_ENDIAN 1
-constexpr bool IsBigEndianHost = false;
-constexpr bool IsLittleEndianHost = true;
-#endif
+constexpr bool IsBigEndianHost = std::endian::native == std::endian::big;
+constexpr bool IsLittleEndianHost = std::endian::native == std::endian::little;
 
 constexpr inline bool IsBigEndian() { return IsBigEndianHost; }
 constexpr inline bool IsLittleEndian() { return IsLittleEndianHost; }
@@ -169,13 +141,7 @@ template <typename T> inline T readbe(const void *p) {
 }
 
 namespace endian {
-#if IS_BIG_ENDIAN
-enum class Endian { little = 0, big = 1, native = big };
-#else
-enum class Endian { little = 0, big = 1, native = little };
-#endif
-
-template <Endian E = Endian::native> class Reader {
+template <std::endian E = std::endian::native> class Reader {
 public:
   Reader() = default;
   Reader(const void *p, size_t len) : data(reinterpret_cast<const uint8_t *>(p)), size(len) {}
@@ -196,7 +162,7 @@ public:
     auto p = reinterpret_cast<const T *>(data);
     data += sizeof(T);
     size -= sizeof(T);
-    if constexpr (E == Endian::native) {
+    if constexpr (E == std::endian::native) {
       return *p;
     }
     return bela::bswap(*p);
@@ -228,10 +194,10 @@ public:
 private:
   const uint8_t *data{nullptr};
   size_t size{0};
-  const Endian e{E};
+  const std::endian e{E};
 };
-using LittenEndian = Reader<Endian::little>;
-using BigEndian = Reader<Endian::big>;
+using LittenEndian = Reader<std::endian::little>;
+using BigEndian = Reader<std::endian::big>;
 
 } // namespace endian
 

@@ -23,7 +23,7 @@ status_t LookupShellLink(bela::MemView mv, hazel_result &hr);
 status_t LookupMedia(bela::MemView mv, hazel_result &hr);
 status_t LookupImages(bela::MemView mv, hazel_result &hr);
 status_t LookupText(bela::MemView mv, hazel_result &hr);
-void LookupShebang(const std::wstring_view line, hazel_result &hr);
+bool LookupShebang(const std::wstring_view line, hazel_result &hr);
 } // namespace hazel::internal
 
 #endif

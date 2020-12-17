@@ -206,7 +206,9 @@ status_t LookupText(bela::MemView mv, hazel_result &hr) {
     return Found;
   }
 
-  hazel::internal::LookupShebang(shebangline, hr);
+  if (hazel::internal::LookupShebang(shebangline, hr)) {
+    return Found;
+  }
   // shlbang
   return Found;
 }

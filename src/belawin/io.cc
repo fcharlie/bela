@@ -19,7 +19,7 @@ bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, u
     out = bela::ToWide(mmv.submv(3).sv());
     return true;
   }
-  if constexpr (bela::IsLittleEndianHost) {
+  if constexpr (bela::IsLittleEndian()) {
     if (mmv.StartsWith(utf16le)) {
       auto sv = mmv.submv(2).sv();
       out.assign(reinterpret_cast<const wchar_t *>(sv.data()), sv.size() / 2);

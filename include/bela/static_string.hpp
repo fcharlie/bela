@@ -4322,7 +4322,7 @@ static_wstring<std::numeric_limits<long double>::max_digits10 + 4> inline to_sta
 //------------------------------------------------------------------------------
 
 template <std::size_t N, typename CharT>
-basic_static_string(CharT (&)[N]) -> basic_static_string<N, CharT, std::char_traits<CharT>>;
+basic_static_string(const CharT (&)[N]) -> basic_static_string<N, CharT, std::char_traits<CharT>>;
 
 //------------------------------------------------------------------------------
 //

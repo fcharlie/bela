@@ -10,7 +10,8 @@ struct link_value_flags_t {
   uint32_t v;
   const wchar_t *n;
 };
-inline std::wstring DumpFlags(uint32_t flag) {
+
+inline void FlagsToArray(uint32_t flag, std::vector<std::wstring> &av) {
   static const link_value_flags_t lfv[] = {
       {HasLinkTargetIDList, L"HasLinkTargetIDList"},
       {HasLinkInfo, L"HasLinkInfo"},
@@ -40,16 +41,11 @@ inline std::wstring DumpFlags(uint32_t flag) {
       {PersistVolumeIDRelative, L"PersistVolumeIDRelative"}
       //
   };
-  std::wstring sf;
   for (const auto &v : lfv) {
     if ((v.v & flag) != 0) {
-      sf.append(v.n).append(L", ");
+      av.emplace_back(v.n);
     }
   }
-  if (sf.size() > 2) {
-    sf.resize(sf.size() - 2);
-  }
-  return sf;
 }
 } // namespace shl
 
@@ -228,7 +224,7 @@ private:
 // This field can be present only if the value of the LinkInfoHeaderSize field
 // is greater than or equal to 0x00000024
 
-status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat) {
+status_t LookupShellLink(bela::MemView mv, hazel_result &hr) {
   shl_memview shm(reinterpret_cast<const char *>(mv.data()), mv.size());
   if (!shm.prepare()) {
     return None;
@@ -247,8 +243,10 @@ status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat) {
     offset += l + 2;
   }
 
-  fat.assign(L"Windows Shortcut", types::shelllink);
-  fat.append(L"Attribute", shl::DumpFlags(flag));
+  hr.assign(types::shelllink, L"Windows Shortcut");
+  std::vector<std::wstring> av;
+  shl::FlagsToArray(flag, av);
+  hr.append(L"Attribute", std::move(av));
 
   // LinkINFO https://msdn.microsoft.com/en-us/library/dd871404.aspx
   if ((flag & shl::HasLinkInfo) != 0) {
@@ -272,7 +270,7 @@ status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat) {
       if (!shm.stringvalue(pos, isunicode, su)) {
         return Found;
       }
-      fat.append(L"Target", su);
+      hr.append(L"Target", su);
     } else if ((liflag & shl::CommonNetworkRelativeLinkAndPathSuffix) != 0) {
       //// NetworkRelative
     }
@@ -298,7 +296,7 @@ status_t LookupShellLink(bela::MemView mv, FileAttributeTable &fat) {
       return Found;
     }
     offset += sdlen;
-    fat.append(i.n, sd);
+    hr.append(i.n, sd);
   }
 
   // ExtraData https://msdn.microsoft.com/en-us/library/dd891345.aspx

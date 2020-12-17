@@ -34,18 +34,18 @@ int wmain(int argc, wchar_t **argv) {
   if (auto fp = bela::RealPathByHandle(file.FD(), ec)) {
     path.assign(std::move(*fp));
   }
-  hazel::FileAttributeTable fat;
-  if (!hazel::LookupFile(file, fat, ec)) {
+  hazel::hazel_result hr;
+  if (!hazel::LookupFile(file, hr, ec)) {
     bela::FPrintF(stderr, L"unable detect file type: %s %s\n", argv[1], ec.message);
     return 1;
   }
-  if (!fat.LooksLikeZIP()) {
+  if (!hr.LooksLikeZIP()) {
     bela::FPrintF(stderr, L"file: %s not zip file\n", argv[1]);
     return 1;
   }
   bela::FPrintF(stderr, L"sizeof(zip::Reader) = %d %d %d\n", sizeof(hazel::zip::Reader), sizeof(std::string),
                 sizeof(std::vector<hazel::zip::File>));
-  auto zr = hazel::zip::NewReader(file.FD(), fat.size, ec);
+  auto zr = hazel::zip::NewReader(file.FD(), hr.size(), ec);
   if (!zr) {
     bela::FPrintF(stderr, L"open zip file: %s error %s\n", path, ec.message);
     return 1;

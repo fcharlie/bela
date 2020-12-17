@@ -161,7 +161,7 @@ const std::wstring_view LanguagesByInterpreter(const std::wstring_view ie) {
 }
 
 namespace internal {
-void LookupShebang(const std::wstring_view line, FileAttributeTable &fat) {
+void LookupShebang(const std::wstring_view line, hazel_result &hr) {
   constexpr const std::wstring_view prefix = L"#!";
   if (!bela::StartsWith(line, prefix)) {
     return;
@@ -189,9 +189,9 @@ void LookupShebang(const std::wstring_view line, FileAttributeTable &fat) {
   if (interpreter.empty()) {
     return;
   }
-  fat.append(L"Interpreter", interpreter);
+  hr.append(L"Interpreter", std::move(interpreter));
   if (auto ln = LanguagesByInterpreter(interpreter); !ln.empty()) {
-    fat.append(L"Language", ln);
+    hr.append(L"Language", ln);
   }
 }
 } // namespace internal

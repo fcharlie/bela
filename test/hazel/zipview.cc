@@ -91,6 +91,7 @@ int wmain(int argc, wchar_t **argv) {
   if (zr->LooksLikeODF(&odfmime)) {
     bela::FPrintF(stdout, L"File is OpenDocument Format, mime: %s\n", odfmime);
   }
-  bela::FPrintF(stdout, L"Files: %d\n", zr->Files().size());
+  bela::FPrintF(stdout, L"Files: %d CompressedSize: %d UncompressedSize: %d\n", zr->Files().size(),
+                zr->CompressedSize(), zr->UncompressedSize());
   return 0;
 }

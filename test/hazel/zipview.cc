@@ -87,6 +87,10 @@ int wmain(int argc, wchar_t **argv) {
   } else if (zr->LooksLikeJar()) {
     bela::FPrintF(stdout, L"File is Java Jar\n");
   }
+  std::string odfmime;
+  if (zr->LooksLikeODF(&odfmime)) {
+    bela::FPrintF(stdout, L"File is OpenDocument Format, mime: %s\n", odfmime);
+  }
   bela::FPrintF(stdout, L"Files: %d\n", zr->Files().size());
   return 0;
 }

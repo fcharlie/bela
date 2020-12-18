@@ -155,7 +155,7 @@ struct File {
   std::string AesText() const { return bela::narrow::StringCat("AE-", aesVersion, "/", AESStrength(aesStrength)); }
 };
 constexpr static auto size_max = (std::numeric_limits<std::size_t>::max)();
-
+using Receiver = std::function<bool(const void *data, size_t len)>;
 enum msoffice_t : int {
   OfficeNone, // None
   OfficePptx,
@@ -244,6 +244,7 @@ public:
 
   bool Contains(bela::Span<std::string_view> paths, std::size_t limit = size_max) const;
   bool Contains(std::string_view p, std::size_t limit = size_max) const;
+  bool Decompress(const File &file, const Receiver &receiver, bela::error_code &ec) const;
   msoffice_t LooksLikeOffice() const;
   bool LooksLikePptx() const { return LooksLikeOffice() == OfficePptx; }
   bool LooksLikeDocx() const { return LooksLikeOffice() == OfficeDocx; }
@@ -252,6 +253,7 @@ public:
   bool LooksLikeJar() const;
   bool LooksLikeAppx() const;
   bool LooksLikeApk() const;
+  bool LooksLikeODF(std::string *mime = nullptr) const;
 
 private:
   std::string comment;

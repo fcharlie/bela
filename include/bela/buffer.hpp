@@ -4,7 +4,6 @@
 #include <memory>
 #include <optional>
 #include <span>
-#include "span.hpp"
 
 namespace bela {
 constexpr inline size_t align_length(size_t n) { return (n / 8 + 1) * 8; }
@@ -70,7 +69,7 @@ public:
   [[nodiscard]] const T *data() const { return data_; }
   [[nodiscard]] T operator[](const size_t _Off) const noexcept { return *(data_ + _Off); }
   [[nodiscard]] T *data() { return data_; }
-  bela::Span<T> Span() const { return bela::MakeSpan(data_, data_ + size_); }
+  std::span<T> Span() const { return std::span(data_, data_ + size_); }
   // std::span<T> Span
 private:
   T *data_{nullptr};

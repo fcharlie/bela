@@ -442,7 +442,7 @@ private:
     return bela::bswap(t);
   }
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer endian_cast_ptr(const void *p) {
+  Integer cast_from(const void *p) {
     if (en == std::endian::native) {
       return *reinterpret_cast<const Integer *>(p);
     }

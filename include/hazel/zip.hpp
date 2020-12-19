@@ -5,7 +5,7 @@
 #include <bela/buffer.hpp>
 #include <bela/str_cat_narrow.hpp>
 #include <bela/time.hpp>
-#include <bela/span.hpp>
+#include <span>
 #include <bela/phmap.hpp>
 
 #define HAZEL_COMPRESS_LEVEL_DEFAULT (-1)
@@ -242,7 +242,7 @@ public:
     return std::make_optional(std::move(r));
   }
 
-  bool Contains(bela::Span<std::string_view> paths, std::size_t limit = size_max) const;
+  bool Contains(std::span<std::string_view> paths, std::size_t limit = size_max) const;
   bool Contains(std::string_view p, std::size_t limit = size_max) const;
   bool Decompress(const File &file, const Receiver &receiver, bela::error_code &ec) const;
   msoffice_t LooksLikeOffice() const;
@@ -267,7 +267,7 @@ private:
   bool readDirectoryEnd(directoryEnd &d, bela::error_code &ec);
   bool readDirectory64End(int64_t offset, directoryEnd &d, bela::error_code &ec);
   int64_t findDirectory64End(int64_t directoryEndOffset, bela::error_code &ec);
-  bool ContainsSlow(bela::Span<std::string_view> paths, std::size_t limit = size_max) const;
+  bool ContainsSlow(std::span<std::string_view> paths, std::size_t limit = size_max) const;
 };
 
 // NewReader

@@ -184,8 +184,8 @@ bool File::pushSection(hazel::macho::Section *sh, bela::error_code &ec) {
     sh->Relocs.resize(sh->Nreloc);
     for (uint32_t i = 0; i < sh->Nreloc; i++) {
       auto &rel = (sh->Relocs[i]);
-      auto addr = endian_cast_ptr<uint32_t>(b.data());
-      auto symnum = endian_cast_ptr<uint32_t>(b.data() + 4);
+      auto addr = cast_from<uint32_t>(b.data());
+      auto symnum = cast_from<uint32_t>(b.data() + 4);
       b.remove_prefix(8);
       if ((addr & (1 << 31)) != 0) {
         rel.Addr = addr & ((1 << 24) - 1);
@@ -246,8 +246,8 @@ bool File::ParseFile(bela::error_code &ec) {
       ec = bela::make_error_code(L"command block too small");
       return false;
     }
-    auto cmd = endian_cast_ptr<uint32_t>(dat.data());
-    auto siz = endian_cast_ptr<uint32_t>(dat.data() + 4);
+    auto cmd = cast_from<uint32_t>(dat.data());
+    auto siz = cast_from<uint32_t>(dat.data() + 4);
     if (siz < 8 || siz > static_cast<uint32_t>(dat.size())) {
       ec = bela::make_error_code(L"invalid command block size");
       return false;
@@ -263,9 +263,9 @@ bool File::ParseFile(bela::error_code &ec) {
         return false;
       }
       RpathCmd hdr;
-      hdr.Cmd = endian_cast_ptr<uint32_t>(cmddat.data());
-      hdr.Len = endian_cast_ptr<uint32_t>(cmddat.data() + 4);
-      hdr.Path = endian_cast_ptr<uint32_t>(cmddat.data() + 8);
+      hdr.Cmd = cast_from<uint32_t>(cmddat.data());
+      hdr.Len = cast_from<uint32_t>(cmddat.data() + 4);
+      hdr.Path = cast_from<uint32_t>(cmddat.data() + 8);
       if (hdr.Path >= static_cast<uint32_t>(cmddat.size())) {
         ec = bela::make_error_code(L"invalid path in rpath command");
         return false;

@@ -159,7 +159,7 @@ private:
     return bela::bswap(t);
   }
   template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer endian_cast_ptr(const void *p) {
+  Integer cast_from(const void *p) {
     if (en == std::endian::native) {
       return *reinterpret_cast<const Integer *>(p);
     }
@@ -184,13 +184,13 @@ private:
     }
     return sectionData(sections[link], buf, ec);
   }
-  bool gnuVersionInit(bela::Span<uint8_t> str);
+  bool gnuVersionInit(std::span<uint8_t> str);
   void gnuVersion(int i, std::string &lib, std::string &ver) {
     i = (i + 1) * 2;
     if (i >= static_cast<int>(gnuVersym.size())) {
       return;
     }
-    auto j = static_cast<size_t>(endian_cast_ptr<uint16_t>(gnuVersym.data() + i));
+    auto j = static_cast<size_t>(cast_from<uint16_t>(gnuVersym.data() + i));
     if (j < 2 || j >= gnuNeed.size()) {
       return;
     }

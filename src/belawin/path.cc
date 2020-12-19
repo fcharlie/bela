@@ -226,7 +226,7 @@ std::wstring_view PathStripRootName(std::wstring_view &p) {
   return L"";
 }
 
-std::wstring PathAbsoluteCatPieces(bela::Span<std::wstring_view> pieces) {
+std::wstring PathAbsoluteCatPieces(std::span<std::wstring_view> pieces) {
   if (pieces.empty()) {
     return L"";
   }
@@ -256,7 +256,7 @@ std::wstring PathAbsoluteCatPieces(bela::Span<std::wstring_view> pieces) {
   return s;
 }
 
-std::wstring PathCatPieces(bela::Span<std::wstring_view> pieces) {
+std::wstring PathCatPieces(std::span<std::wstring_view> pieces) {
   std::wstring_view p0s = pieces[0];
   auto root = PathStripRootName(p0s);
   std::vector<std::wstring_view> pv;

@@ -355,7 +355,7 @@ const wchar_t *Method(uint16_t m) {
   return L"NONE";
 }
 
-bool Reader::ContainsSlow(bela::Span<std::string_view> paths, std::size_t limit) const {
+bool Reader::ContainsSlow(std::span<std::string_view> paths, std::size_t limit) const {
   size_t found = 0;
   bela::flat_hash_map<std::string_view, bool> pms;
   for (const auto p : paths) {
@@ -376,7 +376,7 @@ bool Reader::ContainsSlow(bela::Span<std::string_view> paths, std::size_t limit)
   return false;
 }
 
-bool Reader::Contains(bela::Span<std::string_view> paths, std::size_t limit) const {
+bool Reader::Contains(std::span<std::string_view> paths, std::size_t limit) const {
   if (paths.empty() || paths.size() > files.size()) {
     return false;
   }

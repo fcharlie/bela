@@ -80,6 +80,9 @@ public:
   ssize_t WriteAt(const void *buffer, size_t len, int64_t pos, bela::error_code &ec);
   HANDLE FD() const { return fd; }
   bool Open(std::wstring_view file, bela::error_code &ec);
+  bool Open(std::wstring_view file, DWORD dwDesiredAccess, DWORD dwShareMode,
+            LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
+            HANDLE hTemplateFile, bela::error_code &ec);
   std::wstring FullPath() const {
     bela::error_code ec;
     if (auto fp = bela::RealPathByHandle(fd, ec)) {
@@ -144,6 +147,23 @@ inline bool File::Open(std::wstring_view file, bela::error_code &ec) {
   }
   fd = CreateFileW(file.data(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
                    FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (fd == INVALID_HANDLE_VALUE) {
+    ec = bela::make_system_error_code();
+    return false;
+  }
+  return true;
+}
+
+// Open 
+inline bool File::Open(std::wstring_view file, DWORD dwDesiredAccess, DWORD dwShareMode,
+                       LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
+                       DWORD dwFlagsAndAttributes, HANDLE hTemplateFile, bela::error_code &ec) {
+  if (fd != INVALID_HANDLE_VALUE) {
+    ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
+    return false;
+  }
+  fd = CreateFileW(file.data(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition,
+                   dwFlagsAndAttributes, hTemplateFile);
   if (fd == INVALID_HANDLE_VALUE) {
     ec = bela::make_system_error_code();
     return false;

@@ -35,8 +35,7 @@ struct error_code {
   const wchar_t *data() const { return message.data(); }
   explicit operator bool() const noexcept { return code != None; }
   error_code &assgin(error_code &&o) {
-    message = o.message;
-    o.message.clear();
+    message.assign(std::move(o.message));
     code = o.code;
     o.code = None;
     return *this;

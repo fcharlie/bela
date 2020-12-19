@@ -6,8 +6,8 @@
 #include <bela/phmap.hpp>
 #include <bela/buffer.hpp>
 #include <bela/time.hpp>
+#include <bela/io.hpp>
 #include "types.hpp"
-#include "io.hpp"
 
 namespace hazel {
 
@@ -23,7 +23,7 @@ template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 class hazel_result;
-bool LookupFile(hazel::io::File &fd, hazel_result &hr, bela::error_code &ec);
+bool LookupFile(bela::File &fd, hazel_result &hr, bela::error_code &ec);
 using hazel_value_t = std::variant<std::string, std::wstring, std::vector<std::string>, std::vector<std::wstring>,
                                    int16_t, int32_t, int64_t, uint16_t, uint32_t, uint64_t, bela::Time>;
 class hazel_result {
@@ -103,7 +103,7 @@ public:
   }
 
 private:
-  friend bool LookupFile(hazel::io::File &fd, hazel_result &hr, bela::error_code &ec);
+  friend bool LookupFile(bela::File &fd, hazel_result &hr, bela::error_code &ec);
   std::wstring description_;
   bela::flat_hash_map<std::wstring, hazel_value_t> values_;
   int64_t size_{bela::SizeUnInitialized};

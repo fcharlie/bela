@@ -9,7 +9,7 @@ namespace hazel {
 
 typedef hazel::internal::status_t (*lookup_handle_t)(bela::MemView mv, hazel_result &hr);
 
-bool LookupFile(hazel::io::File &fd, hazel_result &hr, bela::error_code &ec) {
+bool LookupFile(bela::File &fd, hazel_result &hr, bela::error_code &ec) {
   LARGE_INTEGER li = {0};
   if (GetFileSizeEx(fd.FD(), &li) != TRUE) {
     ec = bela::make_system_error_code();

@@ -24,7 +24,7 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stderr, L"usage: %s zipfile\n", argv[0]);
     return 1;
   }
-  hazel::io::File file;
+  bela::File file;
   bela::error_code ec;
   if (!file.Open(argv[1], ec)) {
     bela::FPrintF(stderr, L"unable openfile: %s %s\n", argv[1], ec.message);

@@ -357,7 +357,8 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
   auto ptrsize = is64bit ? sizeof(uint64_t) : sizeof(uint32_t);
   for (auto &dt : ida) {
     dt.DllName = getString(sdata, int(dt.DllNameRVA - ds->Header.VirtualAddress));
-    if (dt.ImportNameTableRVA > ds->Header.VirtualAddress) {
+    if (dt.ImportNameTableRVA < ds->Header.VirtualAddress ||
+        dt.ImportNameTableRVA > ds->Header.VirtualAddress + ds->Header.VirtualSize) {
       break;
     }
     uint32_t N = dt.ImportNameTableRVA - ds->Header.VirtualAddress;
@@ -402,15 +403,7 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
       }
     }
     std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {
-      auto aIndex = a.Index;
-      auto bIndex = b.Index;
-      if (a.Ordinal != 0) {
-        aIndex = a.Ordinal;
-      }
-      if (b.Ordinal != 0) {
-        bIndex = b.Ordinal;
-      }
-      return aIndex < bIndex;
+      return a.GetIndex() < b.GetIndex();
     });
     sm.emplace(std::move(dt.DllName), std::move(functions));
   }
@@ -511,15 +504,7 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
       }
     }
     std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {
-      auto aIndex = a.Index;
-      auto bIndex = b.Index;
-      if (a.Ordinal != 0) {
-        aIndex = a.Ordinal;
-      }
-      if (b.Ordinal != 0) {
-        bIndex = b.Ordinal;
-      }
-      return aIndex < bIndex;
+      return a.GetIndex() < b.GetIndex();
     });
     sm.emplace(std::move(dt.DllName), std::move(functions));
   }

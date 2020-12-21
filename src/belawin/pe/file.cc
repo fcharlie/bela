@@ -289,7 +289,8 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
     for (size_t i = 0; i < exports.size(); i++) {
       auto sv = std::string_view{sdata.data() + N, sdata.size() - N};
       if (sv.size() > static_cast<size_t>(exports[i].Ordinal * 4 + 4)) {
-        exports[i].Address = bela::cast_fromle<uint32_t>(sv.data() + static_cast<int>(exports[i].Ordinal - ordinalBase) * 4);
+        exports[i].Address =
+            bela::cast_fromle<uint32_t>(sv.data() + static_cast<int>(exports[i].Ordinal - ordinalBase) * 4);
       }
     }
   }
@@ -400,6 +401,12 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
         }
       }
     }
+    std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {
+      if (a.Ordinal != 0) {
+        return a.Ordinal < b.Index;
+      }
+      return a.Index < b.Index;
+    });
     sm.emplace(std::move(dt.DllName), std::move(functions));
   }
   return true;
@@ -498,6 +505,12 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
         }
       }
     }
+    std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {
+      if (a.Ordinal != 0) {
+        return a.Ordinal < b.Index;
+      }
+      return a.Index < b.Index;
+    });
     sm.emplace(std::move(dt.DllName), std::move(functions));
   }
   return true;

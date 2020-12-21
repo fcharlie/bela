@@ -402,10 +402,15 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
       }
     }
     std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {
+      auto aIndex = a.Index;
+      auto bIndex = b.Index;
       if (a.Ordinal != 0) {
-        return a.Ordinal < b.Index;
+        aIndex = a.Ordinal;
       }
-      return a.Index < b.Index;
+      if (b.Ordinal != 0) {
+        bIndex = b.Ordinal;
+      }
+      return aIndex < bIndex;
     });
     sm.emplace(std::move(dt.DllName), std::move(functions));
   }
@@ -506,10 +511,15 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
       }
     }
     std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {
+      auto aIndex = a.Index;
+      auto bIndex = b.Index;
       if (a.Ordinal != 0) {
-        return a.Ordinal < b.Index;
+        aIndex = a.Ordinal;
       }
-      return a.Index < b.Index;
+      if (b.Ordinal != 0) {
+        bIndex = b.Ordinal;
+      }
+      return aIndex < bIndex;
     });
     sm.emplace(std::move(dt.DllName), std::move(functions));
   }

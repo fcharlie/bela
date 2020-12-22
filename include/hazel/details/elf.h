@@ -112,8 +112,26 @@ typedef struct {
 #define ELFOSABI_TRU64 10
 #define ELFOSABI_MODESTO 11
 #define ELFOSABI_OPENBSD 12
+#define ELFOSABI_OPENVMS 13 // Open VMS
+#define ELFOSABI_NSK 14     // Hewlett-Packard Non-Stop Kernel
+#define ELFOSABI_AROS 15    // Amiga Research OS
+#define ELFOSABI_FENIXOS 16
+// The FenixOS highly scalable multi-core OS   64-255 Architecture-specific
+// value range
+#define ELFOSABI_CLOUDABI 17
+#define ELFOSABI_FIRST_ARCH 64
+#define ELFOSABI_AMDGPU_HSA 64
+// AMDGPU OS for HSA compatible compute kernels.
+#define ELFOSABI_AMDGPU_PAL 65
+// AMDGPU OS for AMD PAL compatible graphics shaders and compute kernels.
+#define ELFOSABI_AMDGPU_MESA3D 66
+// AMDGPU OS for Mesa3D compatible graphics shaders and compute kernels.
 #define ELFOSABI_ARM 97
+#define ELFOSABI_C6000_ELFABI 64
+#define ELFOSABI_C6000_LINUX 64
 #define ELFOSABI_STANDALONE 255
+#define ELFOSABI_LAST_ARCH 255
+
 
 #define EI_ABIVERSION 8
 

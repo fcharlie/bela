@@ -15,15 +15,15 @@ constexpr int COMPRESS_HIPROC = 0x7fffffff; /* Last processor-specific type. */
 
 // ELF64 file header.
 struct FileHeader {
+  uint64_t Entry;   /* Entry point. */
+  uint16_t Type;    /* File type. */
+  uint16_t Machine; /* Machine architecture. */
+  // magic 4 bytes
   uint8_t Class;
   uint8_t Data;
   uint8_t Version;
-  uint8_t OSABI;
+  uint8_t ABI;
   uint8_t ABIVersion;
-  uint8_t LSB;
-  uint16_t Type;    /* File type. */
-  uint16_t Machine; /* Machine architecture. */
-  uint64_t Entry;   /* Entry point. */
 };
 
 struct ProgHeader {

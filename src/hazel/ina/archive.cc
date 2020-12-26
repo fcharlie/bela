@@ -445,7 +445,7 @@ status_t lookup_archivesinternal(bela::MemView mv, hazel_result &hr) {
     uint32_t version = {0};
     if (auto pv = mv.bit_cast(&version, 4); pv != nullptr) {
       hr.assign(types::crx, L"Chrome Extension");
-      hr.append(L"Version", bela::fromle(pv));
+      hr.append(L"Version", bela::fromle(version));
       return Found;
     }
   }
@@ -479,10 +479,10 @@ status_t lookup_archivesinternal(bela::MemView mv, hazel_result &hr) {
   // Universal NES Image Format
   constexpr const uint8_t unifMagic[] = {'U', 'N', 'I', 'F'};
   if (mv.size() > 40 && mv.StartsWith(unifMagic)) {
-    uint32_t v;
-    if (auto pv = bela::fromle(mv.bit_cast(&v, 4)); pv != nullptr && mv[8] == 0x0 && mv[9] == 0) {
+    uint32_t v = 0;
+    if (auto pv = mv.bit_cast(&v, 4); pv != nullptr && mv[8] == 0x0 && mv[9] == 0) {
       hr.assign(types::nes, L"Universal NES Image Format");
-      hr.append(L"Version", pv);
+      hr.append(L"Version", bela::fromle(v));
       return Found;
     }
   }

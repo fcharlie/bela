@@ -132,7 +132,7 @@ status_t LookupExecutableFile(bela::MemView mv, hazel_result &hr) {
     }
     break;
   case '!': // .a
-    if (mv.StartsWith("!<arch>\n") && !mv.StartsWith(debMagic) || mv.StartsWith("!<thin>\n")) {
+    if ((mv.StartsWith("!<arch>\n") && !mv.StartsWith(debMagic)) || mv.StartsWith("!<thin>\n")) {
       // Skip DEB package
       hr.assign(types::archive, L"ar style archive file");
       return Found;

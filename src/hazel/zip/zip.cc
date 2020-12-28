@@ -91,11 +91,10 @@ bool Reader::readDirectoryEnd(directoryEnd &d, bela::error_code &ec) {
       return false;
     }
   }
-  if (buffer.size() < 22) {
+  if (b.Discard(4) < 14) {
     ec = bela::make_error_code(L"zip: not a valid zip file");
     return false;
   }
-  b.Discard(4);
   d.diskNbr = b.Read<uint16_t>();
   d.dirDiskNbr = b.Read<uint16_t>();
   d.dirRecordsThisDisk = b.Read<uint16_t>();

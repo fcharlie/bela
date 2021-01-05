@@ -115,6 +115,8 @@ inline uint64 Hash128to64(const uint128 &x) {
 
 } // namespace cityhash_v111
 } // namespace internal
+using internal::cityhash_v111::CityHash128;
+using internal::cityhash_v111::CityHash128WithSeed;
 using internal::cityhash_v111::CityHash32;
 using internal::cityhash_v111::CityHash64;
 using internal::cityhash_v111::CityHash64WithSeed;

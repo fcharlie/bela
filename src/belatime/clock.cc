@@ -5,20 +5,12 @@
 
 namespace bela {
 
-namespace time_internal {
-
-static int64_t GetCurrentTimeNanosFromSystem() {
-  return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now() -
-                                                              std::chrono::system_clock::from_time_t(0))
-      .count();
-}
-
-} // namespace time_internal
-
+// GetCurrentTimeNanos
 int64_t GetCurrentTimeNanos() {
-  //
-  return time_internal::GetCurrentTimeNanosFromSystem();
+  using namespace std::chrono;
+  return duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 }
+
 Time Now() {
   // TODO(bww): Get a timespec instead so we don't have to divide.
   int64_t n = bela::GetCurrentTimeNanos();

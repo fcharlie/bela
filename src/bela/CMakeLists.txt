@@ -18,9 +18,11 @@ add_library(
   str_split.cc
   str_split_narrow.cc
   str_replace.cc
+  str_replace_narrow.cc
   str_cat.cc
   str_cat_narrow.cc
   subsitute.cc
+  subsitute_narrow.cc
   terminal.cc)
 
 if(BELA_ENABLE_LTO)

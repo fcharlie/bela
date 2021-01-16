@@ -16,6 +16,7 @@ add_library(
   numbers.cc
   winansi.cc
   str_split.cc
+  str_split_narrow.cc
   str_replace.cc
   str_cat.cc
   str_cat_narrow.cc

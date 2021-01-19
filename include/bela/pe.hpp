@@ -13,6 +13,8 @@
 #include "match.hpp"
 
 namespace bela::pe {
+constexpr long ErrNoOverlay = 0xFF01;
+constexpr long LimitOverlaySize = 64 * 1024 * 1024;
 enum class Machine : uint16_t {
   UNKNOWN = 0,
   TARGET_HOST = 0x0001, // Useful for indicating we want to interact with the
@@ -375,6 +377,7 @@ public:
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
   bool LookupClrVersion(std::string &ver, bela::error_code &ec) const;
+  bool LookupOverlay(std::vector<char> &overlayData, bela::error_code &ec, int64_t limitsize = LimitOverlaySize) const;
   const FileHeader &Fh() const { return fh; }
   const OptionalHeader64 *Oh64() const { return &oh; }
   const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh); }

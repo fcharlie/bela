@@ -400,6 +400,7 @@ public:
   }
   int64_t Size() const { return size; }
   int64_t OverlayOffset() const { return overlayOffset; }
+  int64_t OverlayLength() const { return size - overlayOffset; }
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};

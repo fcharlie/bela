@@ -399,6 +399,7 @@ public:
     return ParseFile(ec);
   }
   int64_t Size() const { return size; }
+  int64_t OverlayOffset() const { return overlayOffset; }
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};
@@ -409,6 +410,7 @@ private:
   OptionalHeader64 oh;
   std::vector<Section> sections;
   StringTable stringTable;
+  int64_t overlayOffset{-1};
   bool is64bit{false};
   bool needClosed{false};
 };

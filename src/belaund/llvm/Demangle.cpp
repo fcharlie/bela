@@ -20,7 +20,7 @@ static bool isItaniumEncoding(std::string_view MangledName) {
   return Pos > 0 && Pos <= 4 && MangledName[Pos] == 'Z';
 }
 
-std::string llvm::demangle(std::string_view MangledName) {
+std::string llvm::demangle(const std::string_view MangledName) {
   char *Demangled;
   if (isItaniumEncoding(MangledName))
     Demangled = itaniumDemangle(MangledName, nullptr, nullptr, nullptr);

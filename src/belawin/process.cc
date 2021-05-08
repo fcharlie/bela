@@ -75,7 +75,6 @@ struct process_capture_helper {
     if (FlagIsTrue(flags, CAPTURE_ERR)) {
       si.hStdError = si.hStdOutput;
     }
-    auto hProcess = GetCurrentProcess();
     if (FlagIsTrue(flags, CAPTURE_USEERR)) {
       si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     }

@@ -279,6 +279,20 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
       file.name = cleanupName(fb.Data<char>(), fb.Size());
       continue;
     }
+    if (fieldTag == infoZipUnicodeCommentExtraID) {
+      // (UCom) 0x6375        Short       tag for this extra block type ("uc")
+      //  TSize         Short       total data size for this block
+      //  Version       1 byte      version of this extra field, currently 1
+      //  ComCRC32      4 bytes     Comment Field CRC32 Checksum
+      //  UnicodeCom    Variable    UTF-8 version of the entry comment
+      if (fb.Size() < 5) {
+        continue;
+      }
+      auto ver = fb.Pick();
+      auto crc32val = fb.Read<uint32_t>();
+      file.comment = cleanupName(fb.Data<char>(), fb.Size());
+      continue;
+    }
     // https://www.winzip.com/win/en/aes_info.html
     if (fieldTag == winzipAesExtraID) {
       if (fb.Size() < 7) {

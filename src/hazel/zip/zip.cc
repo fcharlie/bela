@@ -270,10 +270,9 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
          NameCRC32     4 bytes     File Name Field CRC32 Checksum
          UnicodeName   Variable    UTF-8 version of the entry File Name
       */
-      if (fb.Size() < 7 || (file.flags & 0x800) != 0) {
+      if (fb.Size() < 5 || (file.flags & 0x800) != 0) {
         continue;
       }
-      auto size = fb.Read<uint16_t>();
       auto ver = fb.Pick();
       auto crc32val = fb.Read<uint32_t>();
       file.flags |= 0x800;

@@ -681,12 +681,13 @@ BELA_CONST_INIT const DisplayUnit kDisplayMin = {L"m", -1, 0.0};  // prec ignore
 BELA_CONST_INIT const DisplayUnit kDisplayHour = {L"h", -1, 0.0}; // prec ignored
 
 void AppendNumberUnit(std::wstring *out, int64_t n, DisplayUnit unit) {
-  wchar_t buf[sizeof("2562047788015216")]; // hours in max duration
-  wchar_t *const ep = buf + sizeof(buf);
+  constexpr auto kBufferSize = sizeof("2562047788015216");
+  wchar_t buf[kBufferSize]; // hours in max duration
+  wchar_t *const ep = buf + kBufferSize;
   wchar_t *bp = Format64(ep, 0, n);
   if (*bp != L'0' || bp + 1 != ep) {
     out->append(bp, ep - bp);
-    out->append(unit.abbr.data(), unit.abbr.size());
+    out->append(unit.abbr);
   }
 }
 
@@ -711,7 +712,7 @@ void AppendNumberUnit(std::wstring *out, double n, DisplayUnit unit) {
       }
       out->append(bp, ep - bp);
     }
-    out->append(unit.abbr.data(), unit.abbr.size());
+    out->append(unit.abbr);
   }
 }
 

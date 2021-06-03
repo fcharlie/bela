@@ -696,7 +696,7 @@ void AppendNumberUnit(std::wstring *out, double n, DisplayUnit unit) {
   constexpr int kBufferSize = std::numeric_limits<double>::digits10;
   const int prec = (std::min)(kBufferSize, unit.prec);
   wchar_t buf[kBufferSize]; // also large enough to hold integer part
-  wchar_t *ep = buf + sizeof(buf);
+  wchar_t *ep = buf + kBufferSize;
   double d = 0;
   int64_t frac_part = static_cast<int64_t>(Round(std::modf(n, &d) * unit.pow10));
   int64_t int_part = static_cast<int64_t>(d);

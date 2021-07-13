@@ -20,6 +20,7 @@ static constexpr const uint8_t WinResMagic[] = {
 };
 static constexpr const uint8_t debMagic[] = {0x21, 0x3C, 0x61, 0x72, 0x63, 0x68, 0x3E, 0x0A, 0x64, 0x65, 0x62,
                                              0x69, 0x61, 0x6E, 0x2D, 0x62, 0x69, 0x6E, 0x61, 0x72, 0x79};
+static constexpr const uint8_t ifcMagic[] = {0x54, 0x51, 0x45, 0x1a};
 struct BigObjHeader {
   enum : uint16_t { MinBigObjectVersion = 2 };
 
@@ -286,6 +287,12 @@ status_t LookupExecutableFile(bela::MemView mv, hazel_result &hr) {
   case 0x64: // x86-64 or ARM64 Windows.
     if (mv[1] == 0x86 || mv[1] == 0xaa) {
       hr.assign(types::coff_object, L"COFF object");
+      return Found;
+    }
+    break;
+  case 0x54:
+    if (mv.StartsWith(ifcMagic)) {
+      hr.assign(types::ifc, L"MSVC IFC (C++ module binary)");
       return Found;
     }
     break;

@@ -32,6 +32,10 @@ public:
   std::wstring_view Name() const { return std::wstring_view(wfd.cFileName); }
   bool Next() { return FindNextFileW(hFind, &wfd) == TRUE; }
   bool First(std::wstring_view file, bela::error_code &ec) {
+    if (hFind != INVALID_HANDLE_VALUE) {
+      ec = bela::make_error_code(L"Find handle not invalid");
+      return false;
+    }
     hFind = FindFirstFileW(file.data(), &wfd);
     if (hFind == INVALID_HANDLE_VALUE) {
       ec = bela::make_system_error_code();

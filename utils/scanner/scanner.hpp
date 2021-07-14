@@ -1,11 +1,19 @@
 #ifndef GIT_SCANNER_HPP
 #define GIT_SCANNER_HPP
 #include <functional>
+#include <concepts>
 #include <bela/base.hpp>
 #include <bela/endian.hpp>
 
 namespace git {
 using Filter = std::function<bool(std::wstring_view oid, std::int64_t size)>;
+
+template <typename T>
+requires std::integral<T>
+struct Snapshot {
+  T offset{0};
+  uint32_t index{0};
+};
 
 class Scanner {
 public:

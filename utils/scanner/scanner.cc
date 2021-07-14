@@ -13,6 +13,9 @@ bool Scanner::Execute(const std::wstring_view gitdir, const Filter &filter, bela
   // L0
   auto objdir = bela::StringCat(gitdir, L"/objects");
   bela::fs::Finder finder;
+  if (!finder.First(objdir, L"*", ec)) {
+    return false;
+  }
   return false;
 }
 

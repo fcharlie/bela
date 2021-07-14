@@ -19,8 +19,20 @@ template <class T>
 inline constexpr bool is_character_v =
     is_any_of_v<std::remove_cv_t<T>, char, signed char, unsigned char, wchar_t, char8_t, char16_t, char32_t>;
 
+template <class T> inline constexpr bool is_wide_character_v = is_any_of_v<std::remove_cv_t<T>, wchar_t, char16_t>;
+
+template <class T>
+inline constexpr bool is_narrow_character_v =
+    is_any_of_v<std::remove_cv_t<T>, char, signed char, unsigned char, char8_t>;
+
 template <class T>
 concept character = is_character_v<T>;
+
+template <class T>
+concept wide_character = is_wide_character_v<T>;
+
+template <class T>
+concept narrow_character = is_narrow_character_v<T>;
 
 } // namespace bela
 

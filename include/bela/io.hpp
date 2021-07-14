@@ -112,8 +112,8 @@ inline ssize_t File::Read(void *buffer, size_t len, bela::error_code &ec) {
 }
 
 inline ssize_t File::ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-  auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
-  LARGE_INTEGER oli{0};
+  LARGE_INTEGER li{.QuadPart = pos};
+  LARGE_INTEGER oli{.QuadPart = 0};
   if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
     ec = bela::make_error_code(L"SetFilePointerEx: ");
     return -1;
@@ -131,8 +131,8 @@ inline ssize_t File::Write(const void *buffer, size_t len, bela::error_code &ec)
 }
 
 inline ssize_t File::WriteAt(const void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-  auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
-  LARGE_INTEGER oli{0};
+  LARGE_INTEGER li{.QuadPart = pos};
+  LARGE_INTEGER oli{.QuadPart = 0};
   if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
     ec = bela::make_error_code(L"SetFilePointerEx: ");
     return -1;
@@ -172,8 +172,8 @@ inline bool File::Open(std::wstring_view file, DWORD dwDesiredAccess, DWORD dwSh
 }
 
 inline bool ReadAt(HANDLE fd, void *buffer, size_t len, int64_t pos, size_t &outlen, bela::error_code &ec) {
-  auto li = *reinterpret_cast<LARGE_INTEGER *>(&pos);
-  LARGE_INTEGER oli{0};
+  LARGE_INTEGER li{.QuadPart = pos};
+  LARGE_INTEGER oli{.QuadPart = 0};
   if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
     ec = bela::make_error_code(L"SetFilePointerEx: ");
     return false;

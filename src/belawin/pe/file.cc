@@ -107,7 +107,7 @@ inline void fromle(SectionHeader32 &sh) {
 
 bool File::ParseFile(bela::error_code &ec) {
   if (size == SizeUnInitialized) {
-    LARGE_INTEGER li;
+    LARGE_INTEGER li{.QuadPart = 0};
     if (GetFileSizeEx(fd, &li) != TRUE) {
       ec = bela::make_system_error_code(L"GetFileSizeEx: ");
       return false;

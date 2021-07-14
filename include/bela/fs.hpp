@@ -22,6 +22,13 @@ public:
   bool Ignore() const { return DirSkipFaster(wfd.cFileName); }
   bool IsDir() const { return (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0; }
   bool IsReparsePoint() const { return (wfd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0; }
+  int64_t Size() const {
+    LARGE_INTEGER li{{
+        .LowPart = wfd.nFileSizeLow,
+        .HighPart = static_cast<LONG>(wfd.nFileSizeHigh),
+    }};
+    return li.QuadPart;
+  }
   std::wstring_view Name() const { return std::wstring_view(wfd.cFileName); }
   bool Next() { return FindNextFileW(hFind, &wfd) == TRUE; }
   bool First(std::wstring_view dir, std::wstring_view suffix, bela::error_code &ec) {

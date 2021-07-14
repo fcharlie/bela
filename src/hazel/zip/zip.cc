@@ -318,7 +318,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
 }
 
 bool Reader::Initialize(bela::error_code &ec) {
-  LARGE_INTEGER li;
+  LARGE_INTEGER li{.QuadPart = 0};
   if (GetFileSizeEx(fd, &li) != TRUE) {
     ec = bela::make_system_error_code(L"GetFileSizeEx: ");
     return false;

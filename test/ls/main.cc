@@ -7,16 +7,19 @@ int wmain(int argc, wchar_t **argv) {
   std::wstring baseName = L"*";
   if (argc >= 2) {
     dir = argv[1];
-    if ((GetFileAttributesW(dir.data()) & FILE_ATTRIBUTE_DIRECTORY) == 0) {
-      baseName = bela::BaseName(dir);
-      bela::PathStripName(dir);
-    }
   }
   bela::error_code ec;
   bela::fs::Finder finder;
-  if (!finder.First(dir, baseName, ec)) {
-    bela::FPrintF(stderr, L"List error %v\n", ec.message);
-    return 1;
+  if ((GetFileAttributesW(dir.data()) & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+    if (!finder.First(dir, ec)) {
+      bela::FPrintF(stderr, L"List error %v\n", ec.message);
+      return 1;
+    }
+  } else {
+    if (!finder.First(dir, L"*", ec)) {
+      bela::FPrintF(stderr, L"List error %v\n", ec.message);
+      return 1;
+    }
   }
   do {
     if (finder.Ignore()) {

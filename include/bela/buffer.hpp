@@ -4,9 +4,10 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include "types.hpp"
 
 namespace bela {
-constexpr inline size_t align_length(size_t n) { return (n / 8 + 1) * 8; }
+
 namespace buffer {
 template <typename T = uint8_t, typename Allocator = std::allocator<T>> class Buffer {
 private:

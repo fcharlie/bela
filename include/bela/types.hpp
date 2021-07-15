@@ -34,6 +34,12 @@ concept wide_character = is_wide_character_v<T>;
 template <class T>
 concept narrow_character = is_narrow_character_v<T>;
 
+// funs
+
+template <typename T, typename K> constexpr bool FlagIsTrue(T a, K b) { return (a & static_cast<T>(b)) != 0; }
+
+constexpr int64_t SizeUnInitialized{-1};
+
 } // namespace bela
 
 #endif

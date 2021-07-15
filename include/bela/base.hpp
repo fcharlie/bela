@@ -17,6 +17,7 @@
 #include <vector>
 #include <system_error>
 #include <memory>
+#include "types.hpp"
 #include "str_cat.hpp"
 
 namespace bela {
@@ -167,9 +168,6 @@ template <class F> inline final_act<F> finally(const F &f) noexcept { return fin
 
 template <class F> inline final_act<F> finally(F &&f) noexcept { return final_act<F>(std::forward<F>(f)); }
 
-constexpr int64_t SizeUnInitialized{-1};
-
-template <typename T, typename K> constexpr bool FlagIsTrue(T a, K b) { return (a & static_cast<T>(b)) != 0; }
 } // namespace bela
 
 #endif

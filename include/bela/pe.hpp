@@ -53,6 +53,12 @@ enum class Machine : uint16_t {
   RISCV64 = 0x5064,
   RISCV128 = 0x5128,
   CHPEX86 = 0x3A64,
+  // 10.0.22000.0/km/ntimage.h LINE-245
+  // #define IMAGE_FILE_MACHINE_CHPE_X86          0x3A64
+  // #define IMAGE_FILE_MACHINE_ARM64EC           0xA641
+  // #define IMAGE_FILE_MACHINE_ARM64X            0xA64E
+  ARM64EC = 0xA641,
+  ARM64X = 0xA64E,
   CEE = 0xC0EE
 };
 enum class Subsystem : uint16_t {

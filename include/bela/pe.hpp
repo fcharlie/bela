@@ -15,6 +15,8 @@
 namespace bela::pe {
 constexpr long ErrNoOverlay = 0xFF01;
 constexpr long LimitOverlaySize = 64 * 1024 * 1024;
+// Machine Types
+// https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#machine-types
 enum class Machine : uint16_t {
   UNKNOWN = 0,
   TARGET_HOST = 0x0001, // Useful for indicating we want to interact with the
@@ -176,7 +178,7 @@ struct OptionalHeader64 {
 };
 
 struct SectionHeader32 {
-  uint8_t Name[8];
+  uint8_t Name[8]; // UTF-8
   uint32_t VirtualSize;
   uint32_t VirtualAddress;
   uint32_t SizeOfRawData;
@@ -196,7 +198,7 @@ struct Reloc {
 
 // COFFSymbol represents single COFF symbol table record.
 struct COFFSymbol {
-  uint8_t Name[8];
+  uint8_t Name[8]; // UTF-8
   uint32_t Value;
   int16_t SectionNumber;
   uint16_t Type;
@@ -216,7 +218,7 @@ struct STORAGESIGNATURE {
 #pragma pack()
 
 struct SectionHeader {
-  std::string Name;
+  std::string Name; // UTF-8
   uint32_t VirtualSize;
   uint32_t VirtualAddress;
   uint32_t Size;
@@ -255,7 +257,7 @@ struct StringTable {
 // Symbol is similar to COFFSymbol with Name field replaced
 // by Go string. Symbol also does not have NumberOfAuxSymbols.
 struct Symbol {
-  std::string Name;
+  std::string Name; // UTF-8
   uint32_t Value;
   int16_t SectionNumber;
   uint16_t Type;
@@ -263,7 +265,7 @@ struct Symbol {
 };
 
 struct ExportedSymbol {
-  std::string Name;
+  std::string Name; // UTF-8
   std::string UndecoratedName;
   std::string ForwardName;
   DWORD Address;
@@ -295,6 +297,39 @@ struct FunctionTable {
 
 using symbols_map_t = bela::flat_hash_map<std::string, std::vector<Function>>;
 
+struct Version {
+  std::wstring CompanyName;
+  std::wstring FileDescription;
+  std::wstring FileVersion;
+  std::wstring InternalName;
+  std::wstring LegalCopyright;
+  std::wstring OriginalFileName;
+  std::wstring ProductName;
+  std::wstring ProductVersion;
+  std::wstring Comments;
+  std::wstring LegalTrademarks;
+  std::wstring PrivateBuild;
+  std::wstring SpecialBuild;
+};
+
+struct FileInfo {
+  DWORD dwSignature;        /* e.g. 0xfeef04bd */
+  DWORD dwStrucVersion;     /* e.g. 0x00000042 = "0.42" */
+  DWORD dwFileVersionMS;    /* e.g. 0x00030075 = "3.75" */
+  DWORD dwFileVersionLS;    /* e.g. 0x00000031 = "0.31" */
+  DWORD dwProductVersionMS; /* e.g. 0x00030010 = "3.10" */
+  DWORD dwProductVersionLS; /* e.g. 0x00000031 = "0.31" */
+  DWORD dwFileFlagsMask;    /* = 0x3F for version "0.42" */
+  DWORD dwFileFlags;        /* e.g. VFF_DEBUG | VFF_PRERELEASE */
+  DWORD dwFileOS;           /* e.g. VOS_DOS_WINDOWS16 */
+  DWORD dwFileType;         /* e.g. VFT_DRIVER */
+  DWORD dwFileSubtype;      /* e.g. VFT2_DRV_KEYBOARD */
+  DWORD dwFileDateMS;       /* e.g. 0 */
+  DWORD dwFileDateLS;       /* e.g. 0 */
+};
+
+// PE File resolve
+// https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
 class File {
 private:
   bool ParseFile(bela::error_code &ec);
@@ -378,6 +413,8 @@ public:
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
   bool LookupClrVersion(std::string &ver, bela::error_code &ec) const;
+  bool LookupResource(bela::error_code &ec) const;
+  bool LookupVersion(Version &ver, bela::error_code &ec) const;
   bool LookupOverlay(std::vector<char> &overlayData, bela::error_code &ec, int64_t limitsize = LimitOverlaySize) const;
   const FileHeader &Fh() const { return fh; }
   const OptionalHeader64 *Oh64() const { return &oh; }
@@ -432,41 +469,10 @@ public:
   std::optional<std::string> LookupOrdinalFunctionName(std::string_view dllname, int ordinal, bela::error_code &ec);
 };
 
-struct FileInfo {
-  DWORD dwSignature;        /* e.g. 0xfeef04bd */
-  DWORD dwStrucVersion;     /* e.g. 0x00000042 = "0.42" */
-  DWORD dwFileVersionMS;    /* e.g. 0x00030075 = "3.75" */
-  DWORD dwFileVersionLS;    /* e.g. 0x00000031 = "0.31" */
-  DWORD dwProductVersionMS; /* e.g. 0x00030010 = "3.10" */
-  DWORD dwProductVersionLS; /* e.g. 0x00000031 = "0.31" */
-  DWORD dwFileFlagsMask;    /* = 0x3F for version "0.42" */
-  DWORD dwFileFlags;        /* e.g. VFF_DEBUG | VFF_PRERELEASE */
-  DWORD dwFileOS;           /* e.g. VOS_DOS_WINDOWS16 */
-  DWORD dwFileType;         /* e.g. VFT_DRIVER */
-  DWORD dwFileSubtype;      /* e.g. VFT2_DRV_KEYBOARD */
-  DWORD dwFileDateMS;       /* e.g. 0 */
-  DWORD dwFileDateLS;       /* e.g. 0 */
-};
-
 // https://docs.microsoft.com/en-us/windows/win32/api/winver/nf-winver-getfileversioninfoexw
 // https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-getfileversioninfosizeexw
 // https://docs.microsoft.com/zh-cn/windows/win32/api/winver/nf-winver-verqueryvaluew
 // version.lib
-struct Version {
-  std::wstring CompanyName;
-  std::wstring FileDescription;
-  std::wstring FileVersion;
-  std::wstring InternalName;
-  std::wstring LegalCopyright;
-  std::wstring OriginalFileName;
-  std::wstring ProductName;
-  std::wstring ProductVersion;
-  std::wstring Comments;
-  std::wstring LegalTrademarks;
-  std::wstring PrivateBuild;
-  std::wstring SpecialBuild;
-};
-
 std::optional<Version> Lookup(std::wstring_view file, bela::error_code &ec);
 
 inline bool IsSubsystemConsole(std::wstring_view p) {

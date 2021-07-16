@@ -2,6 +2,8 @@
 #include "internal.hpp"
 #include <algorithm>
 
+// https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
+// https://docs.microsoft.com/zh-cn/windows/win32/debug/pe-format
 // https://en.wikipedia.org/wiki/Portable_Executable
 
 namespace bela::pe {

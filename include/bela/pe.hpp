@@ -11,6 +11,7 @@
 #include "types.hpp"
 #include "ascii.hpp"
 #include "match.hpp"
+#include "os.hpp"
 
 namespace bela::pe {
 constexpr long ErrNoOverlay = 0xFF01;
@@ -339,15 +340,6 @@ struct FileInfo {
 class File {
 private:
   bool ParseFile(bela::error_code &ec);
-  bool PositionAt(int64_t pos, bela::error_code &ec) const {
-    LARGE_INTEGER li{.QuadPart = pos};
-    LARGE_INTEGER oli{.QuadPart = 0};
-    if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
-      ec = bela::make_system_error_code(L"SetFilePointerEx: ");
-      return false;
-    }
-    return true;
-  }
   bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
     DWORD dwSize = {0};
     if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
@@ -376,7 +368,7 @@ private:
   }
   // ReadAt ReadFull
   bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) const {
-    if (!PositionAt(pos, ec)) {
+    if (!bela::os::file::Seek(fd, pos, ec)) {
       return false;
     }
     return ReadFull(buffer, len, ec);
@@ -419,9 +411,9 @@ public:
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
   bool LookupClrVersion(std::string &ver, bela::error_code &ec) const;
-  bool LookupResource(bela::error_code &ec) const;
-  bool LookupVersion(Version &ver, bela::error_code &ec) const;
   bool LookupOverlay(std::vector<char> &overlayData, bela::error_code &ec, int64_t limitsize = LimitOverlaySize) const;
+  bool LookupResource(bela::error_code &ec) const;
+  std::optional<Version> FileVersion(bela::error_code &ec) const;
   const FileHeader &Fh() const { return fh; }
   const OptionalHeader64 *Oh64() const { return &oh; }
   const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh); }

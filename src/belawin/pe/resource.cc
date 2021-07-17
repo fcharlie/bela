@@ -9,7 +9,7 @@ std::wstring_view ResourceTypeName(ULONG_PTR type) {
   return L"";
 }
 
-bool File::LookupVersion(Version &ver, bela::error_code &ec) const {
+std::optional<Version> File::FileVersion(bela::error_code &ec) const {
   uint32_t ddlen = 0;
   const DataDirectory *resrd = nullptr;
   if (is64bit) {
@@ -21,7 +21,7 @@ bool File::LookupVersion(Version &ver, bela::error_code &ec) const {
     resrd = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE]);
   }
   if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || resrd->VirtualAddress == 0) {
-    return true;
+    return std::nullopt;
   }
   const Section *ds = nullptr;
   for (const auto &sec : sections) {
@@ -31,14 +31,14 @@ bool File::LookupVersion(Version &ver, bela::error_code &ec) const {
     }
   }
   if (ds == nullptr) {
-    return true;
+    return std::nullopt;
   }
   auto offset = static_cast<int64_t>(ds->Header.Offset);
   IMAGE_RESOURCE_DIRECTORY ird;
   if (!ReadAt(&ird, sizeof(IMAGE_RESOURCE_DIRECTORY), offset, ec)) {
-    return false;
+    return std::nullopt;
   }
-  return true;
+  return std::nullopt;
 }
 
 bool File::LookupResource(bela::error_code &ec) const {

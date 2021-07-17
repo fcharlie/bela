@@ -12,7 +12,7 @@ bool File::LookupOverlay(std::vector<char> &overlayData, bela::error_code &ec, i
     ec = bela::make_error_code(ErrGeneral, L"overlay data size large over limit");
     return false;
   }
-  if (!PositionAt(overlayOffset, ec)) {
+  if (!bela::os::file::Seek(fd, overlayOffset, ec)) {
     return false;
   }
   overlayData.resize(static_cast<size_t>(overlayLen));

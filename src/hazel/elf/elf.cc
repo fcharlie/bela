@@ -32,12 +32,9 @@ bool File::NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec) {
 
 bool File::ParseFile(bela::error_code &ec) {
   if (size == bela::SizeUnInitialized) {
-    LARGE_INTEGER li{.QuadPart = 0};
-    if (GetFileSizeEx(fd, &li) != TRUE) {
-      ec = bela::make_system_error_code(L"GetFileSizeEx: ");
+    if ((size = bela::os::file::Size(fd, ec)) == bela::SizeUnInitialized) {
       return false;
     }
-    size = li.QuadPart;
   }
   uint8_t ident[16];
   if (!ReadAt(ident, sizeof(ident), 0, ec)) {

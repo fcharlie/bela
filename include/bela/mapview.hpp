@@ -2,6 +2,7 @@
 #ifndef BELA_MAPVIEW_HPP
 #define BELA_MAPVIEW_HPP
 #include "base.hpp"
+#include "os.hpp"
 
 namespace bela {
 class MemView {
@@ -121,16 +122,19 @@ inline bool MapView::MappingView(std::wstring_view file, bela::error_code &ec, s
     ec = bela::make_system_error_code();
     return false;
   }
-  LARGE_INTEGER li{.QuadPart = 0};
-  if (GetFileSizeEx(FileHandle, &li) != TRUE || (std::size_t)li.QuadPart < minsize) {
-    ec = bela::make_error_code(ErrFileTooSmall, L"File size too smal, size: ", li.QuadPart);
+  auto diskSize = bela::os::file::Size(FileHandle, ec);
+  if (diskSize == bela::SizeUnInitialized) {
+    return false;
+  }
+  if (diskSize < static_cast<int64_t>(minsize)) {
+    ec = bela::make_error_code(ErrFileTooSmall, L"File size too smal, size: ", diskSize);
     return false;
   }
   if ((FileMap = CreateFileMappingW(FileHandle, nullptr, PAGE_READONLY, 0, 0, nullptr)) == INVALID_HANDLE_VALUE) {
     ec = bela::make_system_error_code();
     return false;
   }
-  size_ = (size_t)li.QuadPart > maxsize ? maxsize : (size_t)li.QuadPart;
+  size_ = (std::min)(maxsize, static_cast<size_t>(diskSize));
   auto baseAddr = MapViewOfFile(FileMap, FILE_MAP_READ, 0, 0, size_);
   if (baseAddr == nullptr) {
     ec = bela::make_system_error_code();

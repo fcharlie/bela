@@ -4,6 +4,7 @@
 #include "base.hpp"
 #include "types.hpp"
 #include "buffer.hpp"
+#include "os.hpp"
 #include "path.hpp"
 
 namespace bela {
@@ -112,10 +113,7 @@ inline ssize_t File::Read(void *buffer, size_t len, bela::error_code &ec) {
 }
 
 inline ssize_t File::ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-  LARGE_INTEGER li{.QuadPart = pos};
-  LARGE_INTEGER oli{.QuadPart = 0};
-  if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
-    ec = bela::make_error_code(L"SetFilePointerEx: ");
+  if (!bela::os::file::Seek(fd, pos, ec)) {
     return -1;
   }
   return Read(buffer, len, ec);
@@ -131,10 +129,7 @@ inline ssize_t File::Write(const void *buffer, size_t len, bela::error_code &ec)
 }
 
 inline ssize_t File::WriteAt(const void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-  LARGE_INTEGER li{.QuadPart = pos};
-  LARGE_INTEGER oli{.QuadPart = 0};
-  if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
-    ec = bela::make_error_code(L"SetFilePointerEx: ");
+  if (!bela::os::file::Seek(fd, pos, ec)) {
     return -1;
   }
   return Write(buffer, len, ec);
@@ -172,10 +167,7 @@ inline bool File::Open(std::wstring_view file, DWORD dwDesiredAccess, DWORD dwSh
 }
 
 inline bool ReadAt(HANDLE fd, void *buffer, size_t len, int64_t pos, size_t &outlen, bela::error_code &ec) {
-  LARGE_INTEGER li{.QuadPart = pos};
-  LARGE_INTEGER oli{.QuadPart = 0};
-  if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
-    ec = bela::make_error_code(L"SetFilePointerEx: ");
+  if (!bela::os::file::Seek(fd, pos, ec)) {
     return false;
   }
   DWORD dwSize = {0};

@@ -109,12 +109,9 @@ inline void fromle(SectionHeader32 &sh) {
 
 bool File::ParseFile(bela::error_code &ec) {
   if (size == SizeUnInitialized) {
-    LARGE_INTEGER li{.QuadPart = 0};
-    if (GetFileSizeEx(fd, &li) != TRUE) {
-      ec = bela::make_system_error_code(L"GetFileSizeEx: ");
+    if ((size = bela::os::file::Size(fd, ec)) == bela::SizeUnInitialized) {
       return false;
     }
-    size = li.QuadPart;
   }
   DosHeader dh;
   if (!ReadAt(&dh, sizeof(DosHeader), 0, ec)) {

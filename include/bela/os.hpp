@@ -3,6 +3,7 @@
 #define BELA_OS_HPP
 #include <cstdint>
 #include <type_traits>
+#include "base.hpp"
 
 namespace bela::os {
 enum FileMode : uint32_t {
@@ -38,6 +39,44 @@ constexpr inline bool IsDir(FileMode m) { return (m & ModeDir) != 0; }
 constexpr inline bool IsRegular(FileMode m) { return (m & ModeType) == 0; }
 constexpr inline FileMode Perm(FileMode m) { return m & ModePerm; }
 constexpr inline FileMode Type(FileMode m) { return m & ModeType; }
+
+// os function
+
+namespace file {
+inline int64_t Size(HANDLE fd, bela::error_code &ec) {
+  FILE_STANDARD_INFO si;
+  if (GetFileInformationByHandleEx(fd, FileStandardInfo, &si, sizeof(si)) != TRUE) {
+    ec = bela::make_system_error_code(L"GetFileInformationByHandleEx(): ");
+    return bela::SizeUnInitialized;
+  }
+  return si.EndOfFile.QuadPart;
+}
+
+inline int64_t Size(std::wstring_view filename, bela::error_code &ec) {
+  WIN32_FILE_ATTRIBUTE_DATA wdata;
+  if (GetFileAttributesExW(filename.data(), GetFileExInfoStandard, &wdata) != TRUE) {
+    ec = bela::make_system_error_code(L"GetFileAttributesExW(): ");
+    return bela::SizeUnInitialized;
+  }
+  return static_cast<unsigned long long>(wdata.nFileSizeHigh) << 32 | wdata.nFileSizeLow;
+}
+
+enum Whence : DWORD {
+  SeekStart = FILE_BEGIN,
+  SeekCurrent = FILE_CURRENT,
+  SeekEnd = FILE_END,
+};
+
+inline bool Seek(HANDLE fd, int64_t pos, bela::error_code &ec, Whence whence = SeekStart) {
+  LARGE_INTEGER new_pos{.QuadPart = 0};
+  if (SetFilePointerEx(fd, *reinterpret_cast<LARGE_INTEGER const *>(&pos), &new_pos, whence) != TRUE) {
+    ec = bela::make_system_error_code(L"SetFilePointerEx(): ");
+    return false;
+  }
+  return true;
+}
+
+} // namespace file
 
 } // namespace bela::os
 

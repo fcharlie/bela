@@ -3,6 +3,7 @@
 #include <hazel/hazel.hpp>
 #include <bela/mapview.hpp>
 #include <bela/path.hpp>
+#include <bela/os.hpp>
 #include "ina/hazelinc.hpp"
 
 namespace hazel {
@@ -10,12 +11,9 @@ namespace hazel {
 typedef hazel::internal::status_t (*lookup_handle_t)(bela::MemView mv, hazel_result &hr);
 
 bool LookupFile(bela::File &fd, hazel_result &hr, bela::error_code &ec) {
-  LARGE_INTEGER li{.QuadPart = 0};
-  if (GetFileSizeEx(fd.FD(), &li) != TRUE) {
-    ec = bela::make_system_error_code();
+  if ((hr.size_ = bela::os::file::Size(fd.FD(), ec)) == bela::SizeUnInitialized) {
     return false;
   }
-  hr.size_ = li.QuadPart;
   uint8_t buffer[4096];
   auto outlen = fd.ReadAt(buffer, sizeof(buffer), 0, ec);
   if (outlen == -1) {

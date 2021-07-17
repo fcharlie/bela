@@ -113,15 +113,6 @@ enum mszipconatiner_t : int {
 
 class Reader {
 private:
-  bool PositionAt(int64_t pos, bela::error_code &ec) const {
-    LARGE_INTEGER li{.QuadPart = pos};
-    LARGE_INTEGER oli{.QuadPart = 0};
-    if (SetFilePointerEx(fd, li, &oli, SEEK_SET) != TRUE) {
-      ec = bela::make_system_error_code(L"SetFilePointerEx: ");
-      return false;
-    }
-    return true;
-  }
   bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
     auto p = reinterpret_cast<uint8_t *>(buffer);
     size_t total = 0;
@@ -141,7 +132,7 @@ private:
   }
   // ReadAt ReadFull
   bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) const {
-    if (!PositionAt(pos, ec)) {
+    if (!bela::os::file::Seek(fd, pos, ec)) {
       return false;
     }
     return ReadFull(buffer, len, ec);

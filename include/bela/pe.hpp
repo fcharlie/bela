@@ -390,6 +390,8 @@ private:
     }
     return dd;
   }
+  // Also, do not assume that the RVAs in this table point to the beginning of a section or that the sections that
+  // contain specific tables have specific names.
   const Section *getSection(const DataDirectory *dd) const {
     for (const auto &section : sections) {
       if (section.VirtualAddress <= dd->VirtualAddress &&

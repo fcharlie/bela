@@ -13,7 +13,10 @@ void StringTable::MoveFrom(StringTable &&other) {
   other.length = 0;
 }
 
-StringTable::~StringTable() { HeapFree(GetProcessHeap(), 0, data); }
+StringTable::~StringTable() {
+  // lpMem  This pointer can be NULL.
+  HeapFree(GetProcessHeap(), 0, data);
+}
 
 std::string StringTable::String(uint32_t start, bela::error_code &ec) const {
   if (start < 4) {

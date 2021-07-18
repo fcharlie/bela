@@ -18,12 +18,12 @@ std::string File::sectionFullName(SectionHeader32 &sh) const {
 }
 
 bool File::readRelocs(Section &sec) const {
-  if (sec.Header.NumberOfRelocations == 0) {
+  if (sec.NumberOfRelocations == 0) {
     return true;
   }
   bela::error_code ec;
-  sec.Relocs.resize(sec.Header.NumberOfRelocations);
-  if (!ReadAt(sec.Relocs.data(), sizeof(Reloc) * sec.Header.NumberOfRelocations, sec.Header.PointerToRelocations, ec)) {
+  sec.Relocs.resize(sec.NumberOfRelocations);
+  if (!ReadAt(sec.Relocs.data(), sizeof(Reloc) * sec.NumberOfRelocations, sec.PointerToRelocations, ec)) {
     return false;
   }
   if constexpr (bela::IsBigEndian()) {
@@ -38,8 +38,8 @@ bool File::readRelocs(Section &sec) const {
 
 bool File::readSectionData(const Section &sec, std::vector<char> &data) const {
   bela::error_code ec;
-  data.resize(sec.Header.Size);
-  return ReadAt(data.data(), sec.Header.Size, sec.Header.Offset, ec);
+  data.resize(sec.Size);
+  return ReadAt(data.data(), sec.Size, sec.Offset, ec);
 }
 
 } // namespace bela::pe

@@ -11,42 +11,26 @@ typedef enum ReplacesGeneralNumericDefines {
 #define STORAGE_MAGIC_SIG 0x424A5342 // BSJB
 
 bool File::LookupClrVersion(std::string &ver, bela::error_code &ec) const {
-  uint32_t ddlen = 0;
-  const DataDirectory *clrd = nullptr;
-  if (is64bit) {
-    ddlen = oh.NumberOfRvaAndSizes;
-    clrd = &(oh.DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER]);
-  } else {
-    auto oh3 = reinterpret_cast<const OptionalHeader32 *>(&oh);
-    ddlen = oh3->NumberOfRvaAndSizes;
-    clrd = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER]);
-  }
-  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || clrd->VirtualAddress == 0) {
+  auto clrd = getDataDirectory(IMAGE_DIRECTORY_ENTRY_COMHEADER);
+  if (clrd == nullptr) {
     return true;
   }
-  const Section *ds = nullptr;
-  for (const auto &sec : sections) {
-    if (sec.Header.VirtualAddress <= clrd->VirtualAddress &&
-        clrd->VirtualAddress < sec.Header.VirtualAddress + sec.Header.VirtualSize) {
-      ds = &sec;
-    }
-  }
-  if (ds == nullptr) {
+  auto sec = getSection(clrd);
+  if (sec == nullptr) {
     return true;
   }
-
   std::vector<char> sdata;
-  if (!readSectionData(*ds, sdata)) {
+  if (!readSectionData(*sec, sdata)) {
     ec = bela::make_error_code(L"unable read section data");
     return false;
   }
-  auto N = clrd->VirtualAddress - ds->Header.VirtualAddress;
+  auto N = clrd->VirtualAddress - sec->VirtualAddress;
   std::string_view sv{sdata.data() + N, sdata.size() - N};
   if (sv.size() < sizeof(IMAGE_COR20_HEADER)) {
     return false;
   }
   auto cr = reinterpret_cast<const IMAGE_COR20_HEADER *>(sv.data());
-  N = cr->MetaData.VirtualAddress - ds->Header.VirtualAddress;
+  N = cr->MetaData.VirtualAddress - sec->VirtualAddress;
   std::string_view sv2{sdata.data() + N, sdata.size() - N};
   if (sv.size() < sizeof(STORAGESIGNATURE)) {
     return false;

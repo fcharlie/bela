@@ -117,6 +117,7 @@ struct DataDirectory {
   uint32_t Size;
 };
 
+constexpr uint32_t NumberOfDirectoryEntries = 16;
 struct OptionalHeader32 {
   uint16_t Magic;
   uint8_t MajorLinkerVersion;
@@ -148,7 +149,7 @@ struct OptionalHeader32 {
   uint32_t SizeOfHeapCommit;
   uint32_t LoaderFlags;
   uint32_t NumberOfRvaAndSizes;
-  DataDirectory DataDirectory[16];
+  DataDirectory DataDirectory[NumberOfDirectoryEntries];
 };
 
 struct OptionalHeader64 {
@@ -181,7 +182,7 @@ struct OptionalHeader64 {
   uint64_t SizeOfHeapCommit;
   uint32_t LoaderFlags;
   uint32_t NumberOfRvaAndSizes;
-  DataDirectory DataDirectory[16];
+  DataDirectory DataDirectory[NumberOfDirectoryEntries];
 };
 
 struct SectionHeader32 {
@@ -224,7 +225,7 @@ struct STORAGESIGNATURE {
 
 #pragma pack()
 
-struct SectionHeader {
+struct Section {
   std::string Name; // UTF-8
   uint32_t VirtualSize;
   uint32_t VirtualAddress;
@@ -235,10 +236,6 @@ struct SectionHeader {
   uint16_t NumberOfRelocations;
   uint16_t NumberOfLineNumbers;
   uint32_t Characteristics;
-};
-
-struct Section {
-  SectionHeader Header;
   std::vector<Reloc> Relocs;
 };
 
@@ -339,7 +336,6 @@ struct FileInfo {
 // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
 class File {
 private:
-  bool ParseFile(bela::error_code &ec);
   bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
     DWORD dwSize = {0};
     if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
@@ -373,7 +369,36 @@ private:
     }
     return ReadFull(buffer, len, ec);
   }
+  bool parseFile(bela::error_code &ec);
   std::string sectionFullName(SectionHeader32 &sh) const;
+  const DataDirectory *getDataDirectory(uint32_t dirIndex) const {
+    if (dirIndex >= NumberOfDirectoryEntries) {
+      return nullptr;
+    }
+    uint32_t ddlen = 0;
+    const DataDirectory *dd = nullptr;
+    if (is64bit) {
+      ddlen = oh.NumberOfRvaAndSizes;
+      dd = &(oh.DataDirectory[dirIndex]);
+    } else {
+      auto oh3 = reinterpret_cast<const OptionalHeader32 *>(&oh);
+      ddlen = oh3->NumberOfRvaAndSizes;
+      dd = &(oh3->DataDirectory[dirIndex]);
+    }
+    if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || dd->VirtualAddress == 0) {
+      return nullptr;
+    }
+    return dd;
+  }
+  const Section *getSection(const DataDirectory *dd) const {
+    for (const auto &section : sections) {
+      if (section.VirtualAddress <= dd->VirtualAddress &&
+          dd->VirtualAddress < section.VirtualAddress + section.VirtualSize) {
+        return &section;
+      }
+    }
+    return nullptr;
+  }
   bool readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const;
   bool readRelocs(Section &sec) const;
   bool readSectionData(const Section &sec, std::vector<char> &data) const;
@@ -432,7 +457,7 @@ public:
     }
     fd = fd_;
     size = sz;
-    return ParseFile(ec);
+    return parseFile(ec);
   }
   int64_t Size() const { return size; }
   int64_t OverlayOffset() const { return overlayOffset; }

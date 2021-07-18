@@ -27,7 +27,7 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stdout, L"Subsystem %d\n", file.Oh64()->Subsystem);
   }
   for (const auto &sec : file.Sections()) {
-    bela::FPrintF(stdout, L"Section: %s VirtualAddress: %d\n", sec.Header.Name, sec.Header.VirtualAddress);
+    bela::FPrintF(stdout, L"Section: %s VirtualAddress: %d\n", sec.Name, sec.VirtualAddress);
   }
   bela::pe::SymbolSearcher sse(argv[1], file.Machine());
   bela::pe::FunctionTable ft;

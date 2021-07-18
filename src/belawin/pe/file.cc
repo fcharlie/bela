@@ -107,7 +107,7 @@ inline void fromle(SectionHeader32 &sh) {
   }
 }
 
-bool File::ParseFile(bela::error_code &ec) {
+bool File::parseFile(bela::error_code &ec) {
   if (size == SizeUnInitialized) {
     if ((size = bela::os::file::Size(fd, ec)) == bela::SizeUnInitialized) {
       return false;
@@ -154,28 +154,27 @@ bool File::ParseFile(bela::error_code &ec) {
     }
     fromle(reinterpret_cast<OptionalHeader32 *>(&oh));
   }
-  sections.reserve(fh.NumberOfSections);
+  sections.resize(fh.NumberOfSections);
   for (int i = 0; i < fh.NumberOfSections; i++) {
     SectionHeader32 sh;
     if (!ReadFull(&sh, sizeof(SectionHeader32), ec)) {
       return false;
     }
     fromle(sh);
-    Section sec;
-    sec.Header.Name = sectionFullName(sh);
-    sec.Header.VirtualSize = sh.VirtualSize;
-    sec.Header.VirtualAddress = sh.VirtualAddress;
-    sec.Header.Size = sh.SizeOfRawData;
-    sec.Header.Offset = sh.PointerToRawData;
-    sec.Header.PointerToRelocations = sh.PointerToRelocations;
-    sec.Header.PointerToLineNumbers = sh.PointerToLineNumbers;
-    sec.Header.NumberOfRelocations = sh.NumberOfRelocations;
-    sec.Header.NumberOfLineNumbers = sh.NumberOfLineNumbers;
-    sec.Header.Characteristics = sh.Characteristics;
-    if (auto sectionEnd = static_cast<int64_t>(sec.Header.Offset + sec.Header.Size); sectionEnd > overlayOffset) {
+    auto sec = &sections[i];
+    sec->Name = sectionFullName(sh);
+    sec->VirtualSize = sh.VirtualSize;
+    sec->VirtualAddress = sh.VirtualAddress;
+    sec->Size = sh.SizeOfRawData;
+    sec->Offset = sh.PointerToRawData;
+    sec->PointerToRelocations = sh.PointerToRelocations;
+    sec->PointerToLineNumbers = sh.PointerToLineNumbers;
+    sec->NumberOfRelocations = sh.NumberOfRelocations;
+    sec->NumberOfLineNumbers = sh.NumberOfLineNumbers;
+    sec->Characteristics = sh.Characteristics;
+    if (auto sectionEnd = static_cast<int64_t>(sec->Offset + sec->Size); sectionEnd > overlayOffset) {
       overlayOffset = sectionEnd;
     }
-    sections.emplace_back(std::move(sec));
   }
   for (auto &sec : sections) {
     readRelocs(sec);
@@ -196,7 +195,7 @@ bool File::NewFile(std::wstring_view p, bela::error_code &ec) {
     return false;
   }
   needClosed = true;
-  return ParseFile(ec);
+  return parseFile(ec);
 }
 
 uint16_t getFunctionHit(std::vector<char> &section, int start) {
@@ -207,35 +206,20 @@ uint16_t getFunctionHit(std::vector<char> &section, int start) {
 }
 
 bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec) const {
-  uint32_t ddlen = 0;
-  const DataDirectory *exd = nullptr;
-  if (is64bit) {
-    ddlen = oh.NumberOfRvaAndSizes;
-    exd = &(oh.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-  } else {
-    auto oh3 = reinterpret_cast<const OptionalHeader32 *>(&oh);
-    ddlen = oh3->NumberOfRvaAndSizes;
-    exd = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-  }
-  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || exd->VirtualAddress == 0) {
+  auto dd = getDataDirectory(IMAGE_DIRECTORY_ENTRY_EXPORT);
+  if (dd == nullptr) {
     return true;
   }
-  const Section *ds = nullptr;
-  for (const auto &sec : sections) {
-    if (sec.Header.VirtualAddress <= exd->VirtualAddress &&
-        exd->VirtualAddress < sec.Header.VirtualAddress + sec.Header.VirtualSize) {
-      ds = &sec;
-    }
-  }
-  if (ds == nullptr) {
+  auto sec = getSection(dd);
+  if (sec == nullptr) {
     return true;
   }
   std::vector<char> sdata;
-  if (!readSectionData(*ds, sdata)) {
+  if (!readSectionData(*sec, sdata)) {
     ec = bela::make_error_code(L"unable read section data");
     return false;
   }
-  auto N = exd->VirtualAddress - ds->Header.VirtualAddress;
+  auto N = dd->VirtualAddress - sec->VirtualAddress;
   std::string_view sdv{sdata.data() + N, sdata.size() - N};
   if (sdv.size() < sizeof(IMAGE_EXPORT_DIRECTORY)) {
     return true;
@@ -262,9 +246,9 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
   }
   auto ordinalBase = static_cast<uint16_t>(ied.Base);
   exports.resize(ied.NumberOfNames);
-  if (ied.AddressOfNameOrdinals > ds->Header.VirtualAddress &&
-      ied.AddressOfNameOrdinals < ds->Header.VirtualAddress + ds->Header.VirtualSize) {
-    auto L = ied.AddressOfNameOrdinals - ds->Header.VirtualAddress;
+  if (ied.AddressOfNameOrdinals > sec->VirtualAddress &&
+      ied.AddressOfNameOrdinals < sec->VirtualAddress + sec->VirtualSize) {
+    auto L = ied.AddressOfNameOrdinals - sec->VirtualAddress;
     auto sv = std::string_view{sdata.data() + L, sdata.size() - L};
     if (sv.size() > exports.size() * 2) {
       for (size_t i = 0; i < exports.size(); i++) {
@@ -273,20 +257,18 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
       }
     }
   }
-  if (ied.AddressOfNames > ds->Header.VirtualAddress &&
-      ied.AddressOfNames < ds->Header.VirtualAddress + ds->Header.VirtualSize) {
-    auto N = ied.AddressOfNames - ds->Header.VirtualAddress;
+  if (ied.AddressOfNames > sec->VirtualAddress && ied.AddressOfNames < sec->VirtualAddress + sec->VirtualSize) {
+    auto N = ied.AddressOfNames - sec->VirtualAddress;
     auto sv = std::string_view{sdata.data() + N, sdata.size() - N};
     if (sv.size() >= exports.size() * 4) {
       for (size_t i = 0; i < exports.size(); i++) {
-        auto start = bela::cast_fromle<uint32_t>(sv.data() + i * 4) - ds->Header.VirtualAddress;
+        auto start = bela::cast_fromle<uint32_t>(sv.data() + i * 4) - sec->VirtualAddress;
         exports[i].Name = getString(sdata, start);
       }
     }
   }
-  if (ied.AddressOfFunctions > ds->Header.VirtualAddress &&
-      ied.AddressOfFunctions < ds->Header.VirtualAddress + ds->Header.VirtualSize) {
-    auto L = ied.AddressOfFunctions - ds->Header.VirtualAddress;
+  if (ied.AddressOfFunctions > sec->VirtualAddress && ied.AddressOfFunctions < sec->VirtualAddress + sec->VirtualSize) {
+    auto L = ied.AddressOfFunctions - sec->VirtualAddress;
     for (size_t i = 0; i < exports.size(); i++) {
       auto sv = std::string_view{sdata.data() + L, sdata.size() - L};
       if (sv.size() > static_cast<size_t>(exports[i].Ordinal * 4 + 4)) {
@@ -305,35 +287,20 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
 // Delay imports
 // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#delay-load-import-tables-image-only
 bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const {
-  uint32_t ddlen = 0;
-  const DataDirectory *delay = nullptr;
-  if (is64bit) {
-    ddlen = oh.NumberOfRvaAndSizes;
-    delay = &(oh.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
-  } else {
-    auto oh3 = reinterpret_cast<const OptionalHeader32 *>(&oh);
-    ddlen = oh3->NumberOfRvaAndSizes;
-    delay = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]);
-  }
-  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || delay->VirtualAddress == 0) {
+  auto delay = getDataDirectory(IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
+  if (delay == nullptr) {
     return true;
   }
-  const Section *ds = nullptr;
-  for (const auto &sec : sections) {
-    if (sec.Header.VirtualAddress <= delay->VirtualAddress &&
-        delay->VirtualAddress < sec.Header.VirtualAddress + sec.Header.VirtualSize) {
-      ds = &sec;
-    }
-  }
-  if (ds == nullptr) {
+  auto sec = getSection(delay);
+  if (sec == nullptr) {
     return true;
   }
   std::vector<char> sdata;
-  if (!readSectionData(*ds, sdata)) {
+  if (!readSectionData(*sec, sdata)) {
     ec = bela::make_error_code(L"unable read section data");
     return false;
   }
-  auto N = delay->VirtualAddress - ds->Header.VirtualAddress;
+  auto N = delay->VirtualAddress - sec->VirtualAddress;
   std::string_view sdv{sdata.data() + N, sdata.size() - N};
 
   constexpr size_t dslen = sizeof(IMAGE_DELAYLOAD_DESCRIPTOR);
@@ -357,12 +324,11 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
   }
   auto ptrsize = is64bit ? sizeof(uint64_t) : sizeof(uint32_t);
   for (auto &dt : ida) {
-    dt.DllName = getString(sdata, int(dt.DllNameRVA - ds->Header.VirtualAddress));
-    if (dt.ImportNameTableRVA < ds->Header.VirtualAddress ||
-        dt.ImportNameTableRVA > ds->Header.VirtualAddress + ds->Header.VirtualSize) {
+    dt.DllName = getString(sdata, int(dt.DllNameRVA - sec->VirtualAddress));
+    if (dt.ImportNameTableRVA < sec->VirtualAddress || dt.ImportNameTableRVA > sec->VirtualAddress + sec->VirtualSize) {
       break;
     }
-    uint32_t L = dt.ImportNameTableRVA - ds->Header.VirtualAddress;
+    uint32_t L = dt.ImportNameTableRVA - sec->VirtualAddress;
 
     std::string_view d{sdata.data() + L, sdata.size() - L};
     std::vector<Function> functions;
@@ -379,8 +345,8 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
           functions.emplace_back("", 0, static_cast<int>(ordinal));
           // TODO add dynimport ordinal support.
         } else {
-          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va)) - ds->Header.VirtualAddress + 2);
-          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint64_t>(va)) - ds->Header.VirtualAddress);
+          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va)) - sec->VirtualAddress + 2);
+          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint64_t>(va)) - sec->VirtualAddress);
           functions.emplace_back(fn, static_cast<int>(hit));
         }
       } else {
@@ -397,8 +363,8 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
           // TODO add dynimport ordinal support.
           // ord := va&0x0000FFFF
         } else {
-          auto fn = getString(sdata, static_cast<int>(va) - ds->Header.VirtualAddress + 2);
-          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint32_t>(va)) - ds->Header.VirtualAddress);
+          auto fn = getString(sdata, static_cast<int>(va) - sec->VirtualAddress + 2);
+          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint32_t>(va)) - sec->VirtualAddress);
           functions.emplace_back(fn, static_cast<int>(hit));
         }
       }
@@ -412,35 +378,20 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
 }
 
 bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const {
-  uint32_t ddlen = 0;
-  const DataDirectory *idd = nullptr;
-  if (is64bit) {
-    ddlen = oh.NumberOfRvaAndSizes;
-    idd = &(oh.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
-  } else {
-    auto oh3 = reinterpret_cast<const OptionalHeader32 *>(&oh);
-    ddlen = oh3->NumberOfRvaAndSizes;
-    idd = &(oh3->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]);
-  }
-  if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || idd->VirtualAddress == 0) {
+  auto dd = getDataDirectory(IMAGE_DIRECTORY_ENTRY_IMPORT);
+  if (dd == nullptr) {
     return true;
   }
-  const Section *ds = nullptr;
-  for (const auto &sec : sections) {
-    if (sec.Header.VirtualAddress <= idd->VirtualAddress &&
-        idd->VirtualAddress < sec.Header.VirtualAddress + sec.Header.VirtualSize) {
-      ds = &sec;
-    }
-  }
-  if (ds == nullptr) {
+  auto sec = getSection(dd);
+  if (sec == nullptr) {
     return true;
   }
   std::vector<char> sdata;
-  if (!readSectionData(*ds, sdata)) {
+  if (!readSectionData(*sec, sdata)) {
     ec = bela::make_error_code(L"unable read section data");
     return false;
   }
-  auto N = idd->VirtualAddress - ds->Header.VirtualAddress;
+  auto N = dd->VirtualAddress - sec->VirtualAddress;
   std::string_view sv{sdata.data() + N, sdata.size() - N};
   std::vector<ImportDirectory> ida;
   while (sv.size() > 20) {
@@ -459,12 +410,12 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
   }
   auto ptrsize = is64bit ? sizeof(uint64_t) : sizeof(uint32_t);
   for (auto &dt : ida) {
-    dt.DllName = getString(sdata, int(dt.Name - ds->Header.VirtualAddress));
+    dt.DllName = getString(sdata, int(dt.Name - sec->VirtualAddress));
     auto T = dt.OriginalFirstThunk == 0 ? dt.FirstThunk : dt.OriginalFirstThunk;
-    if (T < ds->Header.VirtualAddress) {
+    if (T < sec->VirtualAddress) {
       break;
     }
-    auto N = T - ds->Header.VirtualAddress;
+    auto N = T - sec->VirtualAddress;
     std::string_view d{sdata.data() + N, sdata.size() - N};
     std::vector<Function> functions;
     while (d.size() >= ptrsize) {
@@ -480,8 +431,8 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
           functions.emplace_back("", 0, static_cast<int>(ordinal));
           // TODO add dynimport ordinal support.
         } else {
-          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va)) - ds->Header.VirtualAddress + 2);
-          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint64_t>(va)) - ds->Header.VirtualAddress);
+          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va)) - sec->VirtualAddress + 2);
+          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint64_t>(va)) - sec->VirtualAddress);
           functions.emplace_back(fn, static_cast<int>(hit));
         }
       } else {
@@ -498,8 +449,8 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
           // TODO add dynimport ordinal support.
           // ord := va&0x0000FFFF
         } else {
-          auto fn = getString(sdata, static_cast<int>(va) - ds->Header.VirtualAddress + 2);
-          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint32_t>(va)) - ds->Header.VirtualAddress);
+          auto fn = getString(sdata, static_cast<int>(va) - sec->VirtualAddress + 2);
+          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint32_t>(va)) - sec->VirtualAddress);
           functions.emplace_back(fn, static_cast<int>(hit));
         }
       }

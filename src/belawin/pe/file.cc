@@ -206,20 +206,21 @@ uint16_t getFunctionHit(std::vector<char> &section, int start) {
 }
 
 bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec) const {
-  auto dd = getDataDirectory(IMAGE_DIRECTORY_ENTRY_EXPORT);
-  if (dd == nullptr) {
+  auto exd = getDataDirectory(IMAGE_DIRECTORY_ENTRY_EXPORT);
+  if (exd == nullptr) {
     return true;
   }
-  auto sec = getSection(dd);
-  if (sec == nullptr) {
+  auto ds = getSection(exd);
+  if (ds == nullptr) {
     return true;
   }
   std::vector<char> sdata;
-  if (!readSectionData(*sec, sdata)) {
+  if (!readSectionData(*ds, sdata)) {
     ec = bela::make_error_code(L"unable read section data");
     return false;
   }
-  auto N = dd->VirtualAddress - sec->VirtualAddress;
+  // seek to the virtual address specified in the export data directory
+  auto N = exd->VirtualAddress - ds->VirtualAddress;
   std::string_view sdv{sdata.data() + N, sdata.size() - N};
   if (sdv.size() < sizeof(IMAGE_EXPORT_DIRECTORY)) {
     return true;
@@ -246,9 +247,9 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
   }
   auto ordinalBase = static_cast<uint16_t>(ied.Base);
   exports.resize(ied.NumberOfNames);
-  if (ied.AddressOfNameOrdinals > sec->VirtualAddress &&
-      ied.AddressOfNameOrdinals < sec->VirtualAddress + sec->VirtualSize) {
-    auto L = ied.AddressOfNameOrdinals - sec->VirtualAddress;
+  if (ied.AddressOfNameOrdinals > ds->VirtualAddress &&
+      ied.AddressOfNameOrdinals < ds->VirtualAddress + ds->VirtualSize) {
+    auto L = ied.AddressOfNameOrdinals - ds->VirtualAddress;
     auto sv = std::string_view{sdata.data() + L, sdata.size() - L};
     if (sv.size() > exports.size() * 2) {
       for (size_t i = 0; i < exports.size(); i++) {
@@ -257,18 +258,18 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
       }
     }
   }
-  if (ied.AddressOfNames > sec->VirtualAddress && ied.AddressOfNames < sec->VirtualAddress + sec->VirtualSize) {
-    auto N = ied.AddressOfNames - sec->VirtualAddress;
+  if (ied.AddressOfNames > ds->VirtualAddress && ied.AddressOfNames < ds->VirtualAddress + ds->VirtualSize) {
+    auto N = ied.AddressOfNames - ds->VirtualAddress;
     auto sv = std::string_view{sdata.data() + N, sdata.size() - N};
     if (sv.size() >= exports.size() * 4) {
       for (size_t i = 0; i < exports.size(); i++) {
-        auto start = bela::cast_fromle<uint32_t>(sv.data() + i * 4) - sec->VirtualAddress;
+        auto start = bela::cast_fromle<uint32_t>(sv.data() + i * 4) - ds->VirtualAddress;
         exports[i].Name = getString(sdata, start);
       }
     }
   }
-  if (ied.AddressOfFunctions > sec->VirtualAddress && ied.AddressOfFunctions < sec->VirtualAddress + sec->VirtualSize) {
-    auto L = ied.AddressOfFunctions - sec->VirtualAddress;
+  if (ied.AddressOfFunctions > ds->VirtualAddress && ied.AddressOfFunctions < ds->VirtualAddress + ds->VirtualSize) {
+    auto L = ied.AddressOfFunctions - ds->VirtualAddress;
     for (size_t i = 0; i < exports.size(); i++) {
       auto sv = std::string_view{sdata.data() + L, sdata.size() - L};
       if (sv.size() > static_cast<size_t>(exports[i].Ordinal * 4 + 4)) {
@@ -300,6 +301,7 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
     ec = bela::make_error_code(L"unable read section data");
     return false;
   }
+  // seek to the virtual address specified in the delay import data directory
   auto N = delay->VirtualAddress - sec->VirtualAddress;
   std::string_view sdv{sdata.data() + N, sdata.size() - N};
 
@@ -378,20 +380,21 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
 }
 
 bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const {
-  auto dd = getDataDirectory(IMAGE_DIRECTORY_ENTRY_IMPORT);
-  if (dd == nullptr) {
+  auto idd = getDataDirectory(IMAGE_DIRECTORY_ENTRY_IMPORT);
+  if (idd == nullptr) {
     return true;
   }
-  auto sec = getSection(dd);
-  if (sec == nullptr) {
+  auto ds = getSection(idd);
+  if (ds == nullptr) {
     return true;
   }
   std::vector<char> sdata;
-  if (!readSectionData(*sec, sdata)) {
+  if (!readSectionData(*ds, sdata)) {
     ec = bela::make_error_code(L"unable read section data");
     return false;
   }
-  auto N = dd->VirtualAddress - sec->VirtualAddress;
+  // seek to the virtual address specified in the import data directory
+  auto N = idd->VirtualAddress - ds->VirtualAddress;
   std::string_view sv{sdata.data() + N, sdata.size() - N};
   std::vector<ImportDirectory> ida;
   while (sv.size() > 20) {
@@ -410,12 +413,12 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
   }
   auto ptrsize = is64bit ? sizeof(uint64_t) : sizeof(uint32_t);
   for (auto &dt : ida) {
-    dt.DllName = getString(sdata, int(dt.Name - sec->VirtualAddress));
+    dt.DllName = getString(sdata, int(dt.Name - ds->VirtualAddress));
     auto T = dt.OriginalFirstThunk == 0 ? dt.FirstThunk : dt.OriginalFirstThunk;
-    if (T < sec->VirtualAddress) {
+    if (T < ds->VirtualAddress) {
       break;
     }
-    auto N = T - sec->VirtualAddress;
+    auto N = T - ds->VirtualAddress;
     std::string_view d{sdata.data() + N, sdata.size() - N};
     std::vector<Function> functions;
     while (d.size() >= ptrsize) {
@@ -431,8 +434,8 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
           functions.emplace_back("", 0, static_cast<int>(ordinal));
           // TODO add dynimport ordinal support.
         } else {
-          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va)) - sec->VirtualAddress + 2);
-          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint64_t>(va)) - sec->VirtualAddress);
+          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va)) - ds->VirtualAddress + 2);
+          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint64_t>(va)) - ds->VirtualAddress);
           functions.emplace_back(fn, static_cast<int>(hit));
         }
       } else {
@@ -449,8 +452,8 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
           // TODO add dynimport ordinal support.
           // ord := va&0x0000FFFF
         } else {
-          auto fn = getString(sdata, static_cast<int>(va) - sec->VirtualAddress + 2);
-          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint32_t>(va)) - sec->VirtualAddress);
+          auto fn = getString(sdata, static_cast<int>(va) - ds->VirtualAddress + 2);
+          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint32_t>(va)) - ds->VirtualAddress);
           functions.emplace_back(fn, static_cast<int>(hit));
         }
       }

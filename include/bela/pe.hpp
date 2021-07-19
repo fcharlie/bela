@@ -79,8 +79,8 @@ enum class Subsystem : uint16_t {
   WINDOWS_BOOT_APPLICATION = 16,
   XBOX_CODE_CATALOG = 17
 };
-#pragma pack(1)
 
+#pragma pack(push, 1)
 struct DosHeader {     // DOS .EXE header
   uint16_t e_magic;    // Magic number
   uint16_t e_cblp;     // Bytes on last page of file
@@ -213,17 +213,7 @@ struct COFFSymbol {
   uint8_t StorageClass;
   uint8_t NumberOfAuxSymbols;
 };
-
-#define STORAGE_MAGIC_SIG 0x424A5342 // BSJB
-struct STORAGESIGNATURE {
-  uint32_t lSignature;     // "Magic" signature.
-  uint16_t iMajorVer;      // Major file version.
-  uint16_t iMinorVer;      // Minor file version.
-  uint32_t iExtraData;     // Offset to next structure of information
-  uint32_t iVersionString; // Length of version string
-};
-
-#pragma pack()
+#pragma pack(pop)
 
 struct Section {
   std::string Name; // UTF-8
@@ -240,6 +230,7 @@ struct Section {
 };
 
 constexpr uint32_t COFFSymbolSize = sizeof(COFFSymbol);
+constexpr int64_t SectionSizeLimit = 1024 * 1024 * 1024;
 
 // StringTable: Programs written in golang will customize stringtable
 struct StringTable {
@@ -332,6 +323,12 @@ struct FileInfo {
   DWORD dwFileDateLS;       /* e.g. 0 */
 };
 
+struct DotNetMetadata {
+  std::string version;
+  std::string flags;
+  std::vector<std::string> imports;
+};
+
 // PE File resolve
 // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
 class File {
@@ -377,6 +374,8 @@ private:
     }
     uint32_t ddlen = 0;
     const DataDirectory *dd = nullptr;
+    // grab the number of data directory entries
+    // grab the $dirIndex data directory entry
     if (is64bit) {
       ddlen = oh.NumberOfRvaAndSizes;
       dd = &(oh.DataDirectory[dirIndex]);
@@ -385,18 +384,29 @@ private:
       ddlen = oh3->NumberOfRvaAndSizes;
       dd = &(oh3->DataDirectory[dirIndex]);
     }
-    if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1 || dd->VirtualAddress == 0) {
+    // check that the length of data directory entries is large
+    // enough to include the imports directory.
+    if (ddlen < IMAGE_DIRECTORY_ENTRY_IMPORT + 1) {
       return nullptr;
     }
     return dd;
   }
-  // Also, do not assume that the RVAs in this table point to the beginning of a section or that the sections that
-  // contain specific tables have specific names.
+  // getSection figure out which section contains the 'dd' directory table
   const Section *getSection(const DataDirectory *dd) const {
-    for (const auto &section : sections) {
-      if (section.VirtualAddress <= dd->VirtualAddress &&
-          dd->VirtualAddress < section.VirtualAddress + section.VirtualSize) {
-        return &section;
+    // Also, do not assume that the RVAs in this table point to the beginning of a section or that the sections that
+    // contain specific tables have specific names.
+    for (const auto &s : sections) {
+      if (s.VirtualAddress <= dd->VirtualAddress && dd->VirtualAddress < s.VirtualAddress + s.VirtualSize) {
+        return &s;
+      }
+    }
+    return nullptr;
+  }
+  // getSection by name
+  const Section *getSection(std::string_view name) const {
+    for (const auto &s : sections) {
+      if (s.Name == name) {
+        return &s;
       }
     }
     return nullptr;
@@ -437,10 +447,9 @@ public:
   bool LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec) const;
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
-  bool LookupClrVersion(std::string &ver, bela::error_code &ec) const;
   bool LookupOverlay(std::vector<char> &overlayData, bela::error_code &ec, int64_t limitsize = LimitOverlaySize) const;
-  bool LookupResource(bela::error_code &ec) const;
-  std::optional<Version> FileVersion(bela::error_code &ec) const;
+  std::optional<DotNetMetadata> LookupDotNetMetadata(bela::error_code &ec) const;
+  std::optional<Version> LookupVersion(bela::error_code &ec) const; // WIP
   const FileHeader &Fh() const { return fh; }
   const OptionalHeader64 *Oh64() const { return &oh; }
   const OptionalHeader32 *Oh32() const { return reinterpret_cast<const OptionalHeader32 *>(&oh); }

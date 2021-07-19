@@ -7,6 +7,9 @@ PE32 Format image (from: Wikipedia):
 
 ![](./images/pe32.svg)
 
+PE resource
+
+![](./image/07_pe_resource_manager.png)
 
 ## IsWow64Process2
 

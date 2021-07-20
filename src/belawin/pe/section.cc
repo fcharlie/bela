@@ -42,4 +42,10 @@ bool File::readSectionData(const Section &sec, std::vector<char> &data) const {
   return ReadAt(data.data(), sec.Size, sec.Offset, ec);
 }
 
+bool File::readSectionData(const Section &sec, SectionBuffer &sb) const {
+  bela::error_code ec;
+  sb.resize(sec.Size);
+  return ReadAt(sb.data(), sec.Size, sec.Offset, ec);
+}
+
 } // namespace bela::pe

@@ -7,7 +7,7 @@
 #include "types.hpp"
 
 namespace bela {
-
+// Buffer
 namespace buffer {
 template <typename T = uint8_t, typename Allocator = std::allocator<T>> class Buffer {
 private:

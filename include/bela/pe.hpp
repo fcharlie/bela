@@ -354,40 +354,27 @@ struct DotNetMetadata {
   std::vector<std::string> imports;
 };
 
-class SectionData {
+class SectionBuffer {
 public:
-  SectionData() = default;
-  size_t Resize(size_t len) {
-    rawdata.resize(len);
-    return rawdata.size();
-  }
+  SectionBuffer() = default;
+  void resize(size_t size) { rawdata.resize(size); }
   char *data() { return rawdata.data(); }
   const char *data() const { return rawdata.data(); } // read section
   size_t size() const { return rawdata.size(); }
-  std::string_view sv(size_t pos = 0) const {
+  std::string_view substr(size_t pos = 0) const {
     if (pos > rawdata.size()) {
       return std::string_view();
     }
     return std::string_view{rawdata.data() + pos, rawdata.size() - pos};
   }
-  std::string_view cstringview(int start) const {
-    if (start < 0 || static_cast<size_t>(start) > rawdata.size()) {
+  std::string_view cstring_view(size_t offset, size_t cslength = std::string_view::npos) const {
+    if (offset > rawdata.size()) {
       return std::string_view();
     }
-    for (auto end = static_cast<size_t>(start); end < rawdata.size(); end++) {
+    cslength = (std::min)(cslength, rawdata.size());
+    for (auto end = offset; end < cslength; end++) {
       if (rawdata[end] == 0) {
-        return std::string_view(rawdata.data() + start, end - start);
-      }
-    }
-    return std::string_view();
-  }
-  std::string_view cstringview(int start, int maxlen) const {
-    if (start < 0 || static_cast<size_t>(start) > rawdata.size()) {
-      return std::string_view();
-    }
-    for (auto end = static_cast<size_t>(start); end < rawdata.size(); end++) {
-      if (rawdata[end] == 0) {
-        return std::string_view(rawdata.data() + start, end - start);
+        return std::string_view(rawdata.data() + offset, end - offset);
       }
     }
     return std::string_view();
@@ -397,6 +384,18 @@ public:
       return nullptr;
     }
     return reinterpret_cast<const T *>(rawdata.data() + offset);
+  }
+  template <typename T> const T *bit_cast(T *t, size_t offset) const {
+    if (offset + sizeof(T) > rawdata.size()) {
+      return nullptr;
+    }
+    return reinterpret_cast<T *>(memcpy(t, rawdata.size() + offset, sizeof(T)));
+  }
+  uint16_t function_hit(int start) const {
+    if (start < 0 || static_cast<size_t>(start - 2) > rawdata.size()) {
+      return 0;
+    }
+    return bela::cast_frombe<uint16_t>(rawdata.data() + start);
   }
 
 private:
@@ -488,6 +487,7 @@ private:
   bool readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const;
   bool readRelocs(Section &sec) const;
   bool readSectionData(const Section &sec, std::vector<char> &data) const;
+  bool readSectionData(const Section &sec, SectionBuffer &sb) const;
   bool readStringTable(bela::error_code &ec);
   bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
   bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;

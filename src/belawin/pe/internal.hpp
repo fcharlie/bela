@@ -20,6 +20,7 @@ constexpr int DataDirIAT = 12;                   // Import address table.
 constexpr int DataDirDelayImportDescriptor = 13; // Delay import descriptor.
 constexpr int DataDirCLRHeader = 14;             // CLR header.
 constexpr int DataDirReserved = 15;              // Reserved.
+constexpr int DataDirEntries = 16;               // Tables count.
 
 inline std::string_view cstring_view(const char *data, size_t len) {
   std::string_view sv{data, len};
@@ -52,7 +53,6 @@ inline uint16_t getFunctionHit(std::vector<char> &section, int start) {
   }
   return bela::cast_fromle<uint16_t>(section.data() + start);
 }
-
 
 struct ImportDirectory {
   uint32_t OriginalFirstThunk;

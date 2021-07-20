@@ -354,6 +354,55 @@ struct DotNetMetadata {
   std::vector<std::string> imports;
 };
 
+class SectionData {
+public:
+  SectionData() = default;
+  size_t Resize(size_t len) {
+    rawdata.resize(len);
+    return rawdata.size();
+  }
+  char *data() { return rawdata.data(); }
+  const char *data() const { return rawdata.data(); } // read section
+  size_t size() const { return rawdata.size(); }
+  std::string_view sv(size_t pos = 0) const {
+    if (pos > rawdata.size()) {
+      return std::string_view();
+    }
+    return std::string_view{rawdata.data() + pos, rawdata.size() - pos};
+  }
+  std::string_view cstringview(int start) const {
+    if (start < 0 || static_cast<size_t>(start) > rawdata.size()) {
+      return std::string_view();
+    }
+    for (auto end = static_cast<size_t>(start); end < rawdata.size(); end++) {
+      if (rawdata[end] == 0) {
+        return std::string_view(rawdata.data() + start, end - start);
+      }
+    }
+    return std::string_view();
+  }
+  std::string_view cstringview(int start, int maxlen) const {
+    if (start < 0 || static_cast<size_t>(start) > rawdata.size()) {
+      return std::string_view();
+    }
+    for (auto end = static_cast<size_t>(start); end < rawdata.size(); end++) {
+      if (rawdata[end] == 0) {
+        return std::string_view(rawdata.data() + start, end - start);
+      }
+    }
+    return std::string_view();
+  }
+  template <typename T> const T *direct_cast(size_t offset) const {
+    if (offset + sizeof(T) > rawdata.size()) {
+      return nullptr;
+    }
+    return reinterpret_cast<const T *>(rawdata.data() + offset);
+  }
+
+private:
+  std::vector<char> rawdata;
+};
+
 // PE File resolve
 // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
 class File {

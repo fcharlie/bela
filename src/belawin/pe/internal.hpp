@@ -46,6 +46,14 @@ inline std::string getString(std::vector<char> &section, int start) {
   return "";
 }
 
+inline uint16_t getFunctionHit(std::vector<char> &section, int start) {
+  if (start < 0 || static_cast<size_t>(start - 2) > section.size()) {
+    return 0;
+  }
+  return bela::cast_fromle<uint16_t>(section.data() + start);
+}
+
+
 struct ImportDirectory {
   uint32_t OriginalFirstThunk;
   uint32_t TimeDateStamp;

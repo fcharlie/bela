@@ -80,6 +80,31 @@ enum class Subsystem : uint16_t {
   XBOX_CODE_CATALOG = 17
 };
 
+// https://docs.microsoft.com/en-us/windows/win32/menurc/resource-types
+enum ResourceTypes : uint32_t {
+  CURSOR = 1,        // Hardware-dependent cursor resource.
+  BITMAP = 2,        // Bitmap resource.
+  ICON = 3,          // Hardware-dependent icon resource.
+  MENU = 4,          // Menu resource.
+  DIALOG = 5,        // Dialog box.
+  STRING = 6,        // String-table entry.
+  FONTDIR = 7,       // Font directory resource.
+  FONT = 8,          // Font resource.
+  ACCELERATOR = 9,   // Accelerator table.
+  RCDATA = 10,       // Application-defined resource (raw data).
+  MESSAGETABLE = 11, // Message-table entry.
+  GROUP_CURSOR = 12, // Hardware-independent cursor resource.
+  GROUP_ICON = 13,   // Hardware-independent icon resource.
+  VERSION = 16,      // Version resource.
+  DLGINCLUDE = 17,   // Allows a resource editing tool to associate a string with an .rc file.
+  PLUGPLAY = 19,     // Plug and Play resource.
+  VXD = 20,          // VXD
+  ANICURSOR = 21,    // Animated cursor.
+  ANIICON = 22,      // Animated icon.
+  HTML = 23,         // HTML resource.
+  MANIFEST = 24,     // Side-by-Side Assembly Manifest.
+};
+
 #pragma pack(push, 1)
 struct DosHeader {     // DOS .EXE header
   uint16_t e_magic;    // Magic number
@@ -417,6 +442,8 @@ private:
   bool readStringTable(bela::error_code &ec);
   bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
   bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
+  bool lookupImports32(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
+  bool lookupImports64(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
 
 public:
   File() = default;

@@ -188,7 +188,7 @@ int wmain(int argc, wchar_t **argv) {
   if (file.OverlayLength() == 0) {
     return 0;
   }
-  if (file.OverlayLength() > 10240) {
+  if (file.OverlayLength() > 2048) {
     bela::FPrintF(stderr, L"Overlay: offset %d, length: %d\n", file.OverlayOffset(), file.OverlayLength());
     return 0;
   }

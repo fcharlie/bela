@@ -13,79 +13,68 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
   if (sec == nullptr) {
     return true;
   }
-  std::vector<char> sdata;
-  if (!readSectionData(*sec, sdata)) {
-    ec = bela::make_error_code(L"unable read section data");
+  auto sdata = readSectionData(*sec, ec);
+  if (!sdata) {
     return false;
   }
   // seek to the virtual address specified in the delay import data directory
-  auto N = delay->VirtualAddress - sec->VirtualAddress;
-  std::string_view sdv{sdata.data() + N, sdata.size() - N};
-
   constexpr size_t dslen = sizeof(IMAGE_DELAYLOAD_DESCRIPTOR);
-  std::vector<ImportDelayDirectory> ida;
-  while (sdv.size() > dslen) {
-    const auto dt = reinterpret_cast<const IMAGE_DELAYLOAD_DESCRIPTOR *>(sdv.data());
-    sdv.remove_prefix(dslen);
-    ImportDelayDirectory id;
+  size_t offset = delay->VirtualAddress - sec->VirtualAddress;
+  std::vector<image_delayload_descriptor> ida;
+  for (;;) {
+    auto dt = sdata->direct_cast<IMAGE_DELAYLOAD_DESCRIPTOR>(offset);
+    if (dt == nullptr) {
+      break;
+    }
+    offset += sizeof(IMAGE_DELAYLOAD_DESCRIPTOR);
+    image_delayload_descriptor id;
+    if (id.ModuleHandleRVA = bela::fromle(dt->ModuleHandleRVA); id.ModuleHandleRVA == 0) {
+      break;
+    }
     id.Attributes = bela::fromle(dt->Attributes.AllAttributes);
     id.DllNameRVA = bela::fromle(dt->DllNameRVA);
-    id.ModuleHandleRVA = bela::fromle(dt->ModuleHandleRVA);
     id.ImportAddressTableRVA = bela::fromle(dt->ImportAddressTableRVA);
     id.ImportNameTableRVA = bela::fromle(dt->ImportNameTableRVA);
     id.BoundImportAddressTableRVA = bela::fromle(dt->BoundImportAddressTableRVA);
     id.UnloadInformationTableRVA = bela::fromle(dt->UnloadInformationTableRVA);
     id.TimeDateStamp = bela::fromle(dt->TimeDateStamp);
-    if (id.ModuleHandleRVA == 0) {
-      break;
-    }
     ida.emplace_back(std::move(id));
   }
-  auto ptrsize = oh.Is64Bit ? sizeof(uint64_t) : sizeof(uint32_t);
   for (auto &dt : ida) {
-    dt.DllName = getString(sdata, int(dt.DllNameRVA - sec->VirtualAddress));
+    dt.DllName = sdata->cstring_view(dt.DllNameRVA - sec->VirtualAddress);
     if (dt.ImportNameTableRVA < sec->VirtualAddress || dt.ImportNameTableRVA > sec->VirtualAddress + sec->VirtualSize) {
       break;
     }
-    uint32_t L = dt.ImportNameTableRVA - sec->VirtualAddress;
-
-    std::string_view d{sdata.data() + L, sdata.size() - L};
+    size_t funcOffset = dt.ImportNameTableRVA - sec->VirtualAddress;
     std::vector<Function> functions;
-    while (d.size() >= ptrsize) {
-      if (oh.Is64Bit) {
-        auto va = bela::cast_fromle<uint64_t>(d.data());
-        d.remove_prefix(8);
+    if (oh.Is64Bit) {
+      for (;;) {
+        auto va = sdata->cast_fromle<uint64_t>(funcOffset);
+        funcOffset += sizeof(uint64_t);
         if (va == 0) {
           break;
         }
-        // IMAGE_ORDINAL_FLAG64
-        if ((va & 0x8000000000000000) > 0) {
-          auto ordinal = IMAGE_ORDINAL64(va);
-          functions.emplace_back("", 0, static_cast<int>(ordinal));
-          // TODO add dynimport ordinal support.
-        } else {
-          auto fn = getString(sdata, static_cast<int>(static_cast<uint64_t>(va)) - sec->VirtualAddress + 2);
-          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint64_t>(va)) - sec->VirtualAddress);
-          functions.emplace_back(fn, static_cast<int>(hit));
+        if ((va & IMAGE_ORDINAL_FLAG64) != 0) {
+          functions.emplace_back("", 0, static_cast<int>(IMAGE_ORDINAL64(va)));
+          continue;
         }
-      } else {
-        auto va = bela::cast_fromle<uint32_t>(d.data());
-        d.remove_prefix(4);
+        functions.emplace_back(
+            sdata->cstring_view(static_cast<size_t>(static_cast<uint64_t>(va) - sec->VirtualAddress + 2)),
+            sdata->cast_fromle<uint16_t>(static_cast<size_t>(static_cast<uint64_t>(va) - sec->VirtualAddress)));
+      }
+    } else {
+      for (;;) {
+        auto va = sdata->cast_fromle<uint32_t>(funcOffset);
+        funcOffset += sizeof(uint32_t);
         if (va == 0) {
           break;
         }
-        // IMAGE_ORDINAL_FLAG32
-        if ((va & 0x80000000) > 0) {
-          auto ordinal = IMAGE_ORDINAL32(va);
-          functions.emplace_back("", 0, static_cast<int>(ordinal));
-          // is Ordinal
-          // TODO add dynimport ordinal support.
-          // ord := va&0x0000FFFF
-        } else {
-          auto fn = getString(sdata, static_cast<int>(va) - sec->VirtualAddress + 2);
-          auto hit = getFunctionHit(sdata, static_cast<int>(static_cast<uint32_t>(va)) - sec->VirtualAddress);
-          functions.emplace_back(fn, static_cast<int>(hit));
+        if ((va & IMAGE_ORDINAL_FLAG32) != 0) {
+          functions.emplace_back("", 0, static_cast<int>(IMAGE_ORDINAL32(va)));
+          continue;
         }
+        functions.emplace_back(sdata->cstring_view(static_cast<size_t>(va - sec->VirtualAddress + 2)),
+                               sdata->cast_fromle<uint16_t>(static_cast<size_t>(va - sec->VirtualAddress)));
       }
     }
     std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {

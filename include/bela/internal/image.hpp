@@ -275,9 +275,7 @@ struct ExportedSymbol {
 };
 
 struct Function {
-  Function(std::string &&name, int index = 0, int ordinal = 0)
-      : Name(std::move(name)), Index(index), Ordinal(ordinal) {}
-  Function(const std::string &name, int index = 0, int ordinal = 0) : Name(name), Index(index), Ordinal(ordinal) {}
+  Function(const std::string_view name, int index = 0, int ordinal = 0) : Name(name), Index(index), Ordinal(ordinal) {}
   std::string Name;
   int Index{0};
   int Ordinal{0};
@@ -335,13 +333,14 @@ struct DotNetMetadata {
   std::vector<std::string> imports;
 };
 
-class SectionBuffer {
+class SectionData {
 public:
-  SectionBuffer() = default;
+  SectionData() = default;
   void resize(size_t size) { rawdata.resize(size); }
   char *data() { return rawdata.data(); }
   const char *data() const { return rawdata.data(); } // read section
   size_t size() const { return rawdata.size(); }
+  std::span<uint8_t> make_span() { return {reinterpret_cast<uint8_t *>(rawdata.data()), rawdata.size()}; }
   std::string_view substr(size_t pos = 0) const {
     if (pos > rawdata.size()) {
       return std::string_view();
@@ -376,7 +375,15 @@ public:
     if (offset + 2 > rawdata.size()) {
       return 0;
     }
-    return bela::cast_frombe<uint16_t>(rawdata.data() + offset);
+    return bela::cast_fromle<uint16_t>(rawdata.data() + offset);
+  }
+  template <typename T>
+  requires std::integral<T> T cast_fromle(size_t offset)
+  const {
+    if (offset + sizeof(T) > rawdata.size()) {
+      return 0;
+    }
+    return bela::cast_fromle<T>(rawdata.data() + offset);
   }
 
 private:

@@ -105,36 +105,33 @@ std::optional<DotNetMetadata> File::LookupDotNetMetadata(bela::error_code &ec) c
   if (sec == nullptr) {
     return std::nullopt;
   }
-  std::vector<char> sdata;
-  if (!readSectionData(*sec, sdata)) {
-    ec = bela::make_error_code(L"unable read section data");
+  auto sdata = readSectionData(*sec, ec);
+  if (!sdata) {
     return std::nullopt;
   }
   auto N = clrd->VirtualAddress - sec->VirtualAddress;
-  std::string_view sv{sdata.data() + N, sdata.size() - N};
-  if (sv.size() < sizeof(IMAGE_COR20_HEADER)) {
+  auto cr = sdata->direct_cast<IMAGE_COR20_HEADER>(N);
+  if (cr = nullptr) {
     return std::nullopt;
   }
-  auto cr = reinterpret_cast<const IMAGE_COR20_HEADER *>(sv.data());
-  if (cr->MetaData.VirtualAddress < sec->VirtualAddress) {
+  auto va = bela::fromle(cr->MetaData.VirtualAddress);
+  if (va < sec->VirtualAddress) {
     return std::nullopt;
   }
-  if ((N = cr->MetaData.VirtualAddress - sec->VirtualAddress) >= sec->Size) {
+  if ((N = va - sec->VirtualAddress) >= sec->Size) {
     // avoid bad data
     return std::nullopt;
   }
-  std::string_view sv2{sdata.data() + N, sdata.size() - N};
-  if (sv.size() < sizeof(STORAGESIGNATURE)) {
+  auto d = sdata->direct_cast<STORAGESIGNATURE>(N);
+  if (d == nullptr) {
     return std::nullopt;
   }
-  auto d = reinterpret_cast<const STORAGESIGNATURE *>(sv2.data());
-  STORAGESIGNATURE ssi = {0};
   if (bela::fromle(d->lSignature) != STORAGE_MAGIC_SIG) {
     return std::nullopt;
   }
   DotNetMetadata dm;
   FlagsToText(cr, dm.flags);
-  dm.version = getString(sdata, N + sizeof(STORAGESIGNATURE));
+  dm.version = sdata->cstring_view(N + sizeof(STORAGESIGNATURE));
   return std::make_optional(std::move(dm));
 }
 

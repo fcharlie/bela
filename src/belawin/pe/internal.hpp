@@ -37,7 +37,7 @@ inline uint16_t getFunctionHit(std::vector<char> &section, int start) {
   return bela::cast_fromle<uint16_t>(section.data() + start);
 }
 
-struct ImportDirectory {
+struct image_import_descriptor {
   uint32_t OriginalFirstThunk;
   uint32_t TimeDateStamp;
   uint32_t ForwarderChain;
@@ -47,7 +47,7 @@ struct ImportDirectory {
   std::string DllName;
 };
 
-struct ImportDelayDirectory {
+struct image_delayload_descriptor {
   uint32_t Attributes;
   uint32_t DllNameRVA;
   uint32_t ModuleHandleRVA;

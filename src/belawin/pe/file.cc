@@ -169,6 +169,7 @@ bool File::parseFile(bela::error_code &ec) {
   if (oh.Is64Bit) {
     IMAGE_OPTIONAL_HEADER64 oh64;
     if (!readAt(oh64, base + sizeof(FileHeader), ec)) {
+      ec = bela::make_error_code(ErrGeneral, L"pe: not a valid pe file ", ec.message);
       return false;
     }
     fromle(&oh, &oh64);
@@ -205,7 +206,6 @@ bool File::parseFile(bela::error_code &ec) {
   for (auto &sec : sections) {
     readRelocs(sec);
   }
-
   return true;
 }
 

@@ -12,22 +12,20 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
   if (ds == nullptr) {
     return true;
   }
-  std::vector<char> sdata;
-  if (!readSectionData(*ds, sdata)) {
-    ec = bela::make_error_code(L"unable read section data");
+  auto sdata = readSectionData(*ds, ec);
+  if (!sdata) {
     return false;
   }
   // seek to the virtual address specified in the export data directory
   auto N = exd->VirtualAddress - ds->VirtualAddress;
-  std::string_view sdv{sdata.data() + N, sdata.size() - N};
-  if (sdv.size() < sizeof(IMAGE_EXPORT_DIRECTORY)) {
+  auto cied = sdata->direct_cast<IMAGE_EXPORT_DIRECTORY>(N);
+  if (cied == nullptr) {
     return true;
   }
   IMAGE_EXPORT_DIRECTORY ied;
   if constexpr (bela::IsLittleEndian()) {
-    memcpy(&ied, sdv.data(), sizeof(IMAGE_EXPORT_DIRECTORY));
+    memcpy(&ied, cied, sizeof(IMAGE_EXPORT_DIRECTORY));
   } else {
-    auto cied = reinterpret_cast<const IMAGE_EXPORT_DIRECTORY *>(sdv.data());
     ied.Characteristics = bela::fromle(cied->Characteristics);
     ied.TimeDateStamp = bela::fromle(cied->TimeDateStamp);
     ied.MajorVersion = bela::fromle(cied->MajorVersion);
@@ -48,31 +46,26 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
   if (ied.AddressOfNameOrdinals > ds->VirtualAddress &&
       ied.AddressOfNameOrdinals < ds->VirtualAddress + ds->VirtualSize) {
     auto L = ied.AddressOfNameOrdinals - ds->VirtualAddress;
-    auto sv = std::string_view{sdata.data() + L, sdata.size() - L};
-    if (sv.size() > exports.size() * 2) {
+    if (sdata->size() - L > exports.size() * 2) {
       for (size_t i = 0; i < exports.size(); i++) {
-        exports[i].Ordinal = bela::cast_fromle<uint16_t>(sv.data() + i * 2) + ordinalBase;
+        exports[i].Ordinal = sdata->cast_fromle<uint16_t>(L + i * 2) + ordinalBase;
         exports[i].Hint = static_cast<int>(i);
       }
     }
   }
   if (ied.AddressOfNames > ds->VirtualAddress && ied.AddressOfNames < ds->VirtualAddress + ds->VirtualSize) {
     auto N = ied.AddressOfNames - ds->VirtualAddress;
-    auto sv = std::string_view{sdata.data() + N, sdata.size() - N};
-    if (sv.size() >= exports.size() * 4) {
+    if (sdata->size() - N >= exports.size() * 4) {
       for (size_t i = 0; i < exports.size(); i++) {
-        auto start = bela::cast_fromle<uint32_t>(sv.data() + i * 4) - ds->VirtualAddress;
-        exports[i].Name = getString(sdata, start);
+        exports[i].Name = sdata->cstring_view(sdata->cast_fromle<uint32_t>(N + i * 4) - ds->VirtualAddress);
       }
     }
   }
   if (ied.AddressOfFunctions > ds->VirtualAddress && ied.AddressOfFunctions < ds->VirtualAddress + ds->VirtualSize) {
     auto L = ied.AddressOfFunctions - ds->VirtualAddress;
     for (size_t i = 0; i < exports.size(); i++) {
-      auto sv = std::string_view{sdata.data() + L, sdata.size() - L};
-      if (sv.size() > static_cast<size_t>(exports[i].Ordinal * 4 + 4)) {
-        exports[i].Address =
-            bela::cast_fromle<uint32_t>(sv.data() + static_cast<int>(exports[i].Ordinal - ordinalBase) * 4);
+      if (sdata->size() - L > static_cast<size_t>(exports[i].Ordinal * 4 + 4)) {
+        exports[i].Address = sdata->cast_fromle<uint32_t>(L + static_cast<int>(exports[i].Ordinal - ordinalBase) * 4);
       }
     }
   }

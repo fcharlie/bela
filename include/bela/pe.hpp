@@ -15,7 +15,6 @@
 #include "internal/image.hpp"
 
 namespace bela::pe {
-
 // PE File resolve
 // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
 class File {
@@ -63,15 +62,12 @@ private:
   template <typename T> bool readFull(T &t, bela::error_code &ec) const {
     return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec);
   }
+  std::optional<SectionData> readSectionData(const Section &sec, bela::error_code &ec) const;
   bool readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const;
   bool readRelocs(Section &sec) const;
-  bool readSectionData(const Section &sec, std::vector<char> &data) const;
-  bool readSectionData(const Section &sec, SectionBuffer &sb) const;
   bool readStringTable(bela::error_code &ec);
   bool LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
   bool LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
-  bool lookupImports32(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
-  bool lookupImports64(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const;
 
 public:
   File() = default;

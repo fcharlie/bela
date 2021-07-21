@@ -18,7 +18,6 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
     return false;
   }
   // seek to the virtual address specified in the delay import data directory
-  constexpr size_t dslen = sizeof(IMAGE_DELAYLOAD_DESCRIPTOR);
   size_t offset = delay->VirtualAddress - sec->VirtualAddress;
   std::vector<image_delayload_descriptor> ida;
   for (;;) {

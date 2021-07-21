@@ -62,6 +62,9 @@ private:
   template <typename T> bool readFull(T &t, bela::error_code &ec) const {
     return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec);
   }
+  template <typename T> bool readFullv(std::vector<T> &v, int64_t pos, bela::error_code &ec) const {
+    return ReadFull({reinterpret_cast<uint8_t *>(v.data()), sizeof(T) * v.size()}, ec);
+  }
   std::optional<SectionData> readSectionData(const Section &sec, bela::error_code &ec) const;
   bool readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const;
   bool readRelocs(Section &sec) const;

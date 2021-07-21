@@ -391,11 +391,11 @@ public:
     }
     return reinterpret_cast<T *>(memcpy(t, rawdata.size() + offset, sizeof(T)));
   }
-  uint16_t function_hit(int start) const {
-    if (start < 0 || static_cast<size_t>(start - 2) > rawdata.size()) {
+  uint16_t function_hit(size_t offset) const {
+    if (offset + 2 < rawdata.size()) {
       return 0;
     }
-    return bela::cast_frombe<uint16_t>(rawdata.data() + start);
+    return bela::cast_frombe<uint16_t>(rawdata.data() + offset);
   }
 
 private:

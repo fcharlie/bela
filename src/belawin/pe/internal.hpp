@@ -43,8 +43,6 @@ struct image_import_descriptor {
   uint32_t ForwarderChain;
   uint32_t Name;
   uint32_t FirstThunk;
-
-  std::string DllName;
 };
 
 struct image_delayload_descriptor {
@@ -56,8 +54,6 @@ struct image_delayload_descriptor {
   uint32_t BoundImportAddressTableRVA;
   uint32_t UnloadInformationTableRVA;
   uint32_t TimeDateStamp;
-
-  std::string DllName;
 };
 } // namespace bela::pe
 

@@ -16,32 +16,32 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
   if (!sdata) {
     return false;
   }
-  auto offset = idd->VirtualAddress - ds->VirtualAddress;
   std::vector<image_import_descriptor> ida;
-  for (;;) {
+  for (size_t offset = idd->VirtualAddress - ds->VirtualAddress; offset < static_cast<size_t>(ds->Size);
+       offset += sizeof(IMAGE_IMPORT_DESCRIPTOR)) {
     auto dt = sdata->direct_cast<IMAGE_IMPORT_DESCRIPTOR>(offset);
     if (dt == nullptr) {
       break;
     }
-    offset += sizeof(IMAGE_IMPORT_DESCRIPTOR);
-    image_import_descriptor id;
-    if (id.OriginalFirstThunk = bela::fromle(dt->OriginalFirstThunk); id.OriginalFirstThunk == 0) {
+    auto originalFirstThunk = bela::fromle(dt->OriginalFirstThunk);
+    if (originalFirstThunk == 0) {
       break;
     }
-    id.TimeDateStamp = bela::fromle(dt->TimeDateStamp);
-    id.ForwarderChain = bela::fromle(dt->ForwarderChain);
-    id.Name = bela::fromle(dt->Name);
-    id.FirstThunk = bela::fromle(dt->FirstThunk);
-    ida.emplace_back(std::move(id));
+    ida.emplace_back(image_import_descriptor{
+        .OriginalFirstThunk = originalFirstThunk,
+        .TimeDateStamp = bela::fromle(dt->TimeDateStamp),
+        .ForwarderChain = bela::fromle(dt->ForwarderChain),
+        .Name = bela::fromle(dt->Name),
+        .FirstThunk = bela::fromle(dt->FirstThunk),
+    });
   }
   for (auto &dt : ida) {
-    dt.DllName = sdata->cstring_view(dt.Name - ds->VirtualAddress);
+    auto dllName = sdata->cstring_view(dt.Name - ds->VirtualAddress);
     std::vector<Function> functions;
-    size_t funcOffset = dt.OriginalFirstThunk - ds->VirtualAddress;
     if (oh.Is64Bit) {
-      for (;;) {
-        auto va = sdata->cast_fromle<uint64_t>(funcOffset);
-        funcOffset += sizeof(uint64_t);
+      for (size_t offset = dt.OriginalFirstThunk - ds->VirtualAddress; offset < static_cast<size_t>(ds->Size);
+           offset += sizeof(uint64_t)) {
+        auto va = sdata->cast_fromle<uint64_t>(offset);
         if (va == 0) {
           break;
         }
@@ -54,9 +54,9 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
             sdata->cast_fromle<uint16_t>(static_cast<size_t>(static_cast<uint64_t>(va) - ds->VirtualAddress)));
       }
     } else {
-      for (;;) {
-        auto va = sdata->cast_fromle<uint32_t>(funcOffset);
-        funcOffset += sizeof(uint32_t);
+      for (size_t offset = dt.OriginalFirstThunk - ds->VirtualAddress; offset < static_cast<size_t>(ds->Size);
+           offset += sizeof(uint32_t)) {
+        auto va = sdata->cast_fromle<uint32_t>(offset);
         if (va == 0) {
           break;
         }
@@ -71,7 +71,7 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
     std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {
       return a.GetIndex() < b.GetIndex();
     });
-    sm.emplace(std::move(dt.DllName), std::move(functions));
+    sm.emplace(std::move(dllName), std::move(functions));
   }
   return true;
 }

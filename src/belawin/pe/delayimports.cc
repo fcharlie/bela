@@ -18,38 +18,41 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
     return false;
   }
   // seek to the virtual address specified in the delay import data directory
-  size_t offset = delay->VirtualAddress - sec->VirtualAddress;
+  ;
   std::vector<image_delayload_descriptor> ida;
-  for (;;) {
+  for (size_t offset = delay->VirtualAddress - sec->VirtualAddress; offset < sec->Size;
+       offset += sizeof(IMAGE_DELAYLOAD_DESCRIPTOR)) {
     auto dt = sdata->direct_cast<IMAGE_DELAYLOAD_DESCRIPTOR>(offset);
     if (dt == nullptr) {
       break;
     }
-    offset += sizeof(IMAGE_DELAYLOAD_DESCRIPTOR);
-    image_delayload_descriptor id;
-    if (id.ModuleHandleRVA = bela::fromle(dt->ModuleHandleRVA); id.ModuleHandleRVA == 0) {
+    auto moduleHandleRVA = bela::fromle(dt->ModuleHandleRVA);
+    if (moduleHandleRVA == 0) {
       break;
     }
-    id.Attributes = bela::fromle(dt->Attributes.AllAttributes);
-    id.DllNameRVA = bela::fromle(dt->DllNameRVA);
-    id.ImportAddressTableRVA = bela::fromle(dt->ImportAddressTableRVA);
-    id.ImportNameTableRVA = bela::fromle(dt->ImportNameTableRVA);
-    id.BoundImportAddressTableRVA = bela::fromle(dt->BoundImportAddressTableRVA);
-    id.UnloadInformationTableRVA = bela::fromle(dt->UnloadInformationTableRVA);
-    id.TimeDateStamp = bela::fromle(dt->TimeDateStamp);
-    ida.emplace_back(std::move(id));
+    ida.emplace_back(
+        image_delayload_descriptor{//
+                                   .Attributes = bela::fromle(dt->Attributes.AllAttributes),
+                                   .DllNameRVA = bela::fromle(dt->DllNameRVA),
+                                   .ModuleHandleRVA = moduleHandleRVA,
+                                   .ImportAddressTableRVA = bela::fromle(dt->ImportAddressTableRVA),
+                                   .ImportNameTableRVA = bela::fromle(dt->ImportNameTableRVA),
+                                   .BoundImportAddressTableRVA = bela::fromle(dt->BoundImportAddressTableRVA),
+                                   .UnloadInformationTableRVA = bela::fromle(dt->UnloadInformationTableRVA),
+                                   .TimeDateStamp = bela::fromle(dt->TimeDateStamp)} // C++20
+    );
   }
   for (auto &dt : ida) {
-    dt.DllName = sdata->cstring_view(dt.DllNameRVA - sec->VirtualAddress);
+    auto dllName = sdata->cstring_view(dt.DllNameRVA - sec->VirtualAddress);
     if (dt.ImportNameTableRVA < sec->VirtualAddress || dt.ImportNameTableRVA > sec->VirtualAddress + sec->VirtualSize) {
       break;
     }
-    size_t funcOffset = dt.ImportNameTableRVA - sec->VirtualAddress;
+
     std::vector<Function> functions;
     if (oh.Is64Bit) {
-      for (;;) {
-        auto va = sdata->cast_fromle<uint64_t>(funcOffset);
-        funcOffset += sizeof(uint64_t);
+      for (size_t offset = dt.ImportNameTableRVA - sec->VirtualAddress; offset < static_cast<size_t>(sec->Size);
+           offset += sizeof(uint64_t)) {
+        auto va = sdata->cast_fromle<uint64_t>(offset);
         if (va == 0) {
           break;
         }
@@ -62,9 +65,9 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
             sdata->cast_fromle<uint16_t>(static_cast<size_t>(static_cast<uint64_t>(va) - sec->VirtualAddress)));
       }
     } else {
-      for (;;) {
-        auto va = sdata->cast_fromle<uint32_t>(funcOffset);
-        funcOffset += sizeof(uint32_t);
+      for (size_t offset = dt.ImportNameTableRVA - sec->VirtualAddress; offset < static_cast<size_t>(sec->Size);
+           offset += sizeof(uint32_t)) {
+        auto va = sdata->cast_fromle<uint32_t>(offset);
         if (va == 0) {
           break;
         }
@@ -79,7 +82,7 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
     std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {
       return a.GetIndex() < b.GetIndex();
     });
-    sm.emplace(std::move(dt.DllName), std::move(functions));
+    sm.emplace(std::move(dllName), std::move(functions));
   }
   return true;
 }

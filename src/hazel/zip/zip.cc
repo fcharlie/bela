@@ -92,7 +92,7 @@ bool Reader::readDirectoryEnd(directoryEnd &d, bela::error_code &ec) {
     }
     buffer.size() = blen;
     if (auto p = findSignatureInBlock(buffer); p >= 0) {
-      b.Reset(reinterpret_cast<const char *>(buffer.data()) + p, blen - p);
+      b.Reset({buffer.data() + p, static_cast<size_t>(blen - p)});
       directoryEndOffset = size - blen + p;
       break;
     }

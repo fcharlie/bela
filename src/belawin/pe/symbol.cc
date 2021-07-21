@@ -12,6 +12,7 @@ std::string symbolFullName(const COFFSymbol &sm, const StringTable &st) {
   return std::string(cstring_view(sm.Name, sizeof(sm.Name)));
 }
 
+// Auxiliary Symbol Records
 bool removeAuxSymbols(const std::vector<COFFSymbol> &csyms, const StringTable &st, std::vector<Symbol> &syms,
                       bela::error_code &ec) {
   if (csyms.empty()) {

@@ -64,8 +64,8 @@ public:
   [[nodiscard]] const T *data() const { return data_; }
   [[nodiscard]] T operator[](const size_t _Off) const noexcept { return *(data_ + _Off); }
   [[nodiscard]] T *data() { return data_; }
-  std::span<T> Span() const { return std::span(data_, data_ + size_); }
-  // std::span<T> Span
+  std::span<T> MakeSpan() const { return std::span(data_, data_ + size_); }
+
 private:
   T *data_{nullptr};
   size_t size_{0};

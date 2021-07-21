@@ -5,6 +5,7 @@
 #include <cstring>
 #include <type_traits>
 #include <bit>
+#include <span>
 #include "types.hpp"
 
 namespace bela {
@@ -152,14 +153,15 @@ public:
     data = other.data;
     size = other.size;
   }
+  template <typename T = uint8_t> Reader(std::span<T> s) { Reset(s); }
   Reader &operator=(const Reader &other) {
     data = other.data;
     size = other.size;
     return *this;
   }
-  void Reset(const void *p, size_t len) {
-    data = reinterpret_cast<const uint8_t *>(p);
-    size = len;
+  template <typename T = uint8_t> void Reset(std::span<T> s) {
+    data = reinterpret_cast<const uint8_t *>(s.data());
+    size = s.size() * sizeof(T);
   }
   template <typename T>
   requires std::integral<T> T Read() {

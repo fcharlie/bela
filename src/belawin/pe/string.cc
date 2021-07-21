@@ -45,7 +45,7 @@ bool File::readStringTable(bela::error_code &ec) {
     return true;
   }
   uint32_t l = 0;
-  if (!ReadAt(&l, sizeof(l), offset, ec)) {
+  if (!readAt(l, offset, ec)) {
     return false;
   }
   l = bela::fromle(l);
@@ -57,7 +57,7 @@ bool File::readStringTable(bela::error_code &ec) {
     ec = bela::make_system_error_code(L"fail to allocate string table memory: ");
     return false;
   }
-  if (!ReadFull(stringTable.data, l, ec)) {
+  if (!ReadFull({stringTable.data, l}, ec)) {
     ec = bela::make_error_code(ErrGeneral, L"fail to read string table: ", ec.message);
     return false;
   }

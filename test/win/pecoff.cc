@@ -144,15 +144,14 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stdout, L"\x1b[33mDllName: %s\x1b[0m\n", d.first);
     for (const auto &n : d.second) {
       if (n.Ordinal == 0) {
-        bela::FPrintF(stdout, L"%s %d\n", llvm::demangle(n.Name), n.Index);
-
+        bela::FPrintF(stdout, L" %7d %s\n", n.Index, llvm::demangle(n.Name));
         continue;
       }
       if (auto fn = sse.LookupOrdinalFunctionName(d.first, n.Ordinal, ec); fn) {
-        bela::FPrintF(stdout, L"%s (Ordinal %d)\n", llvm::demangle(*fn), n.Ordinal);
+        bela::FPrintF(stdout, L"         %s (Ordinal %d)\n", llvm::demangle(*fn), n.Ordinal);
         continue;
       }
-      bela::FPrintF(stdout, L"Ordinal%d (Ordinal %d)\n", n.Ordinal, n.Ordinal);
+      bela::FPrintF(stdout, L"         Ordinal%d (Ordinal %d)\n", n.Ordinal, n.Ordinal);
     }
   }
 
@@ -186,17 +185,18 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stdout, L"Flags: %s\n", dm->flags);
   }
   auto overlayLen = file.OverlayLength();
-  bela::FPrintF(stderr, L"Overlay offset 0x%08X, length: %d\n", file.OverlayOffset(), file.OverlayLength());
+  bela::FPrintF(stderr, L"Overlay offset 0x%08x, length: %d\n", file.OverlayOffset(), file.OverlayLength());
   if (overlayLen == 0) {
     return 0;
   }
-  std::vector<char> overlay(static_cast<size_t>(2048));
-  auto ret = file.ReadOverlay(overlay, ec);
+  uint8_t buffer[2048];
+  auto ret = file.ReadOverlay(buffer, ec);
   if (ret < 0) {
     bela::FPrintF(stderr, L"Error: %s\n", ec.message);
     return 1;
   }
   bela::FPrintF(stderr, L"Read %d bytes \n", ret);
-  process_color(stderr, std::string_view{overlay.data(), static_cast<size_t>(ret)}, file.OverlayOffset());
+  process_color(stderr, std::string_view{reinterpret_cast<char *>(buffer), static_cast<size_t>(ret)},
+                file.OverlayOffset());
   return 0;
 }

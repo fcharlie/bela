@@ -20,39 +20,6 @@ namespace bela::pe {
 // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
 class File {
 private:
-  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
-    DWORD dwSize = {0};
-    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
-      ec = bela::make_system_error_code(L"ReadFile: ");
-      return false;
-    }
-    outlen = static_cast<size_t>(len);
-    return true;
-  }
-  bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
-    auto p = reinterpret_cast<uint8_t *>(buffer);
-    size_t total = 0;
-    while (total < len) {
-      DWORD dwSize = 0;
-      if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
-        ec = bela::make_system_error_code(L"ReadFile: ");
-        return false;
-      }
-      if (dwSize == 0) {
-        ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
-        return false;
-      }
-      total += dwSize;
-    }
-    return true;
-  }
-  // ReadAt ReadFull
-  bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) const {
-    if (!bela::os::file::Seek(fd, pos, ec)) {
-      return false;
-    }
-    return ReadFull(buffer, len, ec);
-  }
   bool parseFile(bela::error_code &ec);
   std::string sectionFullName(SectionHeader32 &sh) const;
   const DataDirectory *getDataDirectory(uint32_t dirIndex) const {
@@ -85,6 +52,16 @@ private:
       }
     }
     return nullptr;
+  }
+  // readAt to struct
+  template <typename T> bool readAt(T &t, int64_t pos, bela::error_code &ec) const {
+    return ReadAt({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, pos, ec);
+  }
+  template <typename T> bool readAtv(std::vector<T> &v, int64_t pos, bela::error_code &ec) const {
+    return ReadAt({reinterpret_cast<uint8_t *>(v.data()), sizeof(T) * v.size()}, pos, ec);
+  }
+  template <typename T> bool readFull(T &t, bela::error_code &ec) const {
+    return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec);
   }
   bool readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const;
   bool readRelocs(Section &sec) const;
@@ -122,10 +99,18 @@ public:
       sv.remove_prefix(p + 1);
     }
   }
+  // PE File size
+  int64_t Size() const { return size; }
+  int64_t OverlayOffset() const { return overlayOffset; }
+  int64_t OverlayLength() const { return size - overlayOffset; }
+  // ReadAt reads buffer.size() bytes from the File starting at byte offset pos.
+  bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const;
+  // ReadFull reads exactly buffer.size() bytes from FD into buffer.
+  bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const;
+  int64_t ReadOverlay(std::span<uint8_t> overlayData, bela::error_code &ec) const;
   bool LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec) const;
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
-  int64_t ReadOverlay(std::span<char> overlayData, bela::error_code &ec) const;
   std::optional<DotNetMetadata> LookupDotNetMetadata(bela::error_code &ec) const;
   std::optional<Version> LookupVersion(bela::error_code &ec) const; // WIP
   const FileHeader &Fh() const { return fh; }
@@ -145,9 +130,6 @@ public:
     size = sz;
     return parseFile(ec);
   }
-  int64_t Size() const { return size; }
-  int64_t OverlayOffset() const { return overlayOffset; }
-  int64_t OverlayLength() const { return size - overlayOffset; }
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};
@@ -156,7 +138,7 @@ private:
   OptionalHeader oh;
   std::vector<Section> sections;
   StringTable stringTable;
-  int64_t overlayOffset{-1};
+  int64_t overlayOffset{SizeUnInitialized};
   bool needClosed{false};
 };
 

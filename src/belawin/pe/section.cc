@@ -14,7 +14,7 @@ std::string File::sectionFullName(SectionHeader32 &sh) const {
     return "";
   }
   bela::error_code ec;
-  return stringTable.String(offset, ec);
+  return stringTable.String(bela::fromle(offset), ec);
 }
 
 bool File::readRelocs(Section &sec) const {

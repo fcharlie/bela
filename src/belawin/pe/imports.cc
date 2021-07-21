@@ -139,7 +139,7 @@ bool File::lookupImports64(FunctionTable::symbols_map_t &sm, bela::error_code &e
 }
 
 bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec) const {
-  if (is64bit) {
+  if (oh.Is64Bit) {
     return lookupImports64(sm, ec);
   }
   return lookupImports32(sm, ec);

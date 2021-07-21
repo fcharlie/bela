@@ -20,77 +20,73 @@ inline void fromle(FileHeader &fh) {
   }
 }
 
-inline void fromle(OptionalHeader64 *oh) {
-  if constexpr (bela::IsBigEndian()) {
-    oh->Magic = bela::fromle(oh->Magic);
-    oh->SizeOfCode = bela::fromle(oh->SizeOfCode);
-    oh->SizeOfInitializedData = bela::fromle(oh->SizeOfInitializedData);
-    oh->SizeOfUninitializedData = bela::fromle(oh->SizeOfUninitializedData);
-    oh->AddressOfEntryPoint = bela::fromle(oh->AddressOfEntryPoint);
-    oh->BaseOfCode = bela::fromle(oh->BaseOfCode);
-    oh->ImageBase = bela::fromle(oh->ImageBase);
-    oh->SectionAlignment = bela::fromle(oh->SectionAlignment);
-    oh->FileAlignment = bela::fromle(oh->FileAlignment);
-    oh->MajorOperatingSystemVersion = bela::fromle(oh->MajorOperatingSystemVersion);
-    oh->MinorOperatingSystemVersion = bela::fromle(oh->MinorOperatingSystemVersion);
-    oh->MajorImageVersion = bela::fromle(oh->MajorImageVersion);
-    oh->MinorImageVersion = bela::fromle(oh->MinorImageVersion);
-    oh->MajorSubsystemVersion = bela::fromle(oh->MajorSubsystemVersion);
-    oh->MinorSubsystemVersion = bela::fromle(oh->MinorSubsystemVersion);
-    oh->Win32VersionValue = bela::fromle(oh->Win32VersionValue);
-    oh->SizeOfImage = bela::fromle(oh->SizeOfImage);
-    oh->SizeOfHeaders = bela::fromle(oh->SizeOfHeaders);
-    oh->CheckSum = bela::fromle(oh->CheckSum);
-    oh->Subsystem = bela::fromle(oh->Subsystem);
-    oh->DllCharacteristics = bela::fromle(oh->DllCharacteristics);
-    oh->SizeOfStackReserve = bela::fromle(oh->SizeOfStackReserve);
-    oh->SizeOfStackCommit = bela::fromle(oh->SizeOfStackCommit);
-    oh->SizeOfHeapReserve = bela::fromle(oh->SizeOfHeapReserve);
-    oh->SizeOfHeapCommit = bela::fromle(oh->SizeOfHeapCommit);
-    oh->LoaderFlags = bela::fromle(oh->LoaderFlags);
-    oh->NumberOfRvaAndSizes = bela::fromle(oh->NumberOfRvaAndSizes);
-    for (auto &d : oh->DataDirectory) {
-      d.Size = bela::fromle(d.Size);
-      d.VirtualAddress = bela::fromle(d.VirtualAddress);
-    }
+void fromle(OptionalHeader *oh, const IMAGE_OPTIONAL_HEADER64 *oh64) {
+  oh->Magic = bela::fromle(oh64->Magic);
+  oh->SizeOfCode = bela::fromle(oh64->SizeOfCode);
+  oh->SizeOfInitializedData = bela::fromle(oh64->SizeOfInitializedData);
+  oh->SizeOfUninitializedData = bela::fromle(oh64->SizeOfUninitializedData);
+  oh->AddressOfEntryPoint = bela::fromle(oh64->AddressOfEntryPoint);
+  oh->BaseOfCode = bela::fromle(oh64->BaseOfCode);
+  oh->ImageBase = bela::fromle(oh64->ImageBase);
+  oh->SectionAlignment = bela::fromle(oh64->SectionAlignment);
+  oh->FileAlignment = bela::fromle(oh64->FileAlignment);
+  oh->MajorOperatingSystemVersion = bela::fromle(oh64->MajorOperatingSystemVersion);
+  oh->MinorOperatingSystemVersion = bela::fromle(oh64->MinorOperatingSystemVersion);
+  oh->MajorImageVersion = bela::fromle(oh64->MajorImageVersion);
+  oh->MinorImageVersion = bela::fromle(oh64->MinorImageVersion);
+  oh->MajorSubsystemVersion = bela::fromle(oh64->MajorSubsystemVersion);
+  oh->MinorSubsystemVersion = bela::fromle(oh64->MinorSubsystemVersion);
+  oh->Win32VersionValue = bela::fromle(oh64->Win32VersionValue);
+  oh->SizeOfImage = bela::fromle(oh64->SizeOfImage);
+  oh->SizeOfHeaders = bela::fromle(oh64->SizeOfHeaders);
+  oh->CheckSum = bela::fromle(oh64->CheckSum);
+  oh->Subsystem = bela::fromle(oh64->Subsystem);
+  oh->DllCharacteristics = bela::fromle(oh64->DllCharacteristics);
+  oh->SizeOfStackReserve = bela::fromle(oh64->SizeOfStackReserve);
+  oh->SizeOfStackCommit = bela::fromle(oh64->SizeOfStackCommit);
+  oh->SizeOfHeapReserve = bela::fromle(oh64->SizeOfHeapReserve);
+  oh->SizeOfHeapCommit = bela::fromle(oh64->SizeOfHeapCommit);
+  oh->LoaderFlags = bela::fromle(oh64->LoaderFlags);
+  oh->NumberOfRvaAndSizes = bela::fromle(oh64->NumberOfRvaAndSizes);
+  for (int i = 0; i < DataDirEntries; i++) {
+    oh->DataDirectory[i].Size = bela::fromle(oh64->DataDirectory[i].Size);
+    oh->DataDirectory[i].VirtualAddress = bela::fromle(oh64->DataDirectory[i].VirtualAddress);
   }
 }
 
-inline void fromle(OptionalHeader32 *oh) {
-  if constexpr (bela::IsBigEndian()) {
-    oh->Magic = bela::fromle(oh->Magic);
-    oh->SizeOfCode = bela::fromle(oh->SizeOfCode);
-    oh->SizeOfInitializedData = bela::fromle(oh->SizeOfInitializedData);
-    oh->SizeOfUninitializedData = bela::fromle(oh->SizeOfUninitializedData);
-    oh->AddressOfEntryPoint = bela::fromle(oh->AddressOfEntryPoint);
-    oh->BaseOfCode = bela::fromle(oh->BaseOfCode);
-    oh->BaseOfData = bela::fromle(oh->BaseOfData);
-    oh->ImageBase = bela::fromle(oh->ImageBase);
-    oh->SectionAlignment = bela::fromle(oh->SectionAlignment);
-    oh->FileAlignment = bela::fromle(oh->FileAlignment);
-    oh->MajorOperatingSystemVersion = bela::fromle(oh->MajorOperatingSystemVersion);
-    oh->MinorOperatingSystemVersion = bela::fromle(oh->MinorOperatingSystemVersion);
-    oh->MajorImageVersion = bela::fromle(oh->MajorImageVersion);
-    oh->MinorImageVersion = bela::fromle(oh->MinorImageVersion);
-    oh->MajorSubsystemVersion = bela::fromle(oh->MajorSubsystemVersion);
-    oh->MinorSubsystemVersion = bela::fromle(oh->MinorSubsystemVersion);
-    oh->Win32VersionValue = bela::fromle(oh->Win32VersionValue);
-    oh->SizeOfImage = bela::fromle(oh->SizeOfImage);
-    oh->SizeOfHeaders = bela::fromle(oh->SizeOfHeaders);
-    oh->CheckSum = bela::fromle(oh->CheckSum);
-    oh->Subsystem = bela::fromle(oh->Subsystem);
-    oh->DllCharacteristics = bela::fromle(oh->DllCharacteristics);
-    oh->SizeOfStackReserve = bela::fromle(oh->SizeOfStackReserve);
-    oh->SizeOfStackCommit = bela::fromle(oh->SizeOfStackCommit);
-    oh->SizeOfHeapReserve = bela::fromle(oh->SizeOfHeapReserve);
-    oh->SizeOfHeapCommit = bela::fromle(oh->SizeOfHeapCommit);
-    oh->LoaderFlags = bela::fromle(oh->LoaderFlags);
-    oh->NumberOfRvaAndSizes = bela::fromle(oh->NumberOfRvaAndSizes);
-    for (auto &d : oh->DataDirectory) {
-      d.Size = bela::fromle(d.Size);
-      d.VirtualAddress = bela::fromle(d.VirtualAddress);
-    }
+void fromle(OptionalHeader *oh, const IMAGE_OPTIONAL_HEADER32 *oh32) {
+  oh->Magic = bela::fromle(oh32->Magic);
+  oh->SizeOfCode = bela::fromle(oh32->SizeOfCode);
+  oh->SizeOfInitializedData = bela::fromle(oh32->SizeOfInitializedData);
+  oh->SizeOfUninitializedData = bela::fromle(oh32->SizeOfUninitializedData);
+  oh->AddressOfEntryPoint = bela::fromle(oh32->AddressOfEntryPoint);
+  oh->BaseOfCode = bela::fromle(oh32->BaseOfCode);
+  oh->ImageBase = bela::fromle(oh32->ImageBase);
+  oh->SectionAlignment = bela::fromle(oh32->SectionAlignment);
+  oh->FileAlignment = bela::fromle(oh32->FileAlignment);
+  oh->MajorOperatingSystemVersion = bela::fromle(oh32->MajorOperatingSystemVersion);
+  oh->MinorOperatingSystemVersion = bela::fromle(oh32->MinorOperatingSystemVersion);
+  oh->MajorImageVersion = bela::fromle(oh32->MajorImageVersion);
+  oh->MinorImageVersion = bela::fromle(oh32->MinorImageVersion);
+  oh->MajorSubsystemVersion = bela::fromle(oh32->MajorSubsystemVersion);
+  oh->MinorSubsystemVersion = bela::fromle(oh32->MinorSubsystemVersion);
+  oh->Win32VersionValue = bela::fromle(oh32->Win32VersionValue);
+  oh->SizeOfImage = bela::fromle(oh32->SizeOfImage);
+  oh->SizeOfHeaders = bela::fromle(oh32->SizeOfHeaders);
+  oh->CheckSum = bela::fromle(oh32->CheckSum);
+  oh->Subsystem = bela::fromle(oh32->Subsystem);
+  oh->DllCharacteristics = bela::fromle(oh32->DllCharacteristics);
+  oh->SizeOfStackReserve = bela::fromle(oh32->SizeOfStackReserve);
+  oh->SizeOfStackCommit = bela::fromle(oh32->SizeOfStackCommit);
+  oh->SizeOfHeapReserve = bela::fromle(oh32->SizeOfHeapReserve);
+  oh->SizeOfHeapCommit = bela::fromle(oh32->SizeOfHeapCommit);
+  oh->LoaderFlags = bela::fromle(oh32->LoaderFlags);
+  oh->NumberOfRvaAndSizes = bela::fromle(oh32->NumberOfRvaAndSizes);
+  for (int i = 0; i < DataDirEntries; i++) {
+    oh->DataDirectory[i].Size = bela::fromle(oh32->DataDirectory[i].Size);
+    oh->DataDirectory[i].VirtualAddress = bela::fromle(oh32->DataDirectory[i].VirtualAddress);
   }
+  oh->BaseOfData32 = bela::fromle(oh32->BaseOfData);
 }
 
 inline void fromle(SectionHeader32 &sh) {
@@ -117,7 +113,7 @@ bool File::parseFile(bela::error_code &ec) {
   if (!ReadAt(&dh, sizeof(DosHeader), 0, ec)) {
     return false;
   }
-
+  memset(&oh, 0, sizeof(oh));
   int64_t base = 0;
   if (bela::fromle(dh.e_magic) == IMAGE_DOS_SIGNATURE) {
     auto signoff = static_cast<int64_t>(bela::fromle(dh.e_lfanew));
@@ -137,22 +133,24 @@ bool File::parseFile(bela::error_code &ec) {
     return false;
   }
   fromle(fh);
-  is64bit = (fh.SizeOfOptionalHeader == sizeof(OptionalHeader64));
+  oh.Is64Bit = (fh.SizeOfOptionalHeader == sizeof(IMAGE_OPTIONAL_HEADER64));
   if (!readStringTable(ec)) {
     return false;
   }
 
-  if (is64bit) {
-    if (!ReadAt(&oh, sizeof(OptionalHeader64), base + sizeof(FileHeader), ec)) {
+  if (oh.Is64Bit) {
+    IMAGE_OPTIONAL_HEADER64 oh64;
+    if (!ReadAt(&oh64, sizeof(IMAGE_OPTIONAL_HEADER64), base + sizeof(FileHeader), ec)) {
       return false;
     }
-    fromle(&oh);
+    fromle(&oh, &oh64);
   } else {
-    if (!ReadAt(&oh, sizeof(OptionalHeader32), base + sizeof(FileHeader), ec)) {
+    IMAGE_OPTIONAL_HEADER32 oh32;
+    if (!ReadAt(&oh32, sizeof(IMAGE_OPTIONAL_HEADER32), base + sizeof(FileHeader), ec)) {
       ec = bela::make_error_code(ErrGeneral, L"pe: not a valid pe file ", ec.message);
       return false;
     }
-    fromle(reinterpret_cast<OptionalHeader32 *>(&oh));
+    fromle(&oh, &oh32);
   }
   sections.resize(fh.NumberOfSections);
   for (int i = 0; i < fh.NumberOfSections; i++) {

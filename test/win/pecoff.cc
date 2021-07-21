@@ -132,7 +132,7 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stdout, L"%s\n", s);
   }
   if (file.Is64Bit()) {
-    bela::FPrintF(stdout, L"Subsystem %d\n", file.Oh64()->Subsystem);
+    bela::FPrintF(stdout, L"Subsystem %d\n", static_cast<int>(file.Subsystem()));
   }
   for (const auto &sec : file.Sections()) {
     bela::FPrintF(stdout, L"Section: %s VirtualAddress: %d\n", sec.Name, sec.VirtualAddress);

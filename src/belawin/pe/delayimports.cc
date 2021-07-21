@@ -41,7 +41,7 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
     }
     ida.emplace_back(std::move(id));
   }
-  auto ptrsize = is64bit ? sizeof(uint64_t) : sizeof(uint32_t);
+  auto ptrsize = oh.Is64Bit ? sizeof(uint64_t) : sizeof(uint32_t);
   for (auto &dt : ida) {
     dt.DllName = getString(sdata, int(dt.DllNameRVA - sec->VirtualAddress));
     if (dt.ImportNameTableRVA < sec->VirtualAddress || dt.ImportNameTableRVA > sec->VirtualAddress + sec->VirtualSize) {
@@ -52,7 +52,7 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
     std::string_view d{sdata.data() + L, sdata.size() - L};
     std::vector<Function> functions;
     while (d.size() >= ptrsize) {
-      if (is64bit) {
+      if (oh.Is64Bit) {
         auto va = bela::cast_fromle<uint64_t>(d.data());
         d.remove_prefix(8);
         if (va == 0) {

@@ -185,19 +185,18 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stdout, L"CRL Version: %s\n", dm->version);
     bela::FPrintF(stdout, L"Flags: %s\n", dm->flags);
   }
-  if (file.OverlayLength() == 0) {
+  auto overlayLen = file.OverlayLength();
+  bela::FPrintF(stderr, L"Overlay offset 0x%08X, length: %d\n", file.OverlayOffset(), file.OverlayLength());
+  if (overlayLen == 0) {
     return 0;
   }
-  if (file.OverlayLength() > 2048) {
-    bela::FPrintF(stderr, L"Overlay: offset %d, length: %d\n", file.OverlayOffset(), file.OverlayLength());
-    return 0;
-  }
-  std::vector<char> overlay;
-  if (!file.LookupOverlay(overlay, ec) && ec.code != bela::pe::ErrNoOverlay) {
-    bela::FPrintF(stderr, L"Overlay: %s\n", ec.message);
+  std::vector<char> overlay(static_cast<size_t>(2048));
+  auto ret = file.ReadOverlay(overlay, ec);
+  if (ret < 0) {
+    bela::FPrintF(stderr, L"Error: %s\n", ec.message);
     return 1;
   }
-  bela::FPrintF(stderr, L"Overlay: \n");
-  process_color(stderr, std::string_view{overlay.data(), overlay.size()}, file.OverlayOffset());
+  bela::FPrintF(stderr, L"Read %d bytes \n", ret);
+  process_color(stderr, std::string_view{overlay.data(), static_cast<size_t>(ret)}, file.OverlayOffset());
   return 0;
 }

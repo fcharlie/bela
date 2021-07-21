@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <span>
 #include "base.hpp"
 #include "endian.hpp"
 #include "types.hpp"
@@ -104,7 +105,7 @@ public:
     }
   }
   File(const File &) = delete;
-  File &operator=(const File &&) = delete;
+  File &operator=(const File &) = delete;
   // export FD() to support
   HANDLE FD() const { return fd; }
   template <typename AStringT> void SplitStringTable(std::vector<AStringT> &sa) const {
@@ -124,7 +125,7 @@ public:
   bool LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec) const;
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
-  bool LookupOverlay(std::vector<char> &overlayData, bela::error_code &ec, int64_t limitsize = LimitOverlaySize) const;
+  int64_t ReadOverlay(std::span<char> overlayData, bela::error_code &ec) const;
   std::optional<DotNetMetadata> LookupDotNetMetadata(bela::error_code &ec) const;
   std::optional<Version> LookupVersion(bela::error_code &ec) const; // WIP
   const FileHeader &Fh() const { return fh; }
@@ -150,8 +151,8 @@ public:
 
 private:
   HANDLE fd{INVALID_HANDLE_VALUE};
-  FileHeader fh;
   int64_t size{SizeUnInitialized};
+  FileHeader fh;
   OptionalHeader oh;
   std::vector<Section> sections;
   StringTable stringTable;

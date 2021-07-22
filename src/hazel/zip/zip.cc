@@ -318,7 +318,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
 }
 
 bool Reader::Initialize(bela::error_code &ec) {
-  if ((size = bela::os::file::Size(fd, ec)) == bela::SizeUnInitialized) {
+  if ((size = bela::io::Size(fd, ec)) == bela::SizeUnInitialized) {
     return false;
   }
   directoryEnd d;
@@ -332,7 +332,7 @@ bool Reader::Initialize(bela::error_code &ec) {
   }
   comment.assign(std::move(d.comment));
   files.reserve(d.directoryRecords);
-  if (!bela::os::file::Seek(fd, d.directoryOffset, ec)) {
+  if (!bela::io::Seek(fd, d.directoryOffset, ec)) {
     return false;
   }
   bela::Buffer buffer(16 * 1024);

@@ -386,13 +386,13 @@ private:
   }
   // ReadAt ReadFull
   bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-    if (!bela::os::file::Seek(fd, pos, ec)) {
+    if (!bela::io::Seek(fd, pos, ec)) {
       return false;
     }
     return ReadFull(buffer, len, ec);
   }
   bool ReadAt(bela::Buffer &buffer, size_t len, int64_t pos, bela::error_code &ec) {
-    if (!bela::os::file::Seek(fd, pos, ec)) {
+    if (!bela::io::Seek(fd, pos, ec)) {
       return false;
     }
     if (!ReadFull(buffer.data(), len, ec)) {
@@ -542,13 +542,13 @@ private:
   }
   // ReadAt ReadFull
   bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-    if (!bela::os::file::Seek(fd, pos, ec)) {
+    if (!bela::io::Seek(fd, pos, ec)) {
       return false;
     }
     return ReadFull(buffer, len, ec);
   }
   bool ReadAt(bela::Buffer &buffer, size_t len, int64_t pos, bela::error_code &ec) {
-    if (!bela::os::file::Seek(fd, pos, ec)) {
+    if (!bela::io::Seek(fd, pos, ec)) {
       return false;
     }
     if (!ReadFull(buffer.data(), len, ec)) {

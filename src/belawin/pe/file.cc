@@ -1,4 +1,5 @@
 //
+#include <bela/io.hpp>
 #include "internal.hpp"
 #include <algorithm>
 
@@ -30,7 +31,7 @@ bool File::ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const {
 }
 
 bool File::ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const {
-  if (!bela::os::file::Seek(fd, pos, ec)) {
+  if (!bela::io::Seek(fd, pos, ec)) {
     return false;
   }
   return ReadFull(buffer, ec);
@@ -133,7 +134,7 @@ inline void fromle(SectionHeader32 &sh) {
 
 bool File::parseFile(bela::error_code &ec) {
   if (size == SizeUnInitialized) {
-    if ((size = bela::os::file::Size(fd, ec)) == bela::SizeUnInitialized) {
+    if ((size = bela::io::Size(fd, ec)) == bela::SizeUnInitialized) {
       return false;
     }
   }

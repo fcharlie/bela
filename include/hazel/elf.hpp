@@ -107,13 +107,13 @@ private:
   }
   // ReadAt ReadFull
   bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) const {
-    if (!bela::os::file::Seek(fd, pos, ec)) {
+    if (!bela::io::Seek(fd, pos, ec)) {
       return false;
     }
     return ReadFull(buffer, len, ec);
   }
   bool ReadAt(bela::Buffer &buffer, size_t len, int64_t pos, bela::error_code &ec) const {
-    if (!bela::os::file::Seek(fd, pos, ec)) {
+    if (!bela::io::Seek(fd, pos, ec)) {
       return false;
     }
     if (!ReadFull(buffer.data(), len, ec)) {
@@ -177,7 +177,7 @@ private:
     }
     return sectionData(sections[link], buf, ec);
   }
-  bool gnuVersionInit(std::span<uint8_t> str);
+  bool gnuVersionInit(std::span<const uint8_t> str);
   void gnuVersion(int i, std::string &lib, std::string &ver) {
     i = (i + 1) * 2;
     if (i >= static_cast<int>(gnuVersym.size())) {

@@ -22,6 +22,7 @@
 
 namespace bela {
 constexpr long ErrNone = 0;
+constexpr long ErrEOF = ERROR_HANDLE_EOF;
 constexpr long ErrGeneral = 0x4001;
 constexpr long ErrSkipParse = 0x4002;
 constexpr long ErrParseBroken = 0x4003;

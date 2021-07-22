@@ -8,6 +8,7 @@
 #include <bela/time.hpp>
 #include <bela/phmap.hpp>
 #include <bela/os.hpp>
+#include <bela/io.hpp>
 
 namespace hazel::zip {
 // https://www.hanshq.net/zip.html
@@ -132,7 +133,7 @@ private:
   }
   // ReadAt ReadFull
   bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) const {
-    if (!bela::os::file::Seek(fd, pos, ec)) {
+    if (!bela::io::Seek(fd, pos, ec)) {
       return false;
     }
     return ReadFull(buffer, len, ec);

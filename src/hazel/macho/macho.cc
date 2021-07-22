@@ -223,7 +223,7 @@ bool File::pushSection(hazel::macho::Section *sh, bela::error_code &ec) {
 
 bool File::ParseFile(bela::error_code &ec) {
   if (size == bela::SizeUnInitialized) {
-    if ((size = bela::os::file::Size(fd, ec)) == bela::SizeUnInitialized) {
+    if ((size = bela::io::Size(fd, ec)) == bela::SizeUnInitialized) {
       return false;
     }
   }

@@ -2,7 +2,7 @@
 #ifndef BELA_MAPVIEW_HPP
 #define BELA_MAPVIEW_HPP
 #include "base.hpp"
-#include "os.hpp"
+#include "io.hpp"
 
 namespace bela {
 class MemView {
@@ -122,7 +122,7 @@ inline bool MapView::MappingView(std::wstring_view file, bela::error_code &ec, s
     ec = bela::make_system_error_code();
     return false;
   }
-  auto diskSize = bela::os::file::Size(FileHandle, ec);
+  auto diskSize = bela::io::Size(FileHandle, ec);
   if (diskSize == bela::SizeUnInitialized) {
     return false;
   }

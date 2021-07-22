@@ -115,8 +115,8 @@ public:
   [[nodiscard]] const uint8_t *data() const { return data_; }
   [[nodiscard]] uint8_t operator[](const size_t _Off) const noexcept { return *(data_ + _Off); }
   [[nodiscard]] uint8_t *data() { return data_; }
-  std::span<uint8_t> MakeConstSpan() const { return std::span(data_, data_ + size_); }
-  std::span<uint8_t> MakeSpan() const { return std::span(data_, data_ + capacity_); }
+  std::span<const uint8_t> MakeConstSpan() const { return std::span{data_, size_}; }
+  std::span<uint8_t> MakeSpan() const { return std::span{data_, capacity_}; }
 
 private:
   uint8_t *data_{nullptr};

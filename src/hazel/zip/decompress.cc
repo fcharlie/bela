@@ -17,7 +17,7 @@ bool Reader::Decompress(const File &file, const Writer &w, bela::error_code &ec)
   auto filenameLen = static_cast<int>(b.Read<uint16_t>());
   auto extraLen = static_cast<int>(b.Read<uint16_t>());
   auto position = file.position + fileHeaderLen + filenameLen + extraLen;
-  if (!bela::os::file::Seek(fd, position, ec)) {
+  if (!bela::io::Seek(fd, position, ec)) {
     return false;
   }
   switch (file.method) {

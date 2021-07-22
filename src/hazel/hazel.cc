@@ -11,7 +11,7 @@ namespace hazel {
 typedef hazel::internal::status_t (*lookup_handle_t)(bela::MemView mv, hazel_result &hr);
 
 bool LookupFile(bela::File &fd, hazel_result &hr, bela::error_code &ec) {
-  if ((hr.size_ = bela::os::file::Size(fd.FD(), ec)) == bela::SizeUnInitialized) {
+  if ((hr.size_ = bela::io::Size(fd.FD(), ec)) == bela::SizeUnInitialized) {
     return false;
   }
   uint8_t buffer[4096];

@@ -48,6 +48,7 @@ private:
   void MoveFrom(FD &&o);
 
 public:
+  FD() = default;
   FD(HANDLE fd_, bool needClosed_ = true) : fd(fd_), needClosed(needClosed_) {}
   FD(const FD &) = delete;
   FD &operator=(const FD &) = delete;
@@ -57,29 +58,41 @@ public:
     return *this;
   }
   ~FD() { Free(); }
+  FD &Assgin(FD &&o) {
+    MoveFrom(std::move(o));
+    return *this;
+  }
+  FD &Assgin(HANDLE fd_, bool needClosed_ = true) {
+    Free();
+    fd = fd_;
+    needClosed = needClosed_;
+  }
   explicit operator bool() const { return fd != INVALID_HANDLE_VALUE; }
   const auto address() const { return fd; }
-  bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec);
-  bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec);
+  int64_t Size(bela::error_code &ec) const { return bela::io::Size(fd, ec); }
+  // ReadAt reads buffer.size() bytes from the File starting at byte offset pos.
+  bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const;
+  // ReadFull reads exactly buffer.size() bytes from FD into buffer.
+  bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const;
 
   template <typename T>
   requires std::is_standard_layout_v<T>
-  bool ReadFull(T &t, bela::error_code &ec) { return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec); }
+  bool ReadFull(T &t, bela::error_code &ec) const { return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec); }
   template <typename T>
   requires std::is_standard_layout_v<T>
-  bool ReadFull(std::vector<T> &tv, bela::error_code &ec) {
+  bool ReadVectorFull(std::vector<T> &tv, bela::error_code &ec) const {
     return ReadFull({reinterpret_cast<uint8_t *>(tv.data()), sizeof(T) * tv.size()}, ec);
   }
 
   template <typename T>
   requires std::is_standard_layout_v<T>
-  bool ReadAt(T &t, int64_t pos, bela::error_code &ec) {
+  bool ReadAt(T &t, int64_t pos, bela::error_code &ec) const {
     return ReadAt({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, pos, ec);
   }
 
   template <typename T>
   requires std::is_standard_layout_v<T>
-  bool ReadAt(std::vector<T> &tv, int64_t pos, bela::error_code &ec) {
+  bool ReadVectorAt(std::vector<T> &tv, int64_t pos, bela::error_code &ec) const {
     return ReadAt({reinterpret_cast<uint8_t *>(tv.data()), sizeof(T) * tv.size()}, pos, ec);
   }
 

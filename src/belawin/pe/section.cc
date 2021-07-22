@@ -23,7 +23,7 @@ bool File::readRelocs(Section &sec) const {
   }
   bela::error_code ec;
   sec.Relocs.resize(sec.NumberOfRelocations);
-  if (!readAtv(sec.Relocs, sec.PointerToRelocations, ec)) {
+  if (!fd.ReadVectorAt(sec.Relocs, sec.PointerToRelocations, ec)) {
     return false;
   }
   if constexpr (bela::IsBigEndian()) {
@@ -40,7 +40,7 @@ std::optional<Buffer> File::readSectionData(const Section &sec, bela::error_code
     return std::make_optional<Buffer>();
   }
   Buffer buffer(sec.Size);
-  if (!ReadAt(buffer.MakeSpan(), sec.Offset, ec)) {
+  if (!fd.ReadAt(buffer.MakeSpan(), sec.Offset, ec)) {
     ec = bela::make_error_code(ec.code, L"unable read section data: ", ec.message);
     return std::nullopt;
   }

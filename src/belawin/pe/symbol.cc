@@ -41,7 +41,7 @@ bool File::readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &e
     return true;
   }
   symbols.resize(fh.NumberOfSymbols);
-  if (!readAtv(symbols, fh.PointerToSymbolTable, ec)) {
+  if (!fd.ReadVectorAt(symbols, fh.PointerToSymbolTable, ec)) {
     return false;
   }
   if constexpr (bela::IsBigEndian()) {

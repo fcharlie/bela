@@ -8,34 +8,6 @@
 // https://en.wikipedia.org/wiki/Portable_Executable
 
 namespace bela::pe {
-bool File::ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const {
-  if (buffer.size() == 0) {
-    return true;
-  }
-  auto p = reinterpret_cast<uint8_t *>(buffer.data());
-  auto len = buffer.size();
-  size_t total = 0;
-  while (total < len) {
-    DWORD dwSize = 0;
-    if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
-      ec = bela::make_system_error_code(L"ReadFile: ");
-      return false;
-    }
-    if (dwSize == 0) {
-      ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
-      return false;
-    }
-    total += dwSize;
-  }
-  return true;
-}
-
-bool File::ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const {
-  if (!bela::io::Seek(fd, pos, ec)) {
-    return false;
-  }
-  return ReadFull(buffer, ec);
-}
 
 inline void fromle(FileHeader &fh) {
   if constexpr (bela::IsBigEndian()) {
@@ -134,12 +106,12 @@ inline void fromle(SectionHeader32 &sh) {
 
 bool File::parseFile(bela::error_code &ec) {
   if (size == SizeUnInitialized) {
-    if ((size = bela::io::Size(fd, ec)) == bela::SizeUnInitialized) {
+    if ((size = fd.Size(ec)) == bela::SizeUnInitialized) {
       return false;
     }
   }
   DosHeader dh;
-  if (!readAt(dh, 0, ec)) {
+  if (!fd.ReadAt(dh, 0, ec)) {
     return false;
   }
   memset(&oh, 0, sizeof(oh));
@@ -147,7 +119,7 @@ bool File::parseFile(bela::error_code &ec) {
   if (bela::fromle(dh.e_magic) == IMAGE_DOS_SIGNATURE) {
     auto signoff = static_cast<int64_t>(bela::fromle(dh.e_lfanew));
     uint8_t sign[4];
-    if (!ReadAt(sign, signoff, ec)) {
+    if (!fd.ReadAt(sign, signoff, ec)) {
       return false;
     }
     if (!(sign[0] == 'P' && sign[1] == 'E' && sign[2] == 0 && sign[3] == 0)) {
@@ -158,7 +130,7 @@ bool File::parseFile(bela::error_code &ec) {
     base = signoff + 4;
   }
 
-  if (!readAt(fh, base, ec)) {
+  if (!fd.ReadAt(fh, base, ec)) {
     return false;
   }
   fromle(fh);
@@ -169,14 +141,14 @@ bool File::parseFile(bela::error_code &ec) {
 
   if (oh.Is64Bit) {
     IMAGE_OPTIONAL_HEADER64 oh64;
-    if (!readAt(oh64, base + sizeof(FileHeader), ec)) {
+    if (!fd.ReadAt(oh64, base + sizeof(FileHeader), ec)) {
       ec = bela::make_error_code(ErrGeneral, L"pe: not a valid pe file ", ec.message);
       return false;
     }
     fromle(&oh, &oh64);
   } else {
     IMAGE_OPTIONAL_HEADER32 oh32;
-    if (!readAt(oh32, base + sizeof(FileHeader), ec)) {
+    if (!fd.ReadAt(oh32, base + sizeof(FileHeader), ec)) {
       ec = bela::make_error_code(ErrGeneral, L"pe: not a valid pe file ", ec.message);
       return false;
     }
@@ -185,7 +157,7 @@ bool File::parseFile(bela::error_code &ec) {
   sections.resize(fh.NumberOfSections);
   for (int i = 0; i < fh.NumberOfSections; i++) {
     SectionHeader32 sh;
-    if (!readFull(sh, ec)) {
+    if (!fd.ReadFull(sh, ec)) {
       return false;
     }
     fromle(sh);
@@ -211,17 +183,15 @@ bool File::parseFile(bela::error_code &ec) {
 }
 
 bool File::NewFile(std::wstring_view p, bela::error_code &ec) {
-  if (fd != INVALID_HANDLE_VALUE) {
+  if (fd) {
     ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
     return false;
   }
-  fd = CreateFileW(p.data(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
-                   FILE_ATTRIBUTE_NORMAL, nullptr);
-  if (fd == INVALID_HANDLE_VALUE) {
-    ec = bela::make_system_error_code(L"CreateFileW: ");
+  auto fd_ = bela::io::NewFile(p, ec);
+  if (!fd_) {
     return false;
   }
-  needClosed = true;
+  fd.Assgin(std::move(*fd_));
   return parseFile(ec);
 }
 

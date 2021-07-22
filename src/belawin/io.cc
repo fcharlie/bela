@@ -20,7 +20,7 @@ void FD::MoveFrom(FD &&o) {
   o.needClosed = false;
 }
 
-bool FD::ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) {
+bool FD::ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const {
   if (buffer.size() == 0) {
     return true;
   }
@@ -42,7 +42,7 @@ bool FD::ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) {
   return true;
 }
 
-bool FD::ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) {
+bool FD::ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const {
   if (!bela::io::Seek(fd, pos, ec)) {
     return false;
   }
@@ -53,7 +53,7 @@ std::optional<FD> NewFile(std::wstring_view file, bela::error_code &ec) {
   auto fd = CreateFileW(file.data(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
                         FILE_ATTRIBUTE_NORMAL, nullptr);
   if (fd == INVALID_HANDLE_VALUE) {
-    ec = bela::make_system_error_code();
+    ec = bela::make_system_error_code(L"CreateFileW() ");
     return std::nullopt;
   }
   return std::make_optional<FD>(fd, true);
@@ -65,7 +65,7 @@ std::optional<FD> NewFile(std::wstring_view file, DWORD dwDesiredAccess, DWORD d
   auto fd = CreateFileW(file.data(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition,
                         dwFlagsAndAttributes, hTemplateFile);
   if (fd == INVALID_HANDLE_VALUE) {
-    ec = bela::make_system_error_code();
+    ec = bela::make_system_error_code(L"CreateFileW() ");
     return std::nullopt;
   }
   return std::make_optional<FD>(fd, true);

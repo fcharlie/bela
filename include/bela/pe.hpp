@@ -11,6 +11,7 @@
 #include "ascii.hpp"
 #include "match.hpp"
 #include "os.hpp"
+#include "io.hpp"
 #include "buffer.hpp"
 #include "internal/image.hpp"
 
@@ -52,19 +53,6 @@ private:
     }
     return nullptr;
   }
-  // readAt to struct
-  template <typename T> bool readAt(T &t, int64_t pos, bela::error_code &ec) const {
-    return ReadAt({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, pos, ec);
-  }
-  template <typename T> bool readAtv(std::vector<T> &v, int64_t pos, bela::error_code &ec) const {
-    return ReadAt({reinterpret_cast<uint8_t *>(v.data()), sizeof(T) * v.size()}, pos, ec);
-  }
-  template <typename T> bool readFull(T &t, bela::error_code &ec) const {
-    return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec);
-  }
-  template <typename T> bool readFullv(std::vector<T> &v, int64_t pos, bela::error_code &ec) const {
-    return ReadFull({reinterpret_cast<uint8_t *>(v.data()), sizeof(T) * v.size()}, ec);
-  }
   std::optional<Buffer> readSectionData(const Section &sec, bela::error_code &ec) const;
   bool readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const;
   bool readRelocs(Section &sec) const;
@@ -74,16 +62,9 @@ private:
 
 public:
   File() = default;
-  ~File() {
-    if (fd != INVALID_HANDLE_VALUE && needClosed) {
-      CloseHandle(fd);
-      fd = INVALID_HANDLE_VALUE;
-    }
-  }
+  ~File() = default;
   File(const File &) = delete;
   File &operator=(const File &) = delete;
-  // export FD() to support
-  HANDLE FD() const { return fd; }
   template <typename AStringT> void SplitStringTable(std::vector<AStringT> &sa) const {
     auto sv = std::string_view{reinterpret_cast<const char *>(stringTable.data), stringTable.length};
     for (;;) {
@@ -102,10 +83,6 @@ public:
   int64_t Size() const { return size; }
   int64_t OverlayOffset() const { return overlayOffset; }
   int64_t OverlayLength() const { return size - overlayOffset; }
-  // ReadAt reads buffer.size() bytes from the File starting at byte offset pos.
-  bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const;
-  // ReadFull reads exactly buffer.size() bytes from FD into buffer.
-  bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const;
   int64_t ReadOverlay(std::span<uint8_t> overlayData, bela::error_code &ec) const;
   bool LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code &ec) const;
   bool LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const;
@@ -121,24 +98,23 @@ public:
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec) {
-    if (fd != INVALID_HANDLE_VALUE) {
+    if (fd) {
       ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
       return false;
     }
-    fd = fd_;
+    fd.Assgin(fd_, true);
     size = sz;
     return parseFile(ec);
   }
 
 private:
-  HANDLE fd{INVALID_HANDLE_VALUE};
+  bela::io::FD fd;
   int64_t size{SizeUnInitialized};
   FileHeader fh;
   OptionalHeader oh;
   std::vector<Section> sections;
   StringTable stringTable;
   int64_t overlayOffset{SizeUnInitialized};
-  bool needClosed{false};
 };
 
 class SymbolSearcher {

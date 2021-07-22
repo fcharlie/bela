@@ -21,7 +21,7 @@ std::optional<Version> File::LookupVersion(bela::error_code &ec) const {
   auto N = dd->VirtualAddress - sec->VirtualAddress;
   auto offsetSize = sec->Size - N;
   IMAGE_RESOURCE_DIRECTORY ird;
-  if (!readAt(ird, offset, ec)) {
+  if (!fd.ReadAt(ird, offset, ec)) {
     return std::nullopt;
   }
   auto totalEntries = static_cast<int>(ird.NumberOfNamedEntries) + static_cast<int>(ird.NumberOfIdEntries);
@@ -30,7 +30,7 @@ std::optional<Version> File::LookupVersion(bela::error_code &ec) const {
   }
   IMAGE_RESOURCE_DIRECTORY_ENTRY entry;
   for (auto i = 0; i < totalEntries; i++) {
-    if (!readFull(entry, ec)) {
+    if (!fd.ReadFull(entry, ec)) {
       return std::nullopt;
     }
     // if (entry.NameIsString != 1) {

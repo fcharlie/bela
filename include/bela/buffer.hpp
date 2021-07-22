@@ -116,7 +116,9 @@ public:
   [[nodiscard]] uint8_t operator[](const size_t _Off) const noexcept { return *(data_ + _Off); }
   [[nodiscard]] uint8_t *data() { return data_; }
   std::span<const uint8_t> MakeConstSpan() const { return std::span{data_, size_}; }
-  std::span<uint8_t> MakeSpan() const { return std::span{data_, capacity_}; }
+  std::span<uint8_t> MakeSpan(size_t spanlen = std::string_view::npos) const {
+    return std::span{data_, (std::min)(capacity_, spanlen)};
+  }
 
 private:
   uint8_t *data_{nullptr};
@@ -126,6 +128,13 @@ private:
 
 inline std::string_view cstring_view(std::span<const uint8_t> data) {
   std::string_view sv{reinterpret_cast<const char *>(data.data()), data.size()};
+  if (auto p = sv.find('\0'); p != std::string_view::npos) {
+    return sv.substr(0, p);
+  }
+  return sv;
+}
+inline std::string_view cstring_view(std::span<const char> data) {
+  std::string_view sv{data.data(), data.size()};
   if (auto p = sv.find('\0'); p != std::string_view::npos) {
     return sv.substr(0, p);
   }

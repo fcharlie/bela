@@ -23,7 +23,7 @@ bool File::readRelocs(Section &sec) const {
   }
   bela::error_code ec;
   sec.Relocs.resize(sec.NumberOfRelocations);
-  if (!fd.ReadVectorAt(sec.Relocs, sec.PointerToRelocations, ec)) {
+  if (!fd.ReadAt(sec.Relocs, sec.PointerToRelocations, ec)) {
     return false;
   }
   if constexpr (bela::IsBigEndian()) {

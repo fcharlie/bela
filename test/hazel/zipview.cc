@@ -31,7 +31,7 @@ int wmain(int argc, wchar_t **argv) {
     return 1;
   }
   std::wstring path;
-  if (auto p = bela::RealPathByHandle(fd->address(), ec)) {
+  if (auto p = bela::RealPathByHandle(fd->NativeFD(), ec)) {
     path.assign(std::move(*p));
   }
   hazel::hazel_result hr;
@@ -46,7 +46,7 @@ int wmain(int argc, wchar_t **argv) {
   bela::FPrintF(stderr, L"sizeof(zip::Reader) = %d %d %d\n", sizeof(hazel::zip::Reader), sizeof(std::string),
                 sizeof(std::vector<hazel::zip::File>));
   hazel::zip::Reader zr;
-  if (!zr.OpenReader(fd->address(), hr.size(), ec)) {
+  if (!zr.OpenReader(fd->NativeFD(), hr.size(), ec)) {
     bela::FPrintF(stderr, L"open zip file: %s error %s\n", path, ec.message);
     return 1;
   }

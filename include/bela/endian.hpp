@@ -148,6 +148,11 @@ namespace endian {
 template <std::endian E = std::endian::native> class Reader {
 public:
   Reader() = default;
+  template <typename T, size_t N>
+  requires bela::standard_layout<T> Reader(T (&p)[N]) {
+    data = reinterpret_cast<const uint8_t *>(&p);
+    size = N * sizeof(T);
+  }
   Reader(const void *p, size_t len) : data(reinterpret_cast<const uint8_t *>(p)), size(len) {}
   Reader(const Reader &other) {
     data = other.data;

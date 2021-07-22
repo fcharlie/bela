@@ -357,63 +357,9 @@ constexpr auto ErrNotFat = static_cast<long>(MagicFat);
 
 class File {
 private:
-  bool ParseFile(bela::error_code &ec);
-  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
-    DWORD dwSize = {0};
-    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
-      ec = bela::make_system_error_code(L"ReadFile: ");
-      return false;
-    }
-    outlen = static_cast<size_t>(len);
-    return true;
-  }
-  bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
-    auto p = reinterpret_cast<uint8_t *>(buffer);
-    size_t total = 0;
-    while (total < len) {
-      DWORD dwSize = 0;
-      if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
-        ec = bela::make_system_error_code(L"ReadFile: ");
-        return false;
-      }
-      if (dwSize == 0) {
-        ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
-        return false;
-      }
-      total += dwSize;
-    }
-    return true;
-  }
-  // ReadAt ReadFull
-  bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-    if (!bela::io::Seek(fd, pos, ec)) {
-      return false;
-    }
-    return ReadFull(buffer, len, ec);
-  }
-  bool ReadAt(bela::Buffer &buffer, size_t len, int64_t pos, bela::error_code &ec) {
-    if (!bela::io::Seek(fd, pos, ec)) {
-      return false;
-    }
-    if (!ReadFull(buffer.data(), len, ec)) {
-      return false;
-    }
-    buffer.size() = len;
-    return true;
-  }
-
-  void Free() {
-    if (needClosed && fd != INVALID_HANDLE_VALUE) {
-      CloseHandle(fd);
-      fd = INVALID_HANDLE_VALUE;
-    }
-  }
+  bool parseFile(bela::error_code &ec);
   void MoveFrom(File &&r) {
-    Free();
-    fd = r.fd;
-    r.fd = INVALID_HANDLE_VALUE;
-    needClosed = r.needClosed;
-    r.needClosed = false;
+    fd = std::move(r.fd);
     size = r.size;
     r.size = 0;
     baseOffset = r.baseOffset;
@@ -441,6 +387,13 @@ private:
     }
     return bela::bswap(v);
   }
+  bool ReadAt(bela::Buffer &buffer, size_t bytes, int64_t pos, bela::error_code &ec) const {
+    if (auto p = buffer.MakeSpan(bytes); fd.ReadAt(p, pos, ec)) {
+      buffer.size() = p.size();
+      return true;
+    }
+    return false;
+  }
   bool readFileHeader(int64_t &offset, bela::error_code &ec);
   bool parseSymtab(std::string_view symdat, std::string_view strtab, std::string_view cmddat, const SymtabCmd &hdr,
                    int64_t offset, bela::error_code &ec);
@@ -455,7 +408,7 @@ public:
     MoveFrom(std::move(r));
     return *this;
   }
-  ~File() { Free(); }
+  ~File() = default;
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
@@ -485,7 +438,7 @@ public:
 
 private:
   friend class FatFile;
-  HANDLE fd{INVALID_HANDLE_VALUE};
+  bela::io::FD fd;
   int64_t baseOffset{0}; // when support fat
   int64_t size{bela::SizeUnInitialized};
   std::endian en{std::endian::native};
@@ -495,7 +448,6 @@ private:
   Symtab symtab;
   Dysymtab dysymtab;
   bool is64bit{false};
-  bool needClosed{false};
 };
 
 struct FatArchHeader {
@@ -513,62 +465,9 @@ struct FatArch {
 
 class FatFile {
 private:
-  bool ParseFile(bela::error_code &ec);
-  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
-    DWORD dwSize = {0};
-    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
-      ec = bela::make_system_error_code(L"ReadFile: ");
-      return false;
-    }
-    outlen = static_cast<size_t>(len);
-    return true;
-  }
-  bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
-    auto p = reinterpret_cast<uint8_t *>(buffer);
-    size_t total = 0;
-    while (total < len) {
-      DWORD dwSize = 0;
-      if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
-        ec = bela::make_system_error_code(L"ReadFile: ");
-        return false;
-      }
-      if (dwSize == 0) {
-        ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
-        return false;
-      }
-      total += dwSize;
-    }
-    return true;
-  }
-  // ReadAt ReadFull
-  bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) {
-    if (!bela::io::Seek(fd, pos, ec)) {
-      return false;
-    }
-    return ReadFull(buffer, len, ec);
-  }
-  bool ReadAt(bela::Buffer &buffer, size_t len, int64_t pos, bela::error_code &ec) {
-    if (!bela::io::Seek(fd, pos, ec)) {
-      return false;
-    }
-    if (!ReadFull(buffer.data(), len, ec)) {
-      return false;
-    }
-    buffer.size() = len;
-    return true;
-  }
-
-  void Free() {
-    if (needClosed && fd != INVALID_HANDLE_VALUE) {
-      CloseHandle(fd);
-      fd = INVALID_HANDLE_VALUE;
-    }
-  }
+  bool parseFile(bela::error_code &ec);
   void MoveFrom(File &&r) {
-    Free();
-    fd = r.fd;
-    r.fd = INVALID_HANDLE_VALUE;
-    r.needClosed = false;
+    fd = std::move(r.fd);
     size = r.size;
     arches = std::move(arches);
   }
@@ -577,7 +476,7 @@ public:
   FatFile() = default;
   FatFile(const FatFile &) = delete;
   FatFile &operator=(const FatFile &) = delete;
-  ~FatFile() { Free(); }
+  ~FatFile() = default;
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
@@ -585,10 +484,9 @@ public:
   auto &Arches() { return arches; }
 
 private:
-  HANDLE fd{INVALID_HANDLE_VALUE};
+  bela::io::FD fd;
   int64_t size{bela::SizeUnInitialized};
   std::vector<FatArch> arches;
-  bool needClosed{false};
 };
 
 } // namespace hazel::macho

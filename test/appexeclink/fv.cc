@@ -28,7 +28,7 @@ int wmain(int argc, wchar_t **argv) {
     return 1;
   }
   FILE_STANDARD_INFO di;
-  if (GetFileInformationByHandleEx(fd->address(), FileStandardInfo, &di, sizeof(di)) == TRUE) {
+  if (GetFileInformationByHandleEx(fd->NativeFD(), FileStandardInfo, &di, sizeof(di)) == TRUE) {
     bela::FPrintF(stderr, L"File size: %d %b\n", di.EndOfFile.QuadPart, di.Directory);
   } else {
     auto ec = bela::make_system_error_code();
@@ -44,7 +44,7 @@ int wmain(int argc, wchar_t **argv) {
   space.resize(hr.align_length() + 2, ' ');
   bela::FPrintF(stderr, L"space len %d hr.align_length() %d\n", space.size(), hr.align_length());
   std::wstring_view spaceview(space);
-  if (auto p = bela::RealPathByHandle(fd->address(), ec); p) {
+  if (auto p = bela::RealPathByHandle(fd->NativeFD(), ec); p) {
     bela::FPrintF(stderr, L"file %v %v\n", *p, hr.type());
   }
 

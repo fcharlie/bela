@@ -78,63 +78,9 @@ struct verneed {
 
 class File {
 private:
-  bool ParseFile(bela::error_code &ec);
-  bool Read(void *buffer, size_t len, size_t &outlen, bela::error_code &ec) const {
-    DWORD dwSize = {0};
-    if (ReadFile(fd, buffer, static_cast<DWORD>(len), &dwSize, nullptr) != TRUE) {
-      ec = bela::make_system_error_code(L"ReadFile: ");
-      return false;
-    }
-    outlen = static_cast<size_t>(len);
-    return true;
-  }
-  bool ReadFull(void *buffer, size_t len, bela::error_code &ec) const {
-    auto p = reinterpret_cast<uint8_t *>(buffer);
-    size_t total = 0;
-    while (total < len) {
-      DWORD dwSize = 0;
-      if (ReadFile(fd, p + total, static_cast<DWORD>(len - total), &dwSize, nullptr) != TRUE) {
-        ec = bela::make_system_error_code(L"ReadFile: ");
-        return false;
-      }
-      if (dwSize == 0) {
-        ec = bela::make_error_code(ERROR_HANDLE_EOF, L"Reached the end of the file");
-        return false;
-      }
-      total += dwSize;
-    }
-    return true;
-  }
-  // ReadAt ReadFull
-  bool ReadAt(void *buffer, size_t len, int64_t pos, bela::error_code &ec) const {
-    if (!bela::io::Seek(fd, pos, ec)) {
-      return false;
-    }
-    return ReadFull(buffer, len, ec);
-  }
-  bool ReadAt(bela::Buffer &buffer, size_t len, int64_t pos, bela::error_code &ec) const {
-    if (!bela::io::Seek(fd, pos, ec)) {
-      return false;
-    }
-    if (!ReadFull(buffer.data(), len, ec)) {
-      return false;
-    }
-    buffer.size() = len;
-    return true;
-  }
-
-  void Free() {
-    if (needClosed && fd != INVALID_HANDLE_VALUE) {
-      CloseHandle(fd);
-      fd = INVALID_HANDLE_VALUE;
-    }
-  }
+  bool parseFile(bela::error_code &ec);
   void MoveFrom(File &&r) {
-    Free();
-    fd = r.fd;
-    r.fd = INVALID_HANDLE_VALUE;
-    needClosed = r.needClosed;
-    r.needClosed = false;
+    fd = std::move(r.fd);
     size = r.size;
     r.size = 0;
     sections = std::move(r.sections);
@@ -168,8 +114,13 @@ private:
   }
   bool sectionData(const Section &sec, bela::Buffer &buffer, bela::error_code &ec) const {
     buffer.grow(sec.Size);
-    return ReadAt(buffer, sec.Size, sec.Offset, ec);
+    if (!fd.ReadAt(buffer.MakeSpan(sec.Size), sec.Offset, ec)) {
+      return false;
+    }
+    buffer.size() = sec.Size;
+    return true;
   }
+
   bool stringTable(uint32_t link, bela::Buffer &buf, bela::error_code &ec) const {
     if (link <= 0 || link >= static_cast<uint32_t>(sections.size())) {
       ec = bela::make_error_code(L"section has invalid string table link");
@@ -203,7 +154,7 @@ public:
   File() = default;
   File(const File &) = delete;
   File &operator=(const File &) = delete;
-  ~File() { Free(); }
+  ~File() = default;
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
@@ -239,7 +190,7 @@ public:
   std::optional<std::string> Rupath(bela::error_code &ec) const { return DynString(DT_RPATH, ec); };
 
 private:
-  HANDLE fd{INVALID_HANDLE_VALUE};
+  bela::io::FD fd;
   int64_t size{bela::SizeUnInitialized};
   std::endian en{std::endian::native};
   FileHeader fh;
@@ -248,7 +199,6 @@ private:
   std::vector<verneed> gnuNeed;
   bela::Buffer gnuVersym;
   bool is64bit{false};
-  bool needClosed{false};
 };
 } // namespace hazel::elf
 

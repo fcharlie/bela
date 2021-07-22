@@ -42,6 +42,10 @@ inline bool Seek(HANDLE fd, int64_t pos, bela::error_code &ec, Whence whence = S
   return true;
 }
 
+// Avoid the uint8_t buffer from incorrectly matching the template function
+template <class T>
+concept vectorizable_derived = std::is_standard_layout_v<T> &&(!std::same_as<T, uint8_t>);
+
 class FD {
 private:
   void Free();
@@ -66,33 +70,37 @@ public:
     Free();
     fd = fd_;
     needClosed = needClosed_;
+    return *this;
   }
   explicit operator bool() const { return fd != INVALID_HANDLE_VALUE; }
-  const auto address() const { return fd; }
+  const auto NativeFD() const { return fd; }
   int64_t Size(bela::error_code &ec) const { return bela::io::Size(fd, ec); }
+  bool Seek(int64_t pos, bela::error_code &ec, Whence whence = SeekStart) const {
+    return bela::io::Seek(fd, pos, ec, whence);
+  }
   // ReadAt reads buffer.size() bytes from the File starting at byte offset pos.
   bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const;
   // ReadFull reads exactly buffer.size() bytes from FD into buffer.
   bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const;
 
   template <typename T>
-  requires std::is_standard_layout_v<T>
+  requires bela::standard_layout<T>
   bool ReadFull(T &t, bela::error_code &ec) const { return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec); }
   template <typename T>
-  requires std::is_standard_layout_v<T>
-  bool ReadVectorFull(std::vector<T> &tv, bela::error_code &ec) const {
+  requires vectorizable_derived<T>
+  bool ReadFull(std::vector<T> &tv, bela::error_code &ec) const {
     return ReadFull({reinterpret_cast<uint8_t *>(tv.data()), sizeof(T) * tv.size()}, ec);
   }
 
   template <typename T>
-  requires std::is_standard_layout_v<T>
+  requires bela::standard_layout<T>
   bool ReadAt(T &t, int64_t pos, bela::error_code &ec) const {
     return ReadAt({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, pos, ec);
   }
 
   template <typename T>
-  requires std::is_standard_layout_v<T>
-  bool ReadVectorAt(std::vector<T> &tv, int64_t pos, bela::error_code &ec) const {
+  requires vectorizable_derived<T>
+  bool ReadAt(std::vector<T> &tv, int64_t pos, bela::error_code &ec) const {
     return ReadAt({reinterpret_cast<uint8_t *>(tv.data()), sizeof(T) * tv.size()}, pos, ec);
   }
 

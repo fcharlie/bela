@@ -35,16 +35,16 @@ bool File::readRelocs(Section &sec) const {
   }
   return true;
 }
-std::optional<SectionData> File::readSectionData(const Section &sec, bela::error_code &ec) const {
+std::optional<Buffer> File::readSectionData(const Section &sec, bela::error_code &ec) const {
   if (sec.Size == 0) {
-    return std::make_optional<SectionData>();
+    return std::make_optional<Buffer>();
   }
-  SectionData sd;
-  sd.resize(sec.Size);
-  if (!ReadAt(sd.make_span(), sec.Offset, ec)) {
+  Buffer buffer(sec.Size);
+  if (!ReadAt(buffer.MakeSpan(), sec.Offset, ec)) {
     ec = bela::make_error_code(ec.code, L"unable read section data: ", ec.message);
     return std::nullopt;
   }
-  return std::make_optional(std::move(sd));
+  buffer.size() = static_cast<size_t>(sec.Size);
+  return std::make_optional(std::move(buffer));
 }
 } // namespace bela::pe

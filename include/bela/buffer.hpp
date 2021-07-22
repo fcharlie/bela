@@ -9,12 +9,9 @@
 #include "types.hpp"
 
 namespace bela {
-// Buffer
-namespace buffer {
-template <typename Allocator = std::allocator<uint8_t>> class Buffer {
+class Buffer {
 private:
-  typedef Allocator allocator_type;
-  allocator_type get_allocator() const noexcept { return alloc_; }
+  std::allocator<uint8_t> alloc_;
   void MoveFrom(Buffer &&other) {
     Free(); // Free self
     data_ = other.data_;
@@ -27,13 +24,12 @@ private:
   }
   void Free() {
     if (data_ != nullptr) {
-      get_allocator().deallocate(data_, capacity_);
+      alloc_.deallocate(data_, capacity_);
       data_ = nullptr;
       capacity_ = 0;
       size_ = 0;
     }
   }
-  allocator_type alloc_;
 
 public:
   Buffer() = default;
@@ -53,12 +49,12 @@ public:
     if (n <= capacity_) {
       return;
     }
-    auto b = get_allocator().allocate(n);
+    auto b = alloc_.allocate(n);
     if (size_ != 0) {
       memcpy(b, data_, size_);
     }
     if (data_ != nullptr) {
-      get_allocator().deallocate(data_, capacity_);
+      alloc_.deallocate(data_, capacity_);
     }
     data_ = b;
     capacity_ = n;
@@ -74,19 +70,26 @@ public:
       return std::string_view();
     }
     cslength = (std::min)(cslength, size_);
-    auto p = data_ + cslength;
-    if (auto end = memchr(data_, 0, cslength); end != nullptr) {
-      return std::string_view(reinterpret_cast<const char *>(p), end - p);
+    auto p = data_ + offset;
+    if (auto end = memchr(p, 0, cslength); end != nullptr) {
+      return std::string_view(reinterpret_cast<const char *>(p), reinterpret_cast<const uint8_t *>(end) - p);
     }
     return std::string_view();
   }
-  template <typename T> const T *direct_cast(size_t offset) const {
+  template <typename T>
+  requires std::is_standard_layout_v<T>
+  [[nodiscard]] const T *unsafe_cast() const { return reinterpret_cast<const T *>(data_); }
+  template <typename T>
+  requires std::is_standard_layout_v<T>
+  const T *direct_cast(size_t offset) const {
     if (offset + sizeof(T) > size_) {
       return nullptr;
     }
     return reinterpret_cast<const T *>(data_ + offset);
   }
-  template <typename T> const T *bit_cast(T *t, size_t offset) const {
+  template <typename T>
+  requires std::is_standard_layout_v<T>
+  const T *bit_cast(T *t, size_t offset) const {
     if (offset + sizeof(T) > size_) {
       return nullptr;
     }
@@ -100,20 +103,26 @@ public:
     }
     return bela::cast_fromle<T>(data_ + offset);
   }
+  template <typename T>
+  requires std::integral<T> T cast_frombe(size_t offset)
+  const {
+    if (offset + sizeof(T) > size_) {
+      return 0;
+    }
+    return bela::cast_frombe<T>(data_ + offset);
+  }
 
-  template <typename I> [[nodiscard]] const I *cast() const { return reinterpret_cast<const I *>(data_); }
   [[nodiscard]] const uint8_t *data() const { return data_; }
   [[nodiscard]] uint8_t operator[](const size_t _Off) const noexcept { return *(data_ + _Off); }
   [[nodiscard]] uint8_t *data() { return data_; }
-  std::span<uint8_t> MakeSpan() const { return std::span(data_, data_ + size_); }
+  std::span<uint8_t> MakeConstSpan() const { return std::span(data_, data_ + size_); }
+  std::span<uint8_t> MakeSpan() const { return std::span(data_, data_ + capacity_); }
 
 private:
   uint8_t *data_{nullptr};
   size_t size_{0};
   size_t capacity_{0};
 };
-} // namespace buffer
-using Buffer = bela::buffer::Buffer<std::allocator<uint8_t>>;
 } // namespace bela
 
 #endif

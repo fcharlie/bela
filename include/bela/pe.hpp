@@ -7,11 +7,11 @@
 #include <optional>
 #include <span>
 #include "base.hpp"
-#include "endian.hpp"
 #include "types.hpp"
 #include "ascii.hpp"
 #include "match.hpp"
 #include "os.hpp"
+#include "buffer.hpp"
 #include "internal/image.hpp"
 
 namespace bela::pe {
@@ -65,7 +65,7 @@ private:
   template <typename T> bool readFullv(std::vector<T> &v, int64_t pos, bela::error_code &ec) const {
     return ReadFull({reinterpret_cast<uint8_t *>(v.data()), sizeof(T) * v.size()}, ec);
   }
-  std::optional<SectionData> readSectionData(const Section &sec, bela::error_code &ec) const;
+  std::optional<Buffer> readSectionData(const Section &sec, bela::error_code &ec) const;
   bool readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const;
   bool readRelocs(Section &sec) const;
   bool readStringTable(bela::error_code &ec);

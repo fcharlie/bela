@@ -5,7 +5,6 @@
 #include <string>
 #include <bela/base.hpp>
 #include <bela/phmap.hpp>
-#include <bela/endian.hpp>
 
 namespace bela::pe {
 constexpr long ErrNoOverlay = 0xFF01;
@@ -333,62 +332,6 @@ struct DotNetMetadata {
   std::vector<std::string> imports;
 };
 
-class SectionData {
-public:
-  SectionData() = default;
-  void resize(size_t size) { rawdata.resize(size); }
-  char *data() { return rawdata.data(); }
-  const char *data() const { return rawdata.data(); } // read section
-  size_t size() const { return rawdata.size(); }
-  std::span<uint8_t> make_span() { return {reinterpret_cast<uint8_t *>(rawdata.data()), rawdata.size()}; }
-  std::string_view substr(size_t pos = 0) const {
-    if (pos > rawdata.size()) {
-      return std::string_view();
-    }
-    return std::string_view{rawdata.data() + pos, rawdata.size() - pos};
-  }
-  std::string_view cstring_view(size_t offset, size_t cslength = std::string_view::npos) const {
-    if (offset > rawdata.size()) {
-      return std::string_view();
-    }
-    cslength = (std::min)(cslength, rawdata.size());
-    for (auto end = offset; end < cslength; end++) {
-      if (rawdata[end] == 0) {
-        return std::string_view(rawdata.data() + offset, end - offset);
-      }
-    }
-    return std::string_view();
-  }
-  template <typename T> const T *direct_cast(size_t offset) const {
-    if (offset + sizeof(T) > rawdata.size()) {
-      return nullptr;
-    }
-    return reinterpret_cast<const T *>(rawdata.data() + offset);
-  }
-  template <typename T> const T *bit_cast(T *t, size_t offset) const {
-    if (offset + sizeof(T) > rawdata.size()) {
-      return nullptr;
-    }
-    return reinterpret_cast<T *>(memcpy(t, rawdata.size() + offset, sizeof(T)));
-  }
-  uint16_t function_hit(size_t offset) const {
-    if (offset + 2 > rawdata.size()) {
-      return 0;
-    }
-    return bela::cast_fromle<uint16_t>(rawdata.data() + offset);
-  }
-  template <typename T>
-  requires std::integral<T> T cast_fromle(size_t offset)
-  const {
-    if (offset + sizeof(T) > rawdata.size()) {
-      return 0;
-    }
-    return bela::cast_fromle<T>(rawdata.data() + offset);
-  }
-
-private:
-  std::vector<char> rawdata;
-};
 } // namespace bela::pe
 
 #endif

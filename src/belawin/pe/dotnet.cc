@@ -111,7 +111,7 @@ std::optional<DotNetMetadata> File::LookupDotNetMetadata(bela::error_code &ec) c
   }
   auto N = clrd->VirtualAddress - sec->VirtualAddress;
   auto cr = sdata->direct_cast<IMAGE_COR20_HEADER>(N);
-  if (cr = nullptr) {
+  if (cr == nullptr) {
     return std::nullopt;
   }
   auto va = bela::fromle(cr->MetaData.VirtualAddress);

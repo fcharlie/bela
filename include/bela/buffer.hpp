@@ -74,7 +74,7 @@ public:
     if (auto end = memchr(p, 0, cslength); end != nullptr) {
       return std::string_view(reinterpret_cast<const char *>(p), reinterpret_cast<const uint8_t *>(end) - p);
     }
-    return std::string_view();
+    return std::string_view(reinterpret_cast<const char *>(p), cslength);
   }
   template <typename T>
   requires std::is_standard_layout_v<T>

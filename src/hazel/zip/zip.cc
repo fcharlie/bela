@@ -87,10 +87,9 @@ bool Reader::readDirectoryEnd(directoryEnd &d, bela::error_code &ec) {
       blen = size;
     }
     buffer.grow(blen);
-    if (!fd.ReadAt(buffer.MakeSpan(blen), size - blen, ec)) {
+    if (!fd.ReadAt(buffer, blen, size - blen, ec)) {
       return false;
     }
-    buffer.size() = blen;
     if (auto p = findSignatureInBlock(buffer); p >= 0) {
       b.Reset({buffer.data() + p, static_cast<size_t>(blen - p)});
       directoryEndOffset = size - blen + p;
@@ -171,9 +170,10 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
   if (br.ReadFull(buffer.data(), totallen, ec) != totallen) {
     return false;
   }
-  file.name = cleanupName(buffer.data(), filenameLen);
+  buffer.size() = static_cast<size_t>(totallen);
+  file.name = buffer.cstring_view(0, filenameLen);
   if (commentLen != 0) {
-    file.comment = cleanupName(buffer.data() + filenameLen + extraLen, commentLen);
+    file.comment = buffer.cstring_view(filenameLen + extraLen, commentLen);
   }
   auto needUSize = file.uncompressedSize == SizeMin;
   auto needSize = file.compressedSize == SizeMin;
@@ -276,7 +276,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
       auto ver = fb.Pick();
       auto crc32val = fb.Read<uint32_t>();
       file.flags |= 0x800;
-      file.name = cleanupName(fb.Data<char>(), fb.Size());
+      file.name = bela::cstring_view({fb.Data<char>(), fb.Size()});
       continue;
     }
     if (fieldTag == infoZipUnicodeCommentExtraID) {
@@ -290,7 +290,7 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
       }
       auto ver = fb.Pick();
       auto crc32val = fb.Read<uint32_t>();
-      file.comment = cleanupName(fb.Data<char>(), fb.Size());
+      file.comment = bela::cstring_view({fb.Data<char>(), fb.Size()});
       continue;
     }
     // https://www.winzip.com/win/en/aes_info.html

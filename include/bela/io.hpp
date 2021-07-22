@@ -82,7 +82,13 @@ public:
   bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const;
   // ReadFull reads exactly buffer.size() bytes from FD into buffer.
   bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const;
-
+  bool ReadAt(bela::Buffer &buffer, size_t nbytes, int64_t pos, bela::error_code &ec) const {
+    if (auto p = buffer.MakeSpan(nbytes); ReadAt(p, pos, ec)) {
+      buffer.size() = p.size();
+      return true;
+    }
+    return false;
+  }
   template <typename T>
   requires bela::standard_layout<T>
   bool ReadFull(T &t, bela::error_code &ec) const { return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec); }

@@ -389,13 +389,6 @@ private:
     }
     return bela::bswap(v);
   }
-  bool ReadAt(bela::Buffer &buffer, size_t bytes, int64_t pos, bela::error_code &ec) const {
-    if (auto p = buffer.MakeSpan(bytes); fd.ReadAt(p, pos, ec)) {
-      buffer.size() = p.size();
-      return true;
-    }
-    return false;
-  }
   bool readFileHeader(int64_t &offset, bela::error_code &ec);
   bool parseSymtab(std::string_view symdat, std::string_view strtab, std::string_view cmddat, const SymtabCmd &hdr,
                    int64_t offset, bela::error_code &ec);

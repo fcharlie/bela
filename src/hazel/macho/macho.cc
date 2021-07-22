@@ -168,7 +168,7 @@ bool File::parseSymtab(std::string_view symdat, std::string_view strtab, std::st
 bool File::pushSection(hazel::macho::Section *sh, bela::error_code &ec) {
   if (sh->Nreloc > 0) {
     bela::Buffer reldat(sh->Nreloc * 8);
-    if (!ReadAt(reldat, sh->Nreloc * 8, sh->Reloff, ec)) {
+    if (!fd.ReadAt(reldat, sh->Nreloc * 8, sh->Reloff, ec)) {
       return false;
     }
     std::string_view b{reinterpret_cast<const char *>(reldat.data()), reldat.size()};
@@ -224,7 +224,7 @@ bool File::parseFile(bela::error_code &ec) {
   }
   is64bit = (fh.Magic == Magic64);
   bela::Buffer buffer(fh.Cmdsz);
-  if (!ReadAt(buffer, fh.Cmdsz, offset, ec)) {
+  if (!fd.ReadAt(buffer, fh.Cmdsz, offset, ec)) {
     return false;
   }
   std::string_view dat{reinterpret_cast<const char *>(buffer.data()), fh.Cmdsz};
@@ -293,7 +293,7 @@ bool File::parseFile(bela::error_code &ec) {
       hdr.Strsize = endian_cast(p->Strsize);
       hdr.Symoff = endian_cast(p->Symoff);
       bela::Buffer strtab(hdr.Strsize);
-      if (!ReadAt(strtab, hdr.Strsize, hdr.Stroff, ec)) {
+      if (!fd.ReadAt(strtab, hdr.Strsize, hdr.Stroff, ec)) {
         return false;
       }
       auto symsz = 12;
@@ -302,7 +302,7 @@ bool File::parseFile(bela::error_code &ec) {
       }
       auto symdatsz = hdr.Nsyms * symsz;
       bela::Buffer symdat(symdatsz);
-      if (!ReadAt(symdat, symdatsz, hdr.Symoff, ec)) {
+      if (!fd.ReadAt(symdat, symdatsz, hdr.Symoff, ec)) {
         return false;
       }
       std::string_view symdatsv{reinterpret_cast<const char *>(symdat.data()), symdat.size()};

@@ -40,11 +40,10 @@ std::optional<Buffer> File::readSectionData(const Section &sec, bela::error_code
     return std::make_optional<Buffer>();
   }
   Buffer buffer(sec.Size);
-  if (!fd.ReadAt(buffer.MakeSpan(), sec.Offset, ec)) {
+  if (!fd.ReadAt(buffer, sec.Size, sec.Offset, ec)) {
     ec = bela::make_error_code(ec.code, L"unable read section data: ", ec.message);
     return std::nullopt;
   }
-  buffer.size() = static_cast<size_t>(sec.Size);
   return std::make_optional(std::move(buffer));
 }
 } // namespace bela::pe

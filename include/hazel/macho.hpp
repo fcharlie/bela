@@ -371,17 +371,19 @@ private:
     memcpy(&fh, &r.fh, sizeof(fh));
     memset(&r.fh, 0, sizeof(r.fh));
   }
-
-  template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer endian_cast(Integer t) {
+  //// integral
+  template <typename I>
+  requires std::integral<I> I endian_cast(I t)
+  const {
     if (en == std::endian::native) {
       return t;
     }
     return bela::bswap(t);
   }
-  template <typename Integer, std::enable_if_t<std::is_integral<Integer>::value, bool> = true>
-  Integer cast_from(const void *p) {
-    auto v = bela::unaligned_load<Integer>(p);
+  template <typename I>
+  requires std::integral<I> I cast_from(const void *p)
+  const {
+    auto v = bela::unaligned_load<I>(p);
     if (en == std::endian::native) {
       return v;
     }

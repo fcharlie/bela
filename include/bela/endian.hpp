@@ -158,13 +158,14 @@ public:
     data = other.data;
     size = other.size;
   }
-  template <typename T = uint8_t> Reader(std::span<T> s) { Reset(s); }
   Reader &operator=(const Reader &other) {
     data = other.data;
     size = other.size;
     return *this;
   }
-  template <typename T = uint8_t> void Reset(std::span<T> s) {
+  template <typename T = uint8_t>
+  requires bela::standard_layout<T>
+  void Reset(std::span<T> s) {
     data = reinterpret_cast<const uint8_t *>(s.data());
     size = s.size() * sizeof(T);
   }
@@ -201,7 +202,9 @@ public:
     return Reader(p, n);
   }
   size_t Size() const { return size; }
-  template <typename T = char> const T *Data() const { return reinterpret_cast<const T *>(data); }
+  template <typename T = char>
+  requires bela::standard_layout<T>
+  const T *Data() const { return reinterpret_cast<const T *>(data); }
 
 private:
   const uint8_t *data{nullptr};

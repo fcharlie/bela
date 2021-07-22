@@ -28,7 +28,7 @@ std::string StringTable::String(uint32_t start, bela::error_code &ec) const {
     ec = bela::make_error_code(ErrGeneral, L"offset ", start, L" is beyond the end of string table");
     return "";
   }
-  return std::string(cstring_view(data + start, length - start));
+  return std::string(bela::cstring_view({data + start, length - start}));
 }
 
 bool File::readStringTable(bela::error_code &ec) {

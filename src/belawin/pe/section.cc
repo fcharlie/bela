@@ -6,9 +6,9 @@ namespace bela::pe {
 
 std::string File::sectionFullName(SectionHeader32 &sh) const {
   if (sh.Name[0] != '/') {
-    return std::string(cstring_view(sh.Name, sizeof(sh.Name)));
+    return std::string(bela::cstring_view(sh.Name));
   }
-  auto slen = cstring_view(sh.Name + 1, sizeof(sh.Name) - 1);
+  auto slen = bela::cstring_view({sh.Name + 1, sizeof(sh.Name) - 1});
   uint32_t offset = 0;
   if (auto result = std::from_chars(slen.data(), slen.data() + slen.size(), offset); result.ec != std::errc{}) {
     return "";

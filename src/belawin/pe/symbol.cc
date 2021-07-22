@@ -9,7 +9,7 @@ std::string symbolFullName(const COFFSymbol &sm, const StringTable &st) {
     bela::error_code ec;
     return st.String(offset, ec);
   }
-  return std::string(cstring_view(sm.Name, sizeof(sm.Name)));
+  return std::string(bela::cstring_view(sm.Name));
 }
 
 // Auxiliary Symbol Records

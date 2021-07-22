@@ -123,6 +123,23 @@ private:
   size_t size_{0};
   size_t capacity_{0};
 };
+
+inline std::string_view cstring_view(std::span<const uint8_t> data) {
+  std::string_view sv{reinterpret_cast<const char *>(data.data()), data.size()};
+  if (auto p = sv.find('\0'); p != std::string_view::npos) {
+    return sv.substr(0, p);
+  }
+  return sv;
+}
+
+inline std::wstring_view cstring_view(std::span<const wchar_t> data) {
+  std::wstring_view sv{reinterpret_cast<const wchar_t *>(data.data()), data.size()};
+  if (auto p = sv.find(L'\0'); p != std::wstring_view::npos) {
+    return sv.substr(0, p);
+  }
+  return sv;
+}
+
 } // namespace bela
 
 #endif

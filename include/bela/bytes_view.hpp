@@ -61,6 +61,16 @@ public:
   }
   [[nodiscard]] auto size() const { return size_; }
   [[nodiscard]] const auto *data() const { return data_; }
+
+  void remove_prefix(const size_t count) noexcept {
+    auto minSize = (std::min)(count, size_);
+    size_ -= minSize;
+    data_ += minSize;
+  }
+  void remove_suffix(const size_t count) noexcept {
+    auto minSize = (std::min)(count, size_);
+    size_ -= minSize;
+  }
   // make_cstring_view convert null terminating character to string_view
   [[nodiscard]] auto make_cstring_view(size_t offset = 0, size_t cslength = std::string_view::npos) const {
     if (offset > size_) {

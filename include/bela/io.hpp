@@ -46,6 +46,9 @@ inline bool Seek(HANDLE fd, int64_t pos, bela::error_code &ec, Whence whence = S
 template <class T>
 concept vectorizable_derived = std::is_standard_layout_v<T> &&(!std::same_as<T, uint8_t>);
 
+template <class T>
+concept exclude_buffer_derived = std::is_standard_layout_v<T> &&(!std::same_as<T, bela::Buffer>);
+
 class FD {
 private:
   void Free();
@@ -80,6 +83,13 @@ public:
   }
   // ReadAt reads buffer.size() bytes from the File starting at byte offset pos.
   bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const;
+  bool ReadFull(bela::Buffer &buffer, size_t nbytes, bela::error_code &ec) const {
+    if (auto p = buffer.MakeSpan(nbytes); ReadFull(p, ec)) {
+      buffer.size() = p.size();
+      return true;
+    }
+    return false;
+  }
   // ReadFull reads exactly buffer.size() bytes from FD into buffer.
   bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const;
   bool ReadAt(bela::Buffer &buffer, size_t nbytes, int64_t pos, bela::error_code &ec) const {
@@ -90,7 +100,7 @@ public:
     return false;
   }
   template <typename T>
-  requires bela::standard_layout<T>
+  requires exclude_buffer_derived<T>
   bool ReadFull(T &t, bela::error_code &ec) const { return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec); }
   template <typename T>
   requires vectorizable_derived<T>
@@ -99,7 +109,7 @@ public:
   }
 
   template <typename T>
-  requires bela::standard_layout<T>
+  requires exclude_buffer_derived<T>
   bool ReadAt(T &t, int64_t pos, bela::error_code &ec) const {
     return ReadAt({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, pos, ec);
   }

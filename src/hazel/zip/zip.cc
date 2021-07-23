@@ -350,23 +350,15 @@ bool Reader::Initialize(bela::error_code &ec) {
 }
 
 bool Reader::OpenReader(std::wstring_view file, bela::error_code &ec) {
-  if (fd) {
-    ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
-    return false;
-  }
   auto fd_ = bela::io::NewFile(file, ec);
   if (!fd_) {
     return false;
   }
-  fd.Assgin(std::move(*fd_));
+  fd = std::move(*fd_);
   return Initialize(ec);
 }
 
 bool Reader::OpenReader(HANDLE nfd, int64_t sz, bela::error_code &ec) {
-  if (fd) {
-    ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
-    return false;
-  }
   fd.Assgin(nfd, false);
   size = sz;
   return Initialize(ec);

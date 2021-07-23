@@ -182,19 +182,6 @@ bool File::parseFile(bela::error_code &ec) {
   return true;
 }
 
-bool File::NewFile(std::wstring_view p, bela::error_code &ec) {
-  if (fd) {
-    ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
-    return false;
-  }
-  auto fd_ = bela::io::NewFile(p, ec);
-  if (!fd_) {
-    return false;
-  }
-  fd.Assgin(std::move(*fd_));
-  return parseFile(ec);
-}
-
 // Lookup function table
 bool File::LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const {
   if (!LookupImports(ft.imports, ec)) {
@@ -204,6 +191,21 @@ bool File::LookupFunctionTable(FunctionTable &ft, bela::error_code &ec) const {
     return false;
   }
   return LookupExports(ft.exports, ec);
+}
+
+bool File::NewFile(std::wstring_view p, bela::error_code &ec) {
+  auto fd_ = bela::io::NewFile(p, ec);
+  if (!fd_) {
+    return false;
+  }
+  fd = std::move(*fd_);
+  return parseFile(ec);
+}
+
+bool File::NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec) {
+  fd.Assgin(fd_, true);
+  size = sz;
+  return parseFile(ec);
 }
 
 } // namespace bela::pe

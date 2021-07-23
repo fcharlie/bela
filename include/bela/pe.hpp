@@ -66,7 +66,7 @@ public:
   File(const File &) = delete;
   File &operator=(const File &) = delete;
   template <typename AStringT> void SplitStringTable(std::vector<AStringT> &sa) const {
-    auto sv = std::string_view{reinterpret_cast<const char *>(stringTable.data), stringTable.length};
+    auto sv = stringTable.buffer.substr();
     for (;;) {
       auto p = sv.find('\0');
       if (p == std::string_view::npos) {
@@ -97,15 +97,7 @@ public:
   bela::pe::Subsystem Subsystem() const { return static_cast<bela::pe::Subsystem>(oh.Subsystem); }
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
-  bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec) {
-    if (fd) {
-      ec = bela::make_error_code(L"The file has been opened, the function cannot be called repeatedly");
-      return false;
-    }
-    fd.Assgin(fd_, true);
-    size = sz;
-    return parseFile(ec);
-  }
+  bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
 
 private:
   bela::io::FD fd;

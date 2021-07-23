@@ -239,19 +239,19 @@ constexpr uint32_t COFFSymbolSize = sizeof(COFFSymbol);
 
 // StringTable: Programs written in golang will customize stringtable
 struct StringTable {
-  uint8_t *data{nullptr};
-  size_t length{0};
-  StringTable() = default;
-  StringTable(const StringTable &) = delete;
-  StringTable &operator=(const StringTable &) = delete;
-  StringTable(StringTable &&other) { MoveFrom(std::move(other)); }
-  StringTable &operator=(StringTable &&other) {
-    MoveFrom(std::move(other));
-    return *this;
+  bela::Buffer buffer;
+  std::string_view make_cstring_view(uint32_t start, bela::error_code &ec) const {
+    if (start < 4) {
+      ec = bela::make_error_code(ErrGeneral, L"offset ", start, L" is before the start of string table");
+      return "";
+    }
+    start -= 4;
+    if (static_cast<size_t>(start) > buffer.size()) {
+      ec = bela::make_error_code(ErrGeneral, L"offset ", start, L" is beyond the end of string table");
+      return "";
+    }
+    return buffer.cstring_view(start);
   }
-  ~StringTable();
-  void MoveFrom(StringTable &&other);
-  std::string String(uint32_t start, bela::error_code &ec) const;
 };
 
 // Symbol is similar to COFFSymbol with Name field replaced

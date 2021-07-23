@@ -72,11 +72,20 @@ std::optional<FD> NewFile(std::wstring_view file, DWORD dwDesiredAccess, DWORD d
 }
 
 bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, uint64_t maxsize) {
-  bela::MapView mv;
-  if (!mv.MappingView(file, ec, 1, static_cast<size_t>(maxsize))) {
+  auto fd = bela::io::NewFile(file, ec);
+  if (!fd) {
     return false;
   }
-  auto mmv = mv.subview();
+  auto size = fd->Size(ec);
+  if (size == bela::SizeUnInitialized) {
+    return false;
+  }
+  auto maxSize = (std::min)(static_cast<size_t>(maxsize), static_cast<size_t>(size));
+  bela::Buffer buffer(maxSize);
+  if (!fd->ReadFull(buffer.MakeSpan(), ec)) {
+    return false;
+  }
+  bela::MemView mmv(buffer.data(), buffer.size());
   constexpr uint8_t utf8bom[] = {0xEF, 0xBB, 0xBF};
   constexpr uint8_t utf16le[] = {0xFF, 0xFE};
   constexpr uint8_t utf16be[] = {0xFE, 0xFF};

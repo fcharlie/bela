@@ -7,7 +7,7 @@ std::string symbolFullName(const COFFSymbol &sm, const StringTable &st) {
   if (sm.Name[0] == 0 && sm.Name[1] == 0 && sm.Name[2] == 0 && sm.Name[3] == 0) {
     auto offset = bela::cast_fromle<uint32_t>(sm.Name + 4);
     bela::error_code ec;
-    return st.String(offset, ec);
+    return std::string(st.make_cstring_view(offset, ec));
   }
   return std::string(bela::cstring_view(sm.Name));
 }

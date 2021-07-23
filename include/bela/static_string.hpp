@@ -202,7 +202,7 @@ private:
 };
 
 template <typename CharT, typename Traits>
-constexpr inline int lexicographical_compare(const CharT *s1, std::size_t n1, const CharT *s2,
+constexpr int lexicographical_compare(const CharT *s1, std::size_t n1, const CharT *s2,
                                              std::size_t n2) noexcept {
   if (n1 < n2)
     return Traits::compare(s1, s2, n1) <= 0 ? -1 : 1;
@@ -305,7 +305,7 @@ template <std::size_t N, typename Integer> inline static_wstring<N> to_static_ws
   return static_wstring<N>(digits_begin, std::distance(digits_begin, digits_end));
 }
 
-constexpr inline int count_digits(std::size_t value) { return value < 10 ? 1 : count_digits(value / 10) + 1; }
+constexpr int count_digits(std::size_t value) { return value < 10 ? 1 : count_digits(value / 10) + 1; }
 
 // Ignore -Wformat-truncation, we know what
 // we are doing here. The version check does
@@ -414,7 +414,7 @@ template <std::size_t N> inline static_wstring<N> to_static_wstring_float_impl(l
 #endif
 
 template <typename Traits, typename CharT, typename ForwardIterator>
-constexpr inline ForwardIterator find_not_of(ForwardIterator first, ForwardIterator last, const CharT *str,
+constexpr ForwardIterator find_not_of(ForwardIterator first, ForwardIterator last, const CharT *str,
                                              std::size_t n) noexcept {
   for (; first != last; ++first)
     if (!Traits::find(str, n, *first))
@@ -424,7 +424,7 @@ constexpr inline ForwardIterator find_not_of(ForwardIterator first, ForwardItera
 
 // constexpr search for C++14
 template <typename ForwardIt1, typename ForwardIt2, typename BinaryPredicate>
-constexpr inline ForwardIt1 search(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last,
+constexpr ForwardIt1 search(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last,
                                    BinaryPredicate p) {
   for (;; ++first) {
     ForwardIt1 it = first;
@@ -440,7 +440,7 @@ constexpr inline ForwardIt1 search(ForwardIt1 first, ForwardIt1 last, ForwardIt2
 }
 
 template <typename InputIt, typename ForwardIt, typename BinaryPredicate>
-constexpr inline InputIt find_first_of(InputIt first, InputIt last, ForwardIt s_first, ForwardIt s_last,
+constexpr InputIt find_first_of(InputIt first, InputIt last, ForwardIt s_first, ForwardIt s_last,
                                        BinaryPredicate p) {
   for (; first != last; ++first)
     for (ForwardIt it = s_first; it != s_last; ++it)
@@ -454,7 +454,7 @@ constexpr inline InputIt find_first_of(InputIt first, InputIt last, ForwardIt s_
 // Check if a pointer lies within the range {src_first, src_last)
 // without unspecified behavior, allowing it to be used
 // in a constant evaluation.
-template <typename T> constexpr inline bool ptr_in_range(const T *src_first, const T *src_last, const T *ptr) {
+template <typename T> constexpr bool ptr_in_range(const T *src_first, const T *src_last, const T *ptr) {
   // Our second best option is to use is_constant_evaluated
   // and a loop that checks for equality, since equality for
   // pointer to object types is never unspecified in this case.
@@ -4049,115 +4049,115 @@ private:
 //------------------------------------------------------------------------------
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline bool operator==(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr bool operator==(const basic_static_string<N, CharT, Traits> &lhs,
                                  const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) == 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline bool operator!=(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr bool operator!=(const basic_static_string<N, CharT, Traits> &lhs,
                                  const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) != 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline bool operator<(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr bool operator<(const basic_static_string<N, CharT, Traits> &lhs,
                                 const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) < 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline bool operator<=(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr bool operator<=(const basic_static_string<N, CharT, Traits> &lhs,
                                  const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) <= 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline bool operator>(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr bool operator>(const basic_static_string<N, CharT, Traits> &lhs,
                                 const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) > 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline bool operator>=(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr bool operator>=(const basic_static_string<N, CharT, Traits> &lhs,
                                  const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) >= 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator==(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
+constexpr bool operator==(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs, Traits::length(lhs), rhs.data(), rhs.size()) == 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator==(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
+constexpr bool operator==(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs.data(), lhs.size(), rhs, Traits::length(rhs)) == 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator!=(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
+constexpr bool operator!=(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs, Traits::length(lhs), rhs.data(), rhs.size()) != 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator!=(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
+constexpr bool operator!=(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs.data(), lhs.size(), rhs, Traits::length(rhs)) != 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator<(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
+constexpr bool operator<(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs, Traits::length(lhs), rhs.data(), rhs.size()) < 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator<(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
+constexpr bool operator<(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs.data(), lhs.size(), rhs, Traits::length(rhs)) < 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator<=(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
+constexpr bool operator<=(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs, Traits::length(lhs), rhs.data(), rhs.size()) <= 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator<=(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
+constexpr bool operator<=(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs.data(), lhs.size(), rhs, Traits::length(rhs)) <= 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator>(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
+constexpr bool operator>(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs, Traits::length(lhs), rhs.data(), rhs.size()) > 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator>(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
+constexpr bool operator>(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs.data(), lhs.size(), rhs, Traits::length(rhs)) > 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator>=(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
+constexpr bool operator>=(const CharT *lhs, const basic_static_string<N, CharT, Traits> &rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs, Traits::length(lhs), rhs.data(), rhs.size()) >= 0;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline bool operator>=(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
+constexpr bool operator>=(const basic_static_string<N, CharT, Traits> &lhs, const CharT *rhs) {
   return detail::lexicographical_compare<CharT, Traits>(lhs.data(), lhs.size(), rhs, Traits::length(rhs)) >= 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline basic_static_string<N + M, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr basic_static_string<N + M, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
                                                                      const basic_static_string<M, CharT, Traits> &rhs) {
   return basic_static_string<N + M, CharT, Traits>(lhs) += rhs;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline basic_static_string<N + 1, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr basic_static_string<N + 1, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
                                                                      CharT rhs) {
   return basic_static_string<N + 1, CharT, Traits>(lhs) += rhs;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline basic_static_string<N + 1, CharT, Traits> operator+(CharT lhs,
+constexpr basic_static_string<N + 1, CharT, Traits> operator+(CharT lhs,
                                                                      const basic_static_string<N, CharT, Traits> &rhs) {
   // The cast to std::size_t is needed here since 0 is a null pointer constant
   return basic_static_string<N + 1, CharT, Traits>(rhs).insert(std::size_t(0), 1, lhs);
@@ -4165,14 +4165,14 @@ constexpr inline basic_static_string<N + 1, CharT, Traits> operator+(CharT lhs,
 
 // Add a null terminated character array to a string.
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline basic_static_string<N + M, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
+constexpr basic_static_string<N + M, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
                                                                      const CharT (&rhs)[M]) {
   return basic_static_string<N + M, CharT, Traits>(lhs).append(+rhs);
 }
 
 // Add a string to a null terminated character array.
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline basic_static_string<N + M, CharT, Traits> operator+(const CharT (&lhs)[N],
+constexpr basic_static_string<N + M, CharT, Traits> operator+(const CharT (&lhs)[N],
                                                                      const basic_static_string<M, CharT, Traits> &rhs) {
   // The cast to std::size_t is needed here since 0 is a null pointer constant
   return basic_static_string<N + M, CharT, Traits>(rhs).insert(std::size_t(0), +lhs);
@@ -4185,12 +4185,12 @@ constexpr inline basic_static_string<N + M, CharT, Traits> operator+(const CharT
 //------------------------------------------------------------------------------
 
 template <std::size_t N, typename CharT, typename Traits>
-constexpr inline void swap(basic_static_string<N, CharT, Traits> &lhs, basic_static_string<N, CharT, Traits> &rhs) {
+constexpr void swap(basic_static_string<N, CharT, Traits> &lhs, basic_static_string<N, CharT, Traits> &rhs) {
   lhs.swap(rhs);
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
-constexpr inline void swap(basic_static_string<N, CharT, Traits> &lhs, basic_static_string<M, CharT, Traits> &rhs) {
+constexpr void swap(basic_static_string<N, CharT, Traits> &lhs, basic_static_string<M, CharT, Traits> &rhs) {
   lhs.swap(rhs);
 }
 

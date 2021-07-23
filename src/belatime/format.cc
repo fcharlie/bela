@@ -43,7 +43,7 @@ template <typename CharT> CharT *Format64(CharT *ep, int width, std::int_fast64_
 }
 
 // Formats [0 .. 99] as %02d.
-template <typename CharT> constexpr inline CharT *Format02d(CharT *ep, int v) {
+template <typename CharT> constexpr CharT *Format02d(CharT *ep, int v) {
   *--ep = static_cast<CharT>(kDigits[v % 10]);
   *--ep = static_cast<CharT>(kDigits[(v / 10) % 10]);
   return ep;

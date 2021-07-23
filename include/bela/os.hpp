@@ -35,10 +35,10 @@ enum FileMode : uint32_t {
   return static_cast<FileMode>(static_cast<I>(L) | static_cast<I>(R));
 }
 
-constexpr inline bool IsDir(FileMode m) { return (m & ModeDir) != 0; }
-constexpr inline bool IsRegular(FileMode m) { return (m & ModeType) == 0; }
-constexpr inline FileMode Perm(FileMode m) { return m & ModePerm; }
-constexpr inline FileMode Type(FileMode m) { return m & ModeType; }
+constexpr bool IsDir(FileMode m) { return (m & ModeDir) != 0; }
+constexpr bool IsRegular(FileMode m) { return (m & ModeType) == 0; }
+constexpr FileMode Perm(FileMode m) { return m & ModePerm; }
+constexpr FileMode Type(FileMode m) { return m & ModeType; }
 
 } // namespace bela::os
 

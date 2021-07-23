@@ -23,7 +23,7 @@ enum struct prerelease : std::uint8_t {
 
 // Max version string length = 3(<major>) + 1(.) + 3(<minor>) + 1(.) +
 // 3(<patch>) + 1(-) + 5(<prerelease>) + 1(.) + 3(<prereleaseversion>) = 21.
-[[maybe_unused]] inline constexpr std::size_t max_version_string_length = 21;
+[[maybe_unused]] constexpr std::size_t max_version_string_length = 21;
 
 namespace detail {
 // Literal
@@ -65,7 +65,7 @@ template <typename CharT> struct to_chars_result {
 
 // Min version string length = 1(<major>) + 1(.) + 1(<minor>) + 1(.) +
 // 1(<patch>) = 5.
-inline constexpr auto min_version_string_length = 5;
+constexpr auto min_version_string_length = 5;
 
 template <typename CharT> constexpr CharT to_lower(CharT c) noexcept {
   return (c >= 'A' && c <= 'Z') ? static_cast<CharT>(c + ('a' - 'A')) : c;

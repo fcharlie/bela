@@ -59,7 +59,7 @@ public:
   [[nodiscard]] auto size() const { return size_; }
   [[nodiscard]] const auto *data() const { return data_; }
   // make_cstring_view convert null terminating character to string_view
-  [[nodiscard]] auto make_cstring_view(size_t offset, size_t cslength = std::string_view::npos) const {
+  [[nodiscard]] auto make_cstring_view(size_t offset = 0, size_t cslength = std::string_view::npos) const {
     if (offset > size_) {
       return std::string_view();
     }
@@ -133,14 +133,14 @@ private:
   size_t size_{0};
 };
 
-inline [[nodiscard]] std::string_view cstring_view(std::span<const uint8_t> data) {
+[[nodiscard]] inline std::string_view cstring_view(std::span<const uint8_t> data) {
   std::string_view sv{reinterpret_cast<const char *>(data.data()), data.size()};
   if (auto p = sv.find('\0'); p != std::string_view::npos) {
     return sv.substr(0, p);
   }
   return sv;
 }
-inline [[nodiscard]] std::string_view cstring_view(std::span<const char> data) {
+[[nodiscard]] inline std::string_view cstring_view(std::span<const char> data) {
   std::string_view sv{data.data(), data.size()};
   if (auto p = sv.find('\0'); p != std::string_view::npos) {
     return sv.substr(0, p);
@@ -148,7 +148,7 @@ inline [[nodiscard]] std::string_view cstring_view(std::span<const char> data) {
   return sv;
 }
 
-inline [[nodiscard]] std::wstring_view cstring_view(std::span<const wchar_t> data) {
+[[nodiscard]] inline std::wstring_view cstring_view(std::span<const wchar_t> data) {
   std::wstring_view sv{reinterpret_cast<const wchar_t *>(data.data()), data.size()};
   if (auto p = sv.find(L'\0'); p != std::wstring_view::npos) {
     return sv.substr(0, p);

@@ -45,7 +45,7 @@ bool File::gnuVersionInit(std::span<const uint8_t> str) {
       auto nameoff = cast_from<uint32_t>(d.data() + j + 8);
       auto ndxNext = cast_from<uint32_t>(d.data() + j + 12);
       auto name = getString(str, static_cast<int>(nameoff));
-      if (ndx >= gnuNeed.size()) {
+      if (static_cast<size_t>(ndx) >= gnuNeed.size()) {
         gnuNeed.resize(2 * (ndx + 1));
       }
       gnuNeed[ndx].file = file;

@@ -82,26 +82,24 @@ bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, u
   }
   auto maxSize = (std::min)(static_cast<size_t>(maxsize), static_cast<size_t>(size));
   bela::Buffer buffer(maxSize);
-  if (!fd->ReadFull(buffer.MakeSpan(), ec)) {
+  if (!fd->ReadFull(buffer, maxSize, ec)) {
     return false;
   }
-  bela::MemView mmv(buffer.data(), buffer.size());
+  auto bv = buffer.make_bytes_view();
   constexpr uint8_t utf8bom[] = {0xEF, 0xBB, 0xBF};
   constexpr uint8_t utf16le[] = {0xFF, 0xFE};
   constexpr uint8_t utf16be[] = {0xFE, 0xFF};
-  if (mmv.StartsWith(utf8bom)) {
-    out = bela::ToWide(mmv.submv(3).sv());
+  if (bv.starts_with(utf8bom)) {
+    out = bela::ToWide(bv.subview(3).make_string_view<char>());
     return true;
   }
   if constexpr (bela::IsLittleEndian()) {
-    if (mmv.StartsWith(utf16le)) {
-      auto sv = mmv.submv(2).sv();
-      out.assign(reinterpret_cast<const wchar_t *>(sv.data()), sv.size() / 2);
+    if (bv.starts_with(utf16le)) {
+      out = bv.subview(2).make_string_view<wchar_t>();
       return true;
     }
-    if (mmv.StartsWith(utf16be)) {
-      auto sv = mmv.submv(2).sv();
-      std::wstring_view wsv{reinterpret_cast<const wchar_t *>(sv.data()), sv.size() / 2};
+    if (bv.starts_with(utf16be)) {
+      auto wsv = bv.subview(2).make_string_view<wchar_t>();
       out.resize(wsv.size());
       wchar_t *p = out.data();
       for (size_t i = 0; i < wsv.size(); i++) {
@@ -110,14 +108,12 @@ bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, u
       return true;
     }
   } else {
-    if (mmv.StartsWith(utf16be)) {
-      auto sv = mmv.submv(2).sv();
-      out.assign(reinterpret_cast<const wchar_t *>(sv.data()), sv.size() / 2);
+    if (bv.starts_with(utf16be)) {
+      out = bv.subview(2).make_string_view<wchar_t>();
       return true;
     }
-    if (mmv.StartsWith(utf16le)) {
-      auto sv = mmv.submv(2).sv();
-      std::wstring_view wsv{reinterpret_cast<const wchar_t *>(sv.data()), sv.size() / 2};
+    if (bv.starts_with(utf16le)) {
+      auto wsv = bv.subview(2).make_string_view<wchar_t>();
       out.resize(wsv.size());
       wchar_t *p = out.data();
       for (size_t i = 0; i < wsv.size(); i++) {
@@ -126,7 +122,7 @@ bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, u
       return true;
     }
   }
-  out = bela::ToWide(mmv.sv());
+  out = bela::ToWide(bv.make_string_view<char>());
   return true;
 }
 bool ReadLine(std::wstring_view file, std::wstring &out, bela::error_code &ec, uint64_t maxline) {

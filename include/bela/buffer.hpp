@@ -7,8 +7,10 @@
 #include <string>
 #include "endian.hpp"
 #include "types.hpp"
+#include "bytes_view.hpp"
 
 namespace bela {
+
 class Buffer {
 private:
   std::allocator<uint8_t> alloc_;
@@ -119,6 +121,7 @@ public:
   std::span<uint8_t> MakeSpan(size_t spanlen = std::string_view::npos) const {
     return std::span{data_, (std::min)(capacity_, spanlen)};
   }
+  auto make_bytes_view() const { return bytes_view(data_, size_); }
 
 private:
   uint8_t *data_{nullptr};

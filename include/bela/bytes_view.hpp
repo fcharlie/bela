@@ -57,10 +57,24 @@ public:
   }
   [[nodiscard]] auto size() const { return size_; }
   [[nodiscard]] const auto *data() const { return data_; }
-  template <typename T>
+  [[nodiscard]] auto make_cstring_view(size_t offset, size_t cslength = std::string_view::npos) const {
+    if (offset > size_) {
+      return std::string_view();
+    }
+    cslength = (std::min)(cslength, size_);
+    auto p = data_ + offset;
+    if (auto end = memchr(p, 0, cslength); end != nullptr) {
+      return std::string_view(reinterpret_cast<const char *>(p), reinterpret_cast<const uint8_t *>(end) - p);
+    }
+    return std::string_view(reinterpret_cast<const char *>(p), cslength);
+  }
+  template <typename T = char>
   requires bela::character<T>
-  [[nodiscard]] auto make_string_view() const {
-    return std::basic_string_view<T>(reinterpret_cast<const T *>(data_), size_ / sizeof(T));
+  [[nodiscard]] auto make_string_view(const size_t offset = 0) const {
+    if (offset > size_) {
+      return std::basic_string_view<T>();
+    }
+    return std::basic_string_view<T>(reinterpret_cast<const T *>(data_) + offset, (size_ - offset) / sizeof(T));
   }
   [[nodiscard]] auto operator[](const std::size_t off) const {
     if (off >= size_) {
@@ -70,10 +84,10 @@ public:
   }
   [[nodiscard]] auto make_span() const { return std::span{data_, size_}; }
   template <typename T>
-  requires std::is_standard_layout_v<T>
+  requires bela::standard_layout<T>
   [[nodiscard]] const T *unsafe_cast() const { return reinterpret_cast<const T *>(data_); }
   template <typename T>
-  requires std::is_standard_layout_v<T>
+  requires bela::standard_layout<T>
   [[nodiscard]] const T *direct_cast(size_t offset) const {
     if (offset + sizeof(T) > size_) {
       return nullptr;
@@ -81,7 +95,7 @@ public:
     return reinterpret_cast<const T *>(data_ + offset);
   }
   template <typename T>
-  requires std::is_standard_layout_v<T>
+  requires bela::standard_layout<T>
   [[nodiscard]] const T *bit_cast(T *t, size_t offset) const {
     if (offset + sizeof(T) > size_) {
       return nullptr;

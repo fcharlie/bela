@@ -40,7 +40,7 @@ public:
   template <typename T, size_t ArrayLen>
   requires bela::standard_layout<T>
   [[nodiscard]] bool match_with(size_t pos, const T (&bv)[ArrayLen]) const {
-    return ArrayLen + pos <= size_ && (memcmp(data_ + pos, bv, ArrayLen) == 0);
+    return ArrayLen * sizeof(T) + pos <= size_ && (memcmp(data_ + pos, bv, ArrayLen) == 0);
   }
   [[nodiscard]] bool match_with(size_t pos, std::string_view sv) const {
     return sv.size() + pos <= size_ && (memcmp(data_ + pos, sv.data(), sv.size()) == 0);

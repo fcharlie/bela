@@ -16,10 +16,11 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
   if (!sdata) {
     return false;
   }
+  auto bv = sdata->as_bytes_view();
   std::vector<image_import_descriptor> ida;
   for (size_t offset = idd->VirtualAddress - ds->VirtualAddress; offset < static_cast<size_t>(ds->Size);
        offset += sizeof(IMAGE_IMPORT_DESCRIPTOR)) {
-    auto dt = sdata->direct_cast<IMAGE_IMPORT_DESCRIPTOR>(offset);
+    auto dt = bv.direct_cast<IMAGE_IMPORT_DESCRIPTOR>(offset);
     if (dt == nullptr) {
       break;
     }
@@ -36,12 +37,12 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
     });
   }
   for (auto &dt : ida) {
-    auto dllName = sdata->cstring_view(dt.Name - ds->VirtualAddress);
+    auto dllName = bv.make_cstring_view(dt.Name - ds->VirtualAddress);
     std::vector<Function> functions;
     if (oh.Is64Bit) {
       for (size_t offset = dt.OriginalFirstThunk - ds->VirtualAddress; offset < static_cast<size_t>(ds->Size);
            offset += sizeof(uint64_t)) {
-        auto va = sdata->cast_fromle<uint64_t>(offset);
+        auto va = bv.cast_fromle<uint64_t>(offset);
         if (va == 0) {
           break;
         }
@@ -50,13 +51,13 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
           continue;
         }
         functions.emplace_back(
-            sdata->cstring_view(static_cast<size_t>(static_cast<uint64_t>(va) - ds->VirtualAddress + 2)),
-            sdata->cast_fromle<uint16_t>(static_cast<size_t>(static_cast<uint64_t>(va) - ds->VirtualAddress)));
+            bv.make_cstring_view(static_cast<size_t>(static_cast<uint64_t>(va) - ds->VirtualAddress + 2)),
+            bv.cast_fromle<uint16_t>(static_cast<size_t>(static_cast<uint64_t>(va) - ds->VirtualAddress)));
       }
     } else {
       for (size_t offset = dt.OriginalFirstThunk - ds->VirtualAddress; offset < static_cast<size_t>(ds->Size);
            offset += sizeof(uint32_t)) {
-        auto va = sdata->cast_fromle<uint32_t>(offset);
+        auto va = bv.cast_fromle<uint32_t>(offset);
         if (va == 0) {
           break;
         }
@@ -64,8 +65,8 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
           functions.emplace_back("", 0, static_cast<int>(IMAGE_ORDINAL32(va)));
           continue;
         }
-        functions.emplace_back(sdata->cstring_view(static_cast<size_t>(va - ds->VirtualAddress + 2)),
-                               sdata->cast_fromle<uint16_t>(static_cast<size_t>(va - ds->VirtualAddress)));
+        functions.emplace_back(bv.make_cstring_view(static_cast<size_t>(va - ds->VirtualAddress + 2)),
+                               bv.cast_fromle<uint16_t>(static_cast<size_t>(va - ds->VirtualAddress)));
       }
     }
     std::sort(functions.begin(), functions.end(), [](const bela::pe::Function &a, const bela::pe::Function &b) -> bool {

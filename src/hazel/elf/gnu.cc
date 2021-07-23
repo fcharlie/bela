@@ -72,7 +72,7 @@ bool File::DynamicSymbols(std::vector<Symbol> &syms, bela::error_code &ec) {
   if (!getSymbols(SHT_DYNSYM, syms, strdata, ec)) {
     return false;
   }
-  if (gnuVersionInit(strdata.MakeConstSpan())) {
+  if (gnuVersionInit(strdata.make_const_span())) {
     for (int i = 0; i < static_cast<int>(syms.size()); i++) {
       gnuVersion(i, syms[i].Library, syms[i].Version);
     }
@@ -88,7 +88,7 @@ bool File::ImportedSymbols(std::vector<ImportedSymbol> &symbols, bela::error_cod
   if (!getSymbols(SHT_DYNSYM, syms, strdata, ec)) {
     return false;
   }
-  gnuVersionInit(strdata.MakeConstSpan());
+  gnuVersionInit(strdata.make_const_span());
   symbols.reserve(syms.size());
   for (int i = 0; i < static_cast<int>(syms.size()); i++) {
     const auto &s = syms[i];

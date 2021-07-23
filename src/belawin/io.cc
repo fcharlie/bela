@@ -85,7 +85,7 @@ bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, u
   if (!fd->ReadFull(buffer, maxSize, ec)) {
     return false;
   }
-  auto bv = buffer.make_bytes_view();
+  auto bv = buffer.as_bytes_view();
   constexpr uint8_t utf8bom[] = {0xEF, 0xBB, 0xBF};
   constexpr uint8_t utf16le[] = {0xFF, 0xFE};
   constexpr uint8_t utf16be[] = {0xFE, 0xFF};

@@ -16,9 +16,10 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
   if (!sdata) {
     return false;
   }
+  auto bv = sdata->as_bytes_view();
   // seek to the virtual address specified in the export data directory
   auto N = exd->VirtualAddress - ds->VirtualAddress;
-  auto cied = sdata->direct_cast<IMAGE_EXPORT_DIRECTORY>(N);
+  auto cied = bv.direct_cast<IMAGE_EXPORT_DIRECTORY>(N);
   if (cied == nullptr) {
     return true;
   }
@@ -46,26 +47,26 @@ bool File::LookupExports(std::vector<ExportedSymbol> &exports, bela::error_code 
   if (ied.AddressOfNameOrdinals > ds->VirtualAddress &&
       ied.AddressOfNameOrdinals < ds->VirtualAddress + ds->VirtualSize) {
     auto L = ied.AddressOfNameOrdinals - ds->VirtualAddress;
-    if (sdata->size() - L > exports.size() * 2) {
+    if (bv.size() - L > exports.size() * 2) {
       for (size_t i = 0; i < exports.size(); i++) {
-        exports[i].Ordinal = sdata->cast_fromle<uint16_t>(L + i * 2) + ordinalBase;
+        exports[i].Ordinal = bv.cast_fromle<uint16_t>(L + i * 2) + ordinalBase;
         exports[i].Hint = static_cast<int>(i);
       }
     }
   }
   if (ied.AddressOfNames > ds->VirtualAddress && ied.AddressOfNames < ds->VirtualAddress + ds->VirtualSize) {
     auto N = ied.AddressOfNames - ds->VirtualAddress;
-    if (sdata->size() - N >= exports.size() * 4) {
+    if (bv.size() - N >= exports.size() * 4) {
       for (size_t i = 0; i < exports.size(); i++) {
-        exports[i].Name = sdata->cstring_view(sdata->cast_fromle<uint32_t>(N + i * 4) - ds->VirtualAddress);
+        exports[i].Name = bv.make_cstring_view(bv.cast_fromle<uint32_t>(N + i * 4) - ds->VirtualAddress);
       }
     }
   }
   if (ied.AddressOfFunctions > ds->VirtualAddress && ied.AddressOfFunctions < ds->VirtualAddress + ds->VirtualSize) {
     auto L = ied.AddressOfFunctions - ds->VirtualAddress;
     for (size_t i = 0; i < exports.size(); i++) {
-      if (sdata->size() - L > static_cast<size_t>(exports[i].Ordinal * 4 + 4)) {
-        exports[i].Address = sdata->cast_fromle<uint32_t>(L + static_cast<int>(exports[i].Ordinal - ordinalBase) * 4);
+      if (bv.size() - L > static_cast<size_t>(exports[i].Ordinal * 4 + 4)) {
+        exports[i].Address = bv.cast_fromle<uint32_t>(L + static_cast<int>(exports[i].Ordinal - ordinalBase) * 4);
       }
     }
   }

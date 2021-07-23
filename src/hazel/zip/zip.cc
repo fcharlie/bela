@@ -171,9 +171,9 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
     return false;
   }
   buffer.size() = static_cast<size_t>(totallen);
-  file.name = buffer.cstring_view(0, filenameLen);
+  file.name = buffer.as_bytes_view().make_cstring_view(0, filenameLen);
   if (commentLen != 0) {
-    file.comment = buffer.cstring_view(filenameLen + extraLen, commentLen);
+    file.comment = buffer.as_bytes_view().make_cstring_view(filenameLen + extraLen, commentLen);
   }
   auto needUSize = file.uncompressedSize == SizeMin;
   auto needSize = file.compressedSize == SizeMin;

@@ -237,7 +237,7 @@ bool File::parseFile(bela::error_code &ec) {
     return false;
   }
   for (auto i = 0; i < shnum; i++) {
-    sections[i].Name = getString(buffer.MakeConstSpan(), static_cast<int>(sections[i].nameIndex));
+    sections[i].Name = getString(buffer.make_const_span(), static_cast<int>(sections[i].nameIndex));
   }
   return true;
 }

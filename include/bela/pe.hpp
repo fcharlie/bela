@@ -66,7 +66,7 @@ public:
   File(const File &) = delete;
   File &operator=(const File &) = delete;
   template <typename AStringT> void SplitStringTable(std::vector<AStringT> &sa) const {
-    auto sv = stringTable.buffer.substr();
+    auto sv = stringTable.buffer.as_bytes_view().make_string_view();
     for (;;) {
       auto p = sv.find('\0');
       if (p == std::string_view::npos) {

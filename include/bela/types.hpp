@@ -37,6 +37,9 @@ concept narrow_character = is_narrow_character_v<T>;
 template <class T>
 concept standard_layout = std::is_standard_layout_v<T>;
 
+template <class T>
+concept trivial = std::is_trivial_v<T>;
+
 // funs
 
 template <typename T, typename K> constexpr bool FlagIsTrue(T a, K b) { return (a & static_cast<T>(b)) != 0; }

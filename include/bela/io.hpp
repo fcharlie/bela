@@ -84,7 +84,7 @@ public:
   // ReadAt reads buffer.size() bytes from the File starting at byte offset pos.
   bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const;
   bool ReadFull(bela::Buffer &buffer, size_t nbytes, bela::error_code &ec) const {
-    if (auto p = buffer.MakeSpan(nbytes); ReadFull(p, ec)) {
+    if (auto p = buffer.make_span(nbytes); ReadFull(p, ec)) {
       buffer.size() = p.size();
       return true;
     }
@@ -93,7 +93,7 @@ public:
   // ReadFull reads exactly buffer.size() bytes from FD into buffer.
   bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const;
   bool ReadAt(bela::Buffer &buffer, size_t nbytes, int64_t pos, bela::error_code &ec) const {
-    if (auto p = buffer.MakeSpan(nbytes); ReadAt(p, pos, ec)) {
+    if (auto p = buffer.make_span(nbytes); ReadAt(p, pos, ec)) {
       buffer.size() = p.size();
       return true;
     }

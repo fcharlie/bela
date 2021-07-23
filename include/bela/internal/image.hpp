@@ -250,7 +250,7 @@ struct StringTable {
       ec = bela::make_error_code(ErrGeneral, L"offset ", start, L" is beyond the end of string table");
       return "";
     }
-    return buffer.cstring_view(start);
+    return buffer.as_bytes_view().make_cstring_view(start);
   }
 };
 

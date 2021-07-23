@@ -3,6 +3,7 @@
 #include <string_view>
 #include <span>
 #include "types.hpp"
+#include "endian.hpp"
 
 namespace bela {
 class bytes_view {
@@ -57,6 +58,7 @@ public:
   }
   [[nodiscard]] auto size() const { return size_; }
   [[nodiscard]] const auto *data() const { return data_; }
+  // make_cstring_view convert null terminating character to string_view
   [[nodiscard]] auto make_cstring_view(size_t offset, size_t cslength = std::string_view::npos) const {
     if (offset > size_) {
       return std::string_view();
@@ -68,6 +70,7 @@ public:
     }
     return std::string_view(reinterpret_cast<const char *>(p), cslength);
   }
+  // make_string_view convert bytes_view to base_string_view<T>
   template <typename T = char>
   requires bela::character<T>
   [[nodiscard]] auto make_string_view(const size_t offset = 0) const {
@@ -83,9 +86,12 @@ public:
     return data_[off];
   }
   [[nodiscard]] auto make_span() const { return std::span{data_, size_}; }
+
   template <typename T>
   requires bela::standard_layout<T>
   [[nodiscard]] const T *unsafe_cast() const { return reinterpret_cast<const T *>(data_); }
+
+  // direct_cast converts bytes_view to other types of pointers without alignment check
   template <typename T>
   requires bela::standard_layout<T>
   [[nodiscard]] const T *direct_cast(size_t offset) const {
@@ -94,6 +100,9 @@ public:
     }
     return reinterpret_cast<const T *>(data_ + offset);
   }
+  // Obtain a value of type To by reinterpreting the object representation of from. Every bit in the value
+  // representation of the returned To object is equal to the corresponding bit in the object representation of from.
+  // The values of padding bits in the returned To object are unspecified.
   template <typename T>
   requires bela::standard_layout<T>
   [[nodiscard]] const T *bit_cast(T *t, size_t offset) const {
@@ -123,6 +132,29 @@ private:
   const uint8_t *data_{nullptr};
   size_t size_{0};
 };
+
+inline [[nodiscard]] std::string_view cstring_view(std::span<const uint8_t> data) {
+  std::string_view sv{reinterpret_cast<const char *>(data.data()), data.size()};
+  if (auto p = sv.find('\0'); p != std::string_view::npos) {
+    return sv.substr(0, p);
+  }
+  return sv;
+}
+inline [[nodiscard]] std::string_view cstring_view(std::span<const char> data) {
+  std::string_view sv{data.data(), data.size()};
+  if (auto p = sv.find('\0'); p != std::string_view::npos) {
+    return sv.substr(0, p);
+  }
+  return sv;
+}
+
+inline [[nodiscard]] std::wstring_view cstring_view(std::span<const wchar_t> data) {
+  std::wstring_view sv{reinterpret_cast<const wchar_t *>(data.data()), data.size()};
+  if (auto p = sv.find(L'\0'); p != std::wstring_view::npos) {
+    return sv.substr(0, p);
+  }
+  return sv;
+}
 
 } // namespace bela
 

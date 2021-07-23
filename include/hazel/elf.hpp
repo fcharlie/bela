@@ -116,7 +116,7 @@ private:
   }
   bool sectionData(const Section &sec, bela::Buffer &buffer, bela::error_code &ec) const {
     buffer.grow(sec.Size);
-    if (!fd.ReadAt(buffer.MakeSpan(sec.Size), sec.Offset, ec)) {
+    if (!fd.ReadAt(buffer.make_span(sec.Size), sec.Offset, ec)) {
       return false;
     }
     buffer.size() = sec.Size;

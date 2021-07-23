@@ -318,8 +318,10 @@ bool readDirectoryHeader(bufioReader &br, bela::Buffer &buffer, File &file, bela
 }
 
 bool Reader::Initialize(bela::error_code &ec) {
-  if ((size = fd.Size(ec)) == bela::SizeUnInitialized) {
-    return false;
+  if (size == bela::SizeUnInitialized) {
+    if ((size = fd.Size(ec)) == bela::SizeUnInitialized) {
+      return false;
+    }
   }
   directoryEnd d;
   if (!readDirectoryEnd(d, ec)) {

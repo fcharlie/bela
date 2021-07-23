@@ -1,14 +1,13 @@
 //
 #include <type_traits>
 #include <hazel/hazel.hpp>
-#include <bela/mapview.hpp>
 #include <bela/path.hpp>
 #include <bela/os.hpp>
 #include "ina/hazelinc.hpp"
 
 namespace hazel {
 
-typedef hazel::internal::status_t (*lookup_handle_t)(bela::MemView mv, hazel_result &hr);
+typedef hazel::internal::status_t (*lookup_handle_t)(bela::bytes_view bv, hazel_result &hr);
 
 bool LookupFile(bela::io::FD &fd, hazel_result &hr, bela::error_code &ec) {
   if ((hr.size_ = bela::io::Size(fd.NativeFD(), ec)) == bela::SizeUnInitialized) {
@@ -22,7 +21,7 @@ bool LookupFile(bela::io::FD &fd, hazel_result &hr, bela::error_code &ec) {
   if (auto p = memchr(buffer, 0, minSize); p != nullptr) {
     hr.zeroPosition = static_cast<int64_t>(reinterpret_cast<const uint8_t *>(p) - buffer);
   }
-  bela::MemView mv(buffer, static_cast<size_t>(minSize));
+  bela::bytes_view bv(buffer, static_cast<size_t>(minSize));
   using namespace hazel::internal;
   constexpr lookup_handle_t handles[] = {
       LookupExecutableFile, //
@@ -35,7 +34,7 @@ bool LookupFile(bela::io::FD &fd, hazel_result &hr, bela::error_code &ec) {
       LookupText,
   };
   for (auto h : handles) {
-    if (h(mv, hr) == Found) {
+    if (h(bv, hr) == Found) {
       return true;
     }
   }

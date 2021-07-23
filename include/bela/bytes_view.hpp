@@ -27,7 +27,7 @@ public:
   }
   template <typename T, size_t ArrayLen>
   requires bela::standard_layout<T>
-  [[nodiscard]] bool starts_with(const T (&bv)[ArrayLen]) const {
+  [[nodiscard]] bool starts_bytes_with(const T (&bv)[ArrayLen]) const {
     return ArrayLen <= size_ && (memcmp(data_, bv, ArrayLen * sizeof(T)) == 0);
   }
   [[nodiscard]] bool starts_with(std::string_view sv) const {
@@ -40,7 +40,7 @@ public:
 
   template <typename T, size_t ArrayLen>
   requires bela::standard_layout<T>
-  [[nodiscard]] bool match_with(size_t pos, const T (&bv)[ArrayLen]) const {
+  [[nodiscard]] bool match_bytes_with(size_t pos, const T (&bv)[ArrayLen]) const {
     return ArrayLen * sizeof(T) + pos <= size_ && (memcmp(data_ + pos, bv, ArrayLen) == 0);
   }
   [[nodiscard]] bool match_with(size_t pos, std::string_view sv) const {
@@ -105,7 +105,7 @@ public:
   // The values of padding bits in the returned To object are unspecified.
   template <typename T>
   requires bela::standard_layout<T>
-  [[nodiscard]] const T *bit_cast(T *t, size_t offset) const {
+  [[nodiscard]] const T *bit_cast(T *t, size_t offset = 0) const {
     if (offset + sizeof(T) > size_) {
       return nullptr;
     }

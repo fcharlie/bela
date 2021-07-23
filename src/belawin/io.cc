@@ -1,6 +1,5 @@
 //
 #include <bela/base.hpp>
-#include <bela/mapview.hpp>
 #include <bela/endian.hpp>
 #include <bela/io.hpp>
 #include <bela/path.hpp>
@@ -89,16 +88,16 @@ bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, u
   constexpr uint8_t utf8bom[] = {0xEF, 0xBB, 0xBF};
   constexpr uint8_t utf16le[] = {0xFF, 0xFE};
   constexpr uint8_t utf16be[] = {0xFE, 0xFF};
-  if (bv.starts_with(utf8bom)) {
+  if (bv.starts_bytes_with(utf8bom)) {
     out = bela::ToWide(bv.make_string_view<char>(3));
     return true;
   }
   if constexpr (bela::IsLittleEndian()) {
-    if (bv.starts_with(utf16le)) {
+    if (bv.starts_bytes_with(utf16le)) {
       out = bv.make_string_view<wchar_t>(2);
       return true;
     }
-    if (bv.starts_with(utf16be)) {
+    if (bv.starts_bytes_with(utf16be)) {
       auto wsv = bv.make_string_view<wchar_t>(2);
       out.resize(wsv.size());
       wchar_t *p = out.data();
@@ -108,11 +107,11 @@ bool ReadFile(std::wstring_view file, std::wstring &out, bela::error_code &ec, u
       return true;
     }
   } else {
-    if (bv.starts_with(utf16be)) {
+    if (bv.starts_bytes_with(utf16be)) {
       out = bv.make_string_view<wchar_t>(2);
       return true;
     }
-    if (bv.starts_with(utf16le)) {
+    if (bv.starts_bytes_with(utf16le)) {
       auto wsv = bv.make_string_view<wchar_t>(2);
       out.resize(wsv.size());
       wchar_t *p = out.data();

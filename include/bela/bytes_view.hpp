@@ -54,6 +54,9 @@ public:
   }
 
   [[nodiscard]] bytes_view subview(std::size_t pos, std::size_t n = npos) const {
+    if (pos >= size_) {
+      return bytes_view();
+    }
     return bytes_view(data_ + pos, (std::min)(n, size_ - pos));
   }
   [[nodiscard]] auto size() const { return size_; }

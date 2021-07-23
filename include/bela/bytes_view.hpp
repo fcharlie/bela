@@ -98,7 +98,7 @@ public:
     }
     return data_[off];
   }
-  [[nodiscard]] auto make_span() const { return std::span{data_, size_}; }
+  [[nodiscard]] auto make_const_span() const { return std::span{data_, size_}; }
 
   template <typename T>
   requires bela::standard_layout<T>

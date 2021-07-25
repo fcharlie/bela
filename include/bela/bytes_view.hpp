@@ -102,12 +102,15 @@ public:
 
   template <typename T>
   requires bela::standard_layout<T>
-  [[nodiscard]] const T *unsafe_cast() const { return reinterpret_cast<const T *>(data_); }
+  [[nodiscard]] const T *unchecked_cast(size_t offset = 0) const {
+    // offset and T unchecked
+    return reinterpret_cast<const T *>(data_ + offset);
+  }
 
-  // direct_cast converts bytes_view to other types of pointers without alignment check
+  // checked_cast converts bytes_view to other types of pointers without alignment check
   template <typename T>
   requires bela::standard_layout<T>
-  [[nodiscard]] const T *direct_cast(size_t offset) const {
+  [[nodiscard]] const T *checked_cast(size_t offset = 0) const {
     if (offset + sizeof(T) > size_) {
       return nullptr;
     }

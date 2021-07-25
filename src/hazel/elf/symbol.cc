@@ -30,7 +30,7 @@ bool File::getSymbols32(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &st
   }
   syms.resize(bsv.size() / Sym32Size);
   for (auto &symbol : syms) {
-    auto sym = bsv.unsafe_cast<Elf32_Sym>();
+    auto sym = bsv.unchecked_cast<Elf32_Sym>();
     bsv.remove_prefix(Sym32Size);
     symbol.Name = bv.make_cstring_view(endian_cast(sym->st_name));
     symbol.Info = endian_cast(sym->st_info);
@@ -66,7 +66,7 @@ bool File::getSymbols64(uint32_t st, std::vector<Symbol> &syms, bela::Buffer &st
   }
   syms.resize(symtab.size() / Sym64Size);
   for (auto &symbol : syms) {
-    auto sym = bsv.unsafe_cast<Elf64_Sym>();
+    auto sym = bsv.unchecked_cast<Elf64_Sym>();
     bsv.remove_prefix(Sym64Size);
     symbol.Name = bv.make_cstring_view(endian_cast(sym->st_name));
     symbol.Info = endian_cast(sym->st_info);

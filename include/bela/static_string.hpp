@@ -1,4 +1,5 @@
 // Port from https://github.com/boostorg/static_string
+//
 // Copyright (c) 2016-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
 // Copyright (c) 2019-2020 Krystian Stasiowski (sdkrystian at gmail dot com)
 //
@@ -11,10 +12,6 @@
 #ifndef BELA_STATIC_STRING_HPP
 #define BELA_STATIC_STRING_HPP
 
-#include <version>
-#include <cassert>
-#include <stdexcept>
-#include <string_view>
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -23,8 +20,10 @@
 #include <initializer_list>
 #include <iosfwd>
 #include <type_traits>
+#include <stdexcept>
 
 namespace bela {
+namespace static_strings {
 
 template <std::size_t N, typename CharT, typename Traits> class basic_static_string;
 
@@ -44,10 +43,15 @@ template <std::size_t N> using static_u32string = basic_static_string<N, char32_
 
 template <std::size_t N> using static_u8string = basic_static_string<N, char8_t, std::char_traits<char8_t>>;
 
+//--------------------------------------------------------------------------
+//
+// Detail
+//
+//--------------------------------------------------------------------------
+
 namespace detail {
 
-// Find the smallest width integral type that can hold a value as large as N
-// (Glen Fernandes)
+// Find the smallest width integral type that can hold a value as large as N (Glen Fernandes)
 template <std::size_t N>
 using smallest_width = typename std::conditional<
     (N <= (std::numeric_limits<unsigned char>::max)()), unsigned char,
@@ -202,8 +206,7 @@ private:
 };
 
 template <typename CharT, typename Traits>
-constexpr int lexicographical_compare(const CharT *s1, std::size_t n1, const CharT *s2,
-                                             std::size_t n2) noexcept {
+constexpr int lexicographical_compare(const CharT *s1, std::size_t n1, const CharT *s2, std::size_t n2) noexcept {
   if (n1 < n2)
     return Traits::compare(s1, s2, n1) <= 0 ? -1 : 1;
   if (n1 > n2)
@@ -415,7 +418,7 @@ template <std::size_t N> inline static_wstring<N> to_static_wstring_float_impl(l
 
 template <typename Traits, typename CharT, typename ForwardIterator>
 constexpr ForwardIterator find_not_of(ForwardIterator first, ForwardIterator last, const CharT *str,
-                                             std::size_t n) noexcept {
+                                      std::size_t n) noexcept {
   for (; first != last; ++first)
     if (!Traits::find(str, n, *first))
       return first;
@@ -425,7 +428,7 @@ constexpr ForwardIterator find_not_of(ForwardIterator first, ForwardIterator las
 // constexpr search for C++14
 template <typename ForwardIt1, typename ForwardIt2, typename BinaryPredicate>
 constexpr ForwardIt1 search(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last,
-                                   BinaryPredicate p) {
+                            BinaryPredicate p) {
   for (;; ++first) {
     ForwardIt1 it = first;
     for (ForwardIt2 s_it = s_first;; ++it, ++s_it) {
@@ -440,8 +443,7 @@ constexpr ForwardIt1 search(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_firs
 }
 
 template <typename InputIt, typename ForwardIt, typename BinaryPredicate>
-constexpr InputIt find_first_of(InputIt first, InputIt last, ForwardIt s_first, ForwardIt s_last,
-                                       BinaryPredicate p) {
+constexpr InputIt find_first_of(InputIt first, InputIt last, ForwardIt s_first, ForwardIt s_last, BinaryPredicate p) {
   for (; first != last; ++first)
     for (ForwardIt it = s_first; it != s_last; ++it)
       if (p(*first, *it))
@@ -464,12 +466,6 @@ template <typename T> constexpr bool ptr_in_range(const T *src_first, const T *s
         return true;
     return false;
   }
-  // We want to make this usable in constant expressions as much as possible
-  // while retaining the guarentee that the comparison has a strict total
-  // ordering. We also want this to be fast. Since different compilers have
-  // differing levels of conformance, we will settle for the best option that is
-  // available. We don't care about this in C++11, since this function would
-  // have no applications in constant expressions.
   // Use the library comparison functions if we can't use
   // is_constant_evaluated or if we don't need to.
   return std::greater_equal<const T *>()(ptr, src_first) && std::less<const T *>()(ptr, src_last);
@@ -479,8 +475,7 @@ template <typename T> constexpr bool ptr_in_range(const T *src_first, const T *s
 // which prohibits throw expressions in constexpr
 // functions, but for some reason permits them in
 // constructors.
-
-template <typename Exception>[[noreturn]] inline void throw_exception(const char *msg) { throw(Exception(msg)); }
+template <typename Exception> [[noreturn]] inline void throw_exception(const char *msg) { throw(Exception(msg)); }
 
 } // namespace detail
 
@@ -657,8 +652,7 @@ public:
   template <typename InputIterator,
             typename std::enable_if<detail::is_input_iterator<InputIterator>::value>::type * = nullptr>
   constexpr basic_static_string(InputIterator first, InputIterator last) {
-    // KRYSTIAN TODO: we can use a better algorithm if this is a forward
-    // iterator
+    // KRYSTIAN TODO: we can use a better algorithm if this is a forward iterator
     assign(first, last);
   }
 
@@ -699,7 +693,10 @@ public:
       obtained by converting `t` to `string_view_type`,
       and used to construct the string.
   */
-  template <typename T, typename = detail::enable_if_viewable_t<T, CharT, Traits>>
+  template <typename T
+
+            ,
+            typename = detail::enable_if_viewable_t<T, CharT, Traits>>
   constexpr basic_static_string(const T &t, size_type pos, size_type n) {
     assign(t, pos, n);
   }
@@ -1609,8 +1606,7 @@ public:
       @param count The number of characters to insert.
       The default argument for this parameter is @ref npos.
 
-      @throw std::length_error `size() + str.substr(index_str, count).size() >
-     max_size()`
+      @throw std::length_error `size() + str.substr(index_str, count).size() > max_size()`
       @throw std::out_of_range `index > size()`
       @throw std::out_of_range `index_str > str.size()`
   */
@@ -1709,8 +1705,7 @@ public:
 
       @param pos The position to insert at.
       @param first An iterator representing the first character to insert.
-      @param last An iterator representing one past the last character to
-     insert.
+      @param last An iterator representing one past the last character to insert.
 
       @throw std::length_error `size() + insert_count > max_size()`
   */
@@ -2069,8 +2064,7 @@ public:
       @param last An iterator past the end of
       last character to append.
 
-      @throw std::length_error `size() + std::distance(first, last) >
-     max_size()`
+      @throw std::length_error `size() + std::distance(first, last) > max_size()`
   */
   template <typename InputIterator>
   constexpr typename std::enable_if<detail::is_input_iterator<InputIterator>::value, basic_static_string &>::type
@@ -2266,9 +2260,9 @@ public:
 
   /** Compare a string with the string.
 
-      Let `comp` be `traits_type::compare(data(), s.data(), std::min(size(),
-     s.size())`. If `comp != 0`, then the result is `comp`. Otherwise, the
-     result is `0` if `size() == s.size()`, `-1` if `size() < s.size()`, and `1`
+      Let `comp` be `traits_type::compare(data(), s.data(), std::min(size(), s.size())`.
+      If `comp != 0`, then the result is `comp`. Otherwise, the result is
+      `0` if `size() == s.size()`, `-1` if `size() < s.size()`, and `1`
       otherwise.
 
       @par Complexity
@@ -2322,10 +2316,10 @@ public:
 
       Let `sub1` be `substr(pos1, count1)`, `sub2` be
       `s.substr(pos2, count2)`, and `comp` be
-      `traits_type::compare(sub1.data(), sub2.data(), std::min(sub1.size(),
-     sub2.size())`. If `comp != 0`, then the result is `comp`. Otherwise, the
-     result is `0` if `sub1.size() == sub2.size()`, `-1` if `sub1.size() <
-     sub2.size()`, and `1` otherwise.
+      `traits_type::compare(sub1.data(), sub2.data(), std::min(sub1.size(), sub2.size())`.
+      If `comp != 0`, then the result is `comp`. Otherwise, the result is
+      `0` if `sub1.size() == sub2.size()`, `-1` if `sub1.size() < sub2.size()`, and `1`
+      otherwise.
 
       @par Complexity
 
@@ -2481,10 +2475,10 @@ public:
 
       Let `s` be `string_view_type(t)`, `sub` be
       `substr(pos1, count1)`, and `comp` be
-      `traits_type::compare(sub.data(), s.data(), std::min(sub.size(),
-     s.size())`. If `comp != 0`, then the result is `comp`. Otherwise, the
-     result is `0` if `sub.size() == s.size()`, `-1` if `sub.size() < s.size()`,
-     and `1` otherwise.
+      `traits_type::compare(sub.data(), s.data(), std::min(sub.size(), s.size())`.
+      If `comp != 0`, then the result is `comp`. Otherwise, the result is
+      `0` if `sub.size() == s.size()`, `-1` if `sub.size() < s.size()`, and `1`
+      otherwise.
 
       @par Complexity
 
@@ -2522,10 +2516,10 @@ public:
 
       Let `sub1` be `substr(pos1, count1)`, `sub2` be
       `string_view_type(t).substr(pos2, count2)`, and `comp` be
-      `traits_type::compare(sub1.data(), sub2.data(), std::min(sub1.size(),
-     sub2.size())`. If `comp != 0`, then the result is `comp`. Otherwise, the
-     result is `0` if `sub1.size() == sub2.size()`, `-1` if `sub1.size() <
-     sub2.size()`, and `1` otherwise.
+      `traits_type::compare(sub1.data(), sub2.data(), std::min(sub1.size(), sub2.size())`.
+      If `comp != 0`, then the result is `comp`. Otherwise, the result is
+      `0` if `sub1.size() == sub2.size()`, `-1` if `sub1.size() < sub2.size()`, and `1`
+      otherwise.
 
       @par Complexity
 
@@ -2758,8 +2752,7 @@ public:
       @param n2 The length of the substring.
       The default argument for this parameter is @ref npos.
 
-      @throw std::length_error `size() + (std::min(str.size(), n2) - rcount) >
-     max_size()`
+      @throw std::length_error `size() + (std::min(str.size(), n2) - rcount) > max_size()`
       @throw std::out_of_range `pos1 > size()`
       @throw std::out_of_range `pos2 > str.size()`
   */
@@ -2840,8 +2833,7 @@ public:
       @param n2 The length of the substring.
       The default argument for this parameter is @ref npos.
 
-      @throw std::length_error `size() + (std::min(n2, sv.size()) - rcount) >
-     max_size()`
+      @throw std::length_error `size() + (std::min(n2, sv.size()) - rcount) > max_size()`
       @throw std::out_of_range `pos1 > size()`
       @throw std::out_of_range `pos2 > sv.size()`
   */
@@ -2882,8 +2874,8 @@ public:
   /** Replace a part of the string.
 
       Replaces `rcount` characters starting at index `pos` with those of
-      `{s, s + len)`, where the length of the string `len` is
-     `traits_type::length(s)` and `rcount` is `std::min(n1, size() - pos)`.
+      `{s, s + len)`, where the length of the string `len` is `traits_type::length(s)` and `rcount`
+      is `std::min(n1, size() - pos)`.
 
       @par Exception Safety
 
@@ -2963,8 +2955,7 @@ public:
       the last character to replace.
       @param str The string to replace with.
 
-      @throw std::length_error `size() + (str.size() - std::distance(i1, i2)) >
-     max_size()`
+      @throw std::length_error `size() + (str.size() - std::distance(i1, i2)) > max_size()`
   */
   template <std::size_t M>
   constexpr basic_static_string &replace(const_iterator i1, const_iterator i2,
@@ -3008,8 +2999,7 @@ public:
       the last character to replace.
       @param t The object to replace with.
 
-      @throw std::length_error `size() + (sv.size() - std::distance(i1, i2)) >
-     max_size()`
+      @throw std::length_error `size() + (sv.size() - std::distance(i1, i2)) > max_size()`
   */
   template <typename T, typename = detail::enable_if_viewable_t<T, CharT, Traits>>
   constexpr basic_static_string &replace(const_iterator i1, const_iterator i2, const T &t) {
@@ -3042,8 +3032,7 @@ public:
       @param s The string to replace with.
       @param n The length of the string to replace with.
 
-      @throw std::length_error `size() + (n - std::distance(i1, i2)) >
-     max_size()`
+      @throw std::length_error `size() + (n - std::distance(i1, i2)) > max_size()`
   */
   constexpr basic_static_string &replace(const_iterator i1, const_iterator i2, const_pointer s, size_type n) {
     return replace(i1, i2, s, s + n);
@@ -3052,8 +3041,7 @@ public:
   /** Replace a part of the string.
 
       Replaces the characters in the range `{i1, i2)` with those of
-      `{s, s + len)`, where the length of the string `len` is
-     `traits_type::length(s)`.
+      `{s, s + len)`, where the length of the string `len` is `traits_type::length(s)`.
 
       @par Precondition
 
@@ -3074,8 +3062,7 @@ public:
       the last character to replace.
       @param s The string to replace with.
 
-      @throw std::length_error `size() + (len - std::distance(i1, i2)) >
-     max_size()`
+      @throw std::length_error `size() + (len - std::distance(i1, i2)) > max_size()`
   */
   constexpr basic_static_string &replace(const_iterator i1, const_iterator i2, const_pointer s) {
     return replace(i1, i2, s, traits_type::length(s));
@@ -3106,8 +3093,7 @@ public:
       @param n The number of characters to replace with.
       @param c The character to replace with.
 
-      @throw std::length_error `size() + (n - std::distance(i1, i2)) >
-     max_size()`
+      @throw std::length_error `size() + (n - std::distance(i1, i2)) > max_size()`
   */
   constexpr basic_static_string &replace(const_iterator i1, const_iterator i2, size_type n, value_type c);
 
@@ -3146,8 +3132,7 @@ public:
       @param j2 An iterator referring past the end of
       the last character to replace with.
 
-      @throw std::length_error `size() + (inserted - std::distance(i1, i2)) >
-     max_size()`
+      @throw std::length_error `size() + (inserted - std::distance(i1, i2)) > max_size()`
   */
   template <typename InputIterator>
   constexpr typename std::enable_if<detail::is_input_iterator<InputIterator>::value &&
@@ -3184,8 +3169,7 @@ public:
       the last character to replace.
       @param il The initializer list to replace with.
 
-      @throw std::length_error `size() + (il.size() - std::distance(i1, i2)) >
-     max_size()`
+      @throw std::length_error `size() + (il.size() - std::distance(i1, i2)) > max_size()`
   */
   constexpr basic_static_string &replace(const_iterator i1, const_iterator i2, std::initializer_list<value_type> il) {
     return replace_unchecked(i1, i2, il.begin(), il.size());
@@ -3200,8 +3184,7 @@ public:
   /** Find the first occurrence of a string within the string.
 
       Constructs a temporary `string_view_type` object `sv` from `t`, and finds
-      the first occurrence of `sv` within the string starting at the index
-     `pos`.
+      the first occurrence of `sv` within the string starting at the index `pos`.
 
       @par Complexity
 
@@ -3346,7 +3329,12 @@ public:
       @param pos The index to start searching at. The default argument
       for this parameter is @ref npos.
   */
-  template <typename T, typename = detail::enable_if_viewable_t<T, CharT, Traits>>
+  template <typename T
+
+            ,
+            typename = detail::enable_if_viewable_t<T, CharT, Traits>
+
+            >
   constexpr size_type rfind(const T &t, size_type pos = npos) const
       noexcept(detail::is_nothrow_convertible<const T &, string_view_type>::value) {
     const string_view_type sv = t;
@@ -3463,7 +3451,12 @@ public:
       @param pos The index to start searching at. The default argument
       for this parameter is `0`.
   */
-  template <typename T, typename = detail::enable_if_viewable_t<T, CharT, Traits>>
+  template <typename T
+
+            ,
+            typename = detail::enable_if_viewable_t<T, CharT, Traits>
+
+            >
   constexpr size_type find_first_of(const T &t, size_type pos = 0) const
       noexcept(detail::is_nothrow_convertible<const T &, string_view_type>::value) {
     const string_view_type sv = t;
@@ -3472,16 +3465,15 @@ public:
 
   /** Find the first occurrence of any of the characters within the string.
 
-      Finds the first occurrence of any of the characters within `str` within
-     the string starting at the index `pos`.
+      Finds the first occurrence of any of the characters within `str` within the
+      string starting at the index `pos`.
 
       @par Complexity
 
       Linear.
 
-      @return The index corrosponding to the first occurrence of any of the
-     characters of `str` within `{begin() + pos, end())` if it exists, and @ref
-     npos otherwise.
+      @return The index corrosponding to the first occurrence of any of the characters
+      of `str` within `{begin() + pos, end())` if it exists, and @ref npos otherwise.
 
       @param str The characters to search for.
       @param pos The index to start searching at. The default argument for
@@ -3495,8 +3487,8 @@ public:
 
   /** Find the first occurrence of any of the characters within the string.
 
-      Finds the first occurrence of any of the characters within the string
-     pointed to by `s` within the string starting at the index `pos`.
+      Finds the first occurrence of any of the characters within the string pointed to
+      by `s` within the string starting at the index `pos`.
 
       @par Complexity
 
@@ -3579,7 +3571,12 @@ public:
       @param pos The index to stop searching at. The default argument
       for this parameter is @ref npos.
   */
-  template <typename T, typename = detail::enable_if_viewable_t<T, CharT, Traits>>
+  template <typename T
+
+            ,
+            typename = detail::enable_if_viewable_t<T, CharT, Traits>
+
+            >
   constexpr size_type find_last_of(const T &t, size_type pos = npos) const
       noexcept(detail::is_nothrow_convertible<const T &, string_view_type>::value) {
     const string_view_type sv = t;
@@ -3595,9 +3592,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the last occurrence of any of the
-     characters of `str` within `{begin(), begin() + pos}` if it exists, and
-     @ref npos otherwise.
+      @return The index corrosponding to the last occurrence of any of the characters
+      of `str` within `{begin(), begin() + pos}` if it exists, and @ref npos otherwise.
 
       @param str The characters to search for.
       @param pos The index to stop searching at. The default argument for
@@ -3611,8 +3607,8 @@ public:
 
   /** Find the last occurrence of any of the characters within the string.
 
-      Finds the last occurrence of any of the characters within the string
-     pointed to by `s` within the string before or at the index `pos`.
+      Finds the last occurrence of any of the characters within the string pointed to
+      by `s` within the string before or at the index `pos`.
 
       @par Complexity
 
@@ -3630,17 +3626,17 @@ public:
 
   /** Find the last occurrence of any of the characters within the string.
 
-      Finds the last occurrence of any of the characters within the string
-     pointed to by `s` of length `count` within the string before or at the
-     index `pos`, where `count` is `traits_type::length(s)`.
+      Finds the last occurrence of any of the characters within the string pointed to
+      by `s` of length `count` within the string before or at the index `pos`,
+      where `count` is `traits_type::length(s)`.
 
       @par Complexity
 
       Linear.
 
       @return The index corrosponding to the last occurrence
-      of any of the characters in `{s, s + count)` within `{begin(), begin() +
-     pos}` if it exists, and @ref npos otherwise.
+      of any of the characters in `{s, s + count)` within `{begin(), begin() + pos}`
+      if it exists, and @ref npos otherwise.
 
       @param s The characters to search for.
       @param pos The index to stop searching at. The default argument for
@@ -3694,7 +3690,12 @@ public:
       @param pos The index to start searching at. The default argument
       for this parameter is `0`.
   */
-  template <typename T, typename = detail::enable_if_viewable_t<T, CharT, Traits>>
+  template <typename T
+
+            ,
+            typename = detail::enable_if_viewable_t<T, CharT, Traits>
+
+            >
   constexpr size_type find_first_not_of(const T &t, size_type pos = 0) const
       noexcept(detail::is_nothrow_convertible<const T &, string_view_type>::value) {
     const string_view_type sv = t;
@@ -3710,8 +3711,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the first character of `{begin() + pos,
-     end())` that is not within `str` if it exists, and @ref npos otherwise.
+      @return The index corrosponding to the first character of `{begin() + pos, end())`
+      that is not within `str` if it exists, and @ref npos otherwise.
 
       @param str The characters to ignore.
       @param pos The index to start searching at. The default argument for
@@ -3732,9 +3733,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the first character of `{begin() + pos,
-     end())` that is not within `{s, s + n)` if it exists, and @ref npos
-     otherwise.
+      @return The index corrosponding to the first character of `{begin() + pos, end())`
+      that is not within `{s, s + n)` if it exists, and @ref npos otherwise.
 
       @param s The characters to ignore.
       @param pos The index to start searching at. The default argument for
@@ -3753,9 +3753,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the first character of `{begin() + pos,
-     end())` that is not within `{s, s + count)` if it exists, and @ref npos
-     otherwise.
+      @return The index corrosponding to the first character of `{begin() + pos, end())`
+      that is not within `{s, s + count)` if it exists, and @ref npos otherwise.
 
       @param s The characters to ignore.
       @param pos The index to start searching at. The default argument for
@@ -3774,8 +3773,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the first character of `{begin() + pos,
-     end())` that is not equal to `c` if it exists, and @ref npos otherwise.
+      @return The index corrosponding to the first character of `{begin() + pos, end())`
+      that is not equal to `c` if it exists, and @ref npos otherwise.
 
       @param c The character to ignore.
       @param pos The index to start searching at. The default argument for
@@ -3809,7 +3808,12 @@ public:
       @param pos The index to start searching at. The default argument
       for this parameter is @ref npos.
   */
-  template <typename T, typename = detail::enable_if_viewable_t<T, CharT, Traits>>
+  template <typename T
+
+            ,
+            typename = detail::enable_if_viewable_t<T, CharT, Traits>
+
+            >
   constexpr size_type find_last_not_of(const T &t, size_type pos = npos) const
       noexcept(detail::is_nothrow_convertible<const T &, string_view_type>::value) {
     const string_view_type sv = t;
@@ -3825,9 +3829,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the last character of `{begin(),
-     begin() + pos}` that is not within `str` if it exists, and @ref npos
-     otherwise.
+      @return The index corrosponding to the last character of `{begin(), begin() + pos}`
+      that is not within `str` if it exists, and @ref npos otherwise.
 
       @param str The characters to ignore.
       @param pos The index to stop searching at. The default argument for
@@ -3848,9 +3851,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the last character of `{begin(),
-     begin() + pos}` that is not within `{s, s + n)` if it exists, and @ref npos
-     otherwise.
+      @return The index corrosponding to the last character of `{begin(), begin() + pos}`
+      that is not within `{s, s + n)` if it exists, and @ref npos otherwise.
 
       @param s The characters to ignore.
       @param pos The index to stop searching at. The default argument for
@@ -3869,9 +3871,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the last character of `{begin(),
-     begin() + pos}` that is not within `{s, s + count)` if it exists, and @ref
-     npos otherwise.
+      @return The index corrosponding to the last character of `{begin(), begin() + pos}`
+      that is not within `{s, s + count)` if it exists, and @ref npos otherwise.
 
       @param s The characters to ignore.
       @param pos The index to stop searching at. The default argument for
@@ -3890,9 +3891,8 @@ public:
 
       Linear.
 
-      @return The index corrosponding to the last character of `{begin(),
-     begin() + pos}` that is not equal to `c` if it exists, and @ref npos
-     otherwise.
+      @return The index corrosponding to the last character of `{begin(), begin() + pos}`
+      that is not equal to `c` if it exists, and @ref npos otherwise.
 
       @param c The character to ignore.
       @param pos The index to start searching at. The default argument for
@@ -4002,13 +4002,13 @@ private:
     return term();
   }
 
-  [[noreturn]] basic_static_string &assign_char(value_type, std::false_type) {
+  basic_static_string &assign_char(value_type, std::false_type) {
     detail::throw_exception<std::length_error>("max_size() == 0");
     // This eliminates any potential warnings
+    return *this;
   }
 
-  // Returns the size of data read from input iterator. Read data begins at
-  // data() + size() + 1.
+  // Returns the size of data read from input iterator. Read data begins at data() + size() + 1.
   template <typename InputIterator>
   constexpr size_type read_back(bool overwrite_null, InputIterator first, InputIterator last);
 
@@ -4050,37 +4050,37 @@ private:
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr bool operator==(const basic_static_string<N, CharT, Traits> &lhs,
-                                 const basic_static_string<M, CharT, Traits> &rhs) {
+                          const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) == 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr bool operator!=(const basic_static_string<N, CharT, Traits> &lhs,
-                                 const basic_static_string<M, CharT, Traits> &rhs) {
+                          const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) != 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr bool operator<(const basic_static_string<N, CharT, Traits> &lhs,
-                                const basic_static_string<M, CharT, Traits> &rhs) {
+                         const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) < 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr bool operator<=(const basic_static_string<N, CharT, Traits> &lhs,
-                                 const basic_static_string<M, CharT, Traits> &rhs) {
+                          const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) <= 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr bool operator>(const basic_static_string<N, CharT, Traits> &lhs,
-                                const basic_static_string<M, CharT, Traits> &rhs) {
+                         const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) > 0;
 }
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr bool operator>=(const basic_static_string<N, CharT, Traits> &lhs,
-                                 const basic_static_string<M, CharT, Traits> &rhs) {
+                          const basic_static_string<M, CharT, Traits> &rhs) {
   return lhs.compare(rhs) >= 0;
 }
 
@@ -4146,19 +4146,19 @@ constexpr bool operator>=(const basic_static_string<N, CharT, Traits> &lhs, cons
 
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr basic_static_string<N + M, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
-                                                                     const basic_static_string<M, CharT, Traits> &rhs) {
+                                                              const basic_static_string<M, CharT, Traits> &rhs) {
   return basic_static_string<N + M, CharT, Traits>(lhs) += rhs;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
 constexpr basic_static_string<N + 1, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
-                                                                     CharT rhs) {
+                                                              CharT rhs) {
   return basic_static_string<N + 1, CharT, Traits>(lhs) += rhs;
 }
 
 template <std::size_t N, typename CharT, typename Traits>
 constexpr basic_static_string<N + 1, CharT, Traits> operator+(CharT lhs,
-                                                                     const basic_static_string<N, CharT, Traits> &rhs) {
+                                                              const basic_static_string<N, CharT, Traits> &rhs) {
   // The cast to std::size_t is needed here since 0 is a null pointer constant
   return basic_static_string<N + 1, CharT, Traits>(rhs).insert(std::size_t(0), 1, lhs);
 }
@@ -4166,16 +4166,34 @@ constexpr basic_static_string<N + 1, CharT, Traits> operator+(CharT lhs,
 // Add a null terminated character array to a string.
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr basic_static_string<N + M, CharT, Traits> operator+(const basic_static_string<N, CharT, Traits> &lhs,
-                                                                     const CharT (&rhs)[M]) {
+                                                              const CharT (&rhs)[M]) {
   return basic_static_string<N + M, CharT, Traits>(lhs).append(+rhs);
 }
 
 // Add a string to a null terminated character array.
 template <std::size_t N, std::size_t M, typename CharT, typename Traits>
 constexpr basic_static_string<N + M, CharT, Traits> operator+(const CharT (&lhs)[N],
-                                                                     const basic_static_string<M, CharT, Traits> &rhs) {
+                                                              const basic_static_string<M, CharT, Traits> &rhs) {
   // The cast to std::size_t is needed here since 0 is a null pointer constant
   return basic_static_string<N + M, CharT, Traits>(rhs).insert(std::size_t(0), +lhs);
+}
+
+//------------------------------------------------------------------------------
+//
+// erase_if
+//
+//------------------------------------------------------------------------------
+
+template <std::size_t N, typename CharT, typename Traits, typename UnaryPredicate>
+constexpr typename basic_static_string<N, CharT, Traits>::size_type erase_if(basic_static_string<N, CharT, Traits> &str,
+                                                                             UnaryPredicate pred) {
+  auto first = str.begin();
+  for (auto it = first; it != str.end(); ++it)
+    if (!pred(*it))
+      *first++ = std::move(*it);
+  const auto count = str.end() - first;
+  str.erase(first, str.end());
+  return count;
 }
 
 //------------------------------------------------------------------------------
@@ -4330,13 +4348,26 @@ basic_static_string(const CharT (&)[N]) -> basic_static_string<N, CharT, std::ch
 //
 //------------------------------------------------------------------------------
 
+} // namespace static_strings
+
+//------------------------------------------------------------------------------
+//
+// using Declarations
+//
+//------------------------------------------------------------------------------
+
+using static_strings::static_string;
+using static_strings::static_u16string;
+using static_strings::static_u32string;
+using static_strings::static_wstring;
 } // namespace bela
 
 /// std::hash partial specialization for basic_static_string
 namespace std {
 
-template <std::size_t N, typename CharT, typename Traits> struct hash<bela::basic_static_string<N, CharT, Traits>> {
-  std::size_t operator()(const bela::basic_static_string<N, CharT, Traits> &str) const noexcept {
+template <std::size_t N, typename CharT, typename Traits>
+struct hash<bela::static_strings::basic_static_string<N, CharT, Traits>> {
+  std::size_t operator()(const bela::static_strings::basic_static_string<N, CharT, Traits> &str) const noexcept {
     using view_type = typename std::basic_string_view<CharT, Traits>;
     return std::hash<view_type>()(view_type(str.data(), str.size()));
   }
@@ -4350,6 +4381,7 @@ template <std::size_t N, typename CharT, typename Traits> struct hash<bela::basi
 //--------------------------------------------------------------------------
 
 namespace bela {
+namespace static_strings {
 
 template <std::size_t N, typename CharT, typename Traits>
 constexpr auto basic_static_string<N, CharT, Traits>::assign(size_type count, value_type ch) -> basic_static_string & {
@@ -4597,12 +4629,11 @@ constexpr auto basic_static_string<N, CharT, Traits>::replace(const_iterator i1,
   const std::size_t n1 = detail::distance(i1, i2);
   const std::size_t n2 = read_back(false, j1, j2);
   const std::size_t pos = i1 - curr_data;
-  // Rotate to the correct order. [i2, end] will now start with the replaced
-  // string, continue to the existing string not being replaced, and end with a
-  // null terminator
+  // Rotate to the correct order. [i2, end] will now start with the replaced string,
+  // continue to the existing string not being replaced, and end with a null terminator
   std::rotate(&curr_data[pos], &curr_data[curr_size + 1], &curr_data[curr_size + n2 + 1]);
-  // Move everything from the end of the splice point to the end of the rotated
-  // string to the begining of the splice point
+  // Move everything from the end of the splice point to the end of the rotated string to
+  // the begining of the splice point
   traits_type::move(&curr_data[pos + n2], &curr_data[pos + n2 + n1], ((curr_size - n1) + n2) - pos);
   this->set_size((curr_size - n1) + n2);
   return *this;
@@ -4733,6 +4764,6 @@ constexpr auto basic_static_string<N, CharT, Traits>::insert_unchecked(const_ite
   this->set_size(curr_size + count);
   return curr_data + index;
 }
+} // namespace static_strings
 } // namespace bela
-
 #endif

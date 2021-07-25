@@ -21,6 +21,7 @@
 #include <iosfwd>
 #include <type_traits>
 #include <stdexcept>
+#include "types.hpp"
 
 namespace bela {
 namespace static_strings {
@@ -130,20 +131,6 @@ template <typename T, typename = void> struct is_subtractable : std::false_type 
 
 template <typename T>
 struct is_subtractable<T, void_t<decltype(std::declval<T &>() - std::declval<T &>())>> : std::true_type {};
-
-// constexpr distance for c++14
-template <typename ForwardIt, typename std::enable_if<!is_subtractable<ForwardIt>::value>::type * = nullptr>
-constexpr std::size_t distance(ForwardIt first, ForwardIt last) {
-  std::size_t dist = 0;
-  for (; first != last; ++first, ++dist)
-    ;
-  return dist;
-}
-
-template <typename RandomIt, typename std::enable_if<is_subtractable<RandomIt>::value>::type * = nullptr>
-constexpr std::size_t distance(RandomIt first, RandomIt last) {
-  return last - first;
-}
 
 // Copy using traits, respecting iterator rules
 template <typename Traits, typename InputIt, typename CharT>
@@ -422,32 +409,6 @@ constexpr ForwardIterator find_not_of(ForwardIterator first, ForwardIterator las
   for (; first != last; ++first)
     if (!Traits::find(str, n, *first))
       return first;
-  return last;
-}
-
-// constexpr search for C++14
-template <typename ForwardIt1, typename ForwardIt2, typename BinaryPredicate>
-constexpr ForwardIt1 search(ForwardIt1 first, ForwardIt1 last, ForwardIt2 s_first, ForwardIt2 s_last,
-                            BinaryPredicate p) {
-  for (;; ++first) {
-    ForwardIt1 it = first;
-    for (ForwardIt2 s_it = s_first;; ++it, ++s_it) {
-      if (s_it == s_last)
-        return first;
-      if (it == last)
-        return last;
-      if (!p(*it, *s_it))
-        break;
-    }
-  }
-}
-
-template <typename InputIt, typename ForwardIt, typename BinaryPredicate>
-constexpr InputIt find_first_of(InputIt first, InputIt last, ForwardIt s_first, ForwardIt s_last, BinaryPredicate p) {
-  for (; first != last; ++first)
-    for (ForwardIt it = s_first; it != s_last; ++it)
-      if (p(*first, *it))
-        return first;
   return last;
 }
 
@@ -4440,7 +4401,7 @@ constexpr auto basic_static_string<N, CharT, Traits>::insert(const_iterator pos,
     typename std::enable_if<detail::is_forward_iterator<ForwardIterator>::value, iterator>::type {
   const auto curr_size = size();
   const auto curr_data = data();
-  const std::size_t count = detail::distance(first, last);
+  const std::size_t count = std::distance(first, last);
   const std::size_t index = pos - curr_data;
   const auto first_addr = &*first;
   if (count > max_size() - curr_size)
@@ -4581,7 +4542,7 @@ constexpr auto basic_static_string<N, CharT, Traits>::replace(const_iterator i1,
   const auto curr_data = data();
   const auto first_addr = &*j1;
   const std::size_t n1 = i2 - i1;
-  const std::size_t n2 = detail::distance(j1, j2);
+  const std::size_t n2 = std::distance(j1, j2);
   const std::size_t pos = i1 - curr_data;
   if (n2 > max_size() || curr_size - (std::min)(n1, curr_size - pos) >= max_size() - n2)
     detail::throw_exception<std::length_error>("replaced string exceeds max_size()");
@@ -4626,7 +4587,7 @@ constexpr auto basic_static_string<N, CharT, Traits>::replace(const_iterator i1,
                             basic_static_string<N, CharT, Traits> &>::type {
   const auto curr_size = size();
   const auto curr_data = data();
-  const std::size_t n1 = detail::distance(i1, i2);
+  const std::size_t n1 = std::distance(i1, i2);
   const std::size_t n2 = read_back(false, j1, j2);
   const std::size_t pos = i1 - curr_data;
   // Rotate to the correct order. [i2, end] will now start with the replaced string,
@@ -4647,8 +4608,8 @@ constexpr auto basic_static_string<N, CharT, Traits>::find(const_pointer s, size
     return npos;
   if (!n)
     return pos;
-  const auto res = detail::search(data() + pos, data() + curr_size, s, s + n, traits_type::eq);
-  return res == end() ? npos : detail::distance(data(), res);
+  const auto res = std::search(data() + pos, data() + curr_size, s, s + n, traits_type::eq);
+  return res == end() ? npos : std::distance(data(), res);
 }
 
 template <std::size_t N, typename CharT, typename Traits>
@@ -4664,7 +4625,7 @@ constexpr auto basic_static_string<N, CharT, Traits>::rfind(const_pointer s, siz
     return pos;
   for (auto sub = &curr_data[pos]; sub >= curr_data; --sub)
     if (!traits_type::compare(sub, s, n))
-      return detail::distance(curr_data, sub);
+      return std::distance(curr_data, sub);
   return npos;
 }
 
@@ -4674,8 +4635,8 @@ constexpr auto basic_static_string<N, CharT, Traits>::find_first_of(const_pointe
   const auto curr_data = data();
   if (pos >= size() || !n)
     return npos;
-  const auto res = detail::find_first_of(&curr_data[pos], &curr_data[size()], s, &s[n], traits_type::eq);
-  return res == end() ? npos : detail::distance(curr_data, res);
+  const auto res = std::find_first_of(&curr_data[pos], &curr_data[size()], s, &s[n], traits_type::eq);
+  return res == end() ? npos : std::distance(curr_data, res);
 }
 
 template <std::size_t N, typename CharT, typename Traits>
@@ -4688,8 +4649,8 @@ constexpr auto basic_static_string<N, CharT, Traits>::find_last_of(const_pointer
     pos = 0;
   else
     pos = curr_size - (pos + 1);
-  const auto res = detail::find_first_of(rbegin() + pos, rend(), s, &s[n], traits_type::eq);
-  return res == rend() ? npos : curr_size - 1 - detail::distance(rbegin(), res);
+  const auto res = std::find_first_of(rbegin() + pos, rend(), s, &s[n], traits_type::eq);
+  return res == rend() ? npos : curr_size - 1 - std::distance(rbegin(), res);
 }
 
 template <std::size_t N, typename CharT, typename Traits>
@@ -4699,8 +4660,8 @@ constexpr auto basic_static_string<N, CharT, Traits>::find_first_not_of(const_po
     return npos;
   if (!n)
     return pos;
-  const auto res = detail::find_not_of<Traits>(data() + pos, data() + size(), s, n);
-  return res == end() ? npos : detail::distance(data(), res);
+  const auto res = std::find_if_not<Traits>(data() + pos, data() + size(), s, n);
+  return res == end() ? npos : std::distance(data(), res);
 }
 
 template <std::size_t N, typename CharT, typename Traits>
@@ -4713,7 +4674,7 @@ constexpr auto basic_static_string<N, CharT, Traits>::find_last_not_of(const_poi
     return pos;
   pos = curr_size - (pos + 1);
   const auto res = detail::find_not_of<Traits>(rbegin() + pos, rend(), s, n);
-  return res == rend() ? npos : curr_size - 1 - detail::distance(rbegin(), res);
+  return res == rend() ? npos : curr_size - 1 - std::distance(rbegin(), res);
 }
 
 template <std::size_t N, typename CharT, typename Traits>

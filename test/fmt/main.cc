@@ -2,6 +2,7 @@
 #include <bela/str_cat.hpp>
 #include <bela/terminal.hpp>
 #include <bela/codecvt.hpp>
+#include <bela/internal/unicode.hpp>
 #include "ucwidth-wt.hpp"
 
 int wmain(int argc, wchar_t **argv) {
@@ -15,12 +16,22 @@ int wmain(int argc, wchar_t **argv) {
                 L"__cplusplus: %d C++17: %b\n",
                 argc, argv[0], wx, ux, __cplusplus, iscpp17);
 
-  char32_t em = 0x1F603;     // 😃 U+1F603
-  char32_t sh = 0x1F496;     //  💖
-  char32_t blueheart = U'💙'; //💙
-  char32_t se = 0x1F92A;     //🤪
-  char32_t em2 = U'中';
-  char32_t hammerandwrench = 0x1F6E0;
+  constexpr char32_t em = 0x1F603;     // 😃 U+1F603
+  constexpr char32_t sh = 0x1F496;     //  💖
+  constexpr char32_t blueheart = U'💙'; //💙
+  constexpr char32_t se = 0x1F92A;     //🤪
+  constexpr char32_t em2 = U'中';
+  constexpr char32_t hammerandwrench = 0x1F6E0;
+
+  wchar_t buf0[4];
+  char16_t buf1[4];
+  char buf2[8];
+  char8_t buf3[8];
+
+  bela::FPrintF(stderr, L"encode_into %s [wchar_t], %s [char16_t], %s [char] %s [char8_t]\n",
+                bela::unicode::encode_into(sh, buf0), bela::unicode::encode_into(sh, buf1),
+                bela::unicode::encode_into(sh, buf2), bela::unicode::encode_into(sh, buf3));
+
   auto s = bela::StringCat(L"Look emoji -->", em, L" U+", bela::AlphaNum(bela::Hex(em)));
   bela::FPrintF(stderr, L"emoji %c %c %c %c %U %U %s P: %p\n", em, sh, blueheart, se, em, em2, s, &em);
   bela::FPrintF(stderr, L"Unicode %c Width: %d \u2600 %d 中 %d ©: %d [%c] %d [%c] %d \n", em, bela::CalculateWidth(em),

@@ -241,8 +241,8 @@ public:
       const std::basic_string<char, std::char_traits<char>, Allocator> &str)
       : piece_(str) {}
   AlphaNum(char c) = delete;
-  AlphaNum(char32_t ch) : piece_(digits_, bela::unicode::encode_into_unchecked(ch, digits_)) {
-    static_assert(sizeof(digits_) > bela::unicode::kMaxEncodedUTF8Size, "difits_ buffer is too small");
+  AlphaNum(char32_t ch) : piece_(digits_, bela::encode_into_unchecked(ch, digits_)) {
+    static_assert(sizeof(digits_) > bela::kMaxEncodedUTF8Size, "difits_ buffer is too small");
   }
   AlphaNum(const AlphaNum &) = delete;
   AlphaNum &operator=(const AlphaNum &) = delete;

@@ -214,7 +214,7 @@ bool CUnescapeInternal(std::wstring_view source, bool leave_nulls_escaped, wchar
           d += 5;
           break;
         }
-        d += bela::unicode::encode_into_unchecked(rune, d);
+        d += bela::encode_into_unchecked(rune, d);
         break;
       }
       case 'U': {
@@ -258,7 +258,7 @@ bool CUnescapeInternal(std::wstring_view source, bool leave_nulls_escaped, wchar
           d += 9;
           break;
         }
-        d += bela::unicode::encode_into_unchecked(rune, d);
+        d += bela::encode_into_unchecked(rune, d);
         break;
       }
       default: {

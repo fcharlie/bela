@@ -3,6 +3,7 @@
 #define BELA_CODECVT_HPP
 #include <string>
 #include <vector>
+#include "internal/unicode.hpp"
 #include "ucwidth.hpp"
 
 /*
@@ -24,8 +25,6 @@
  */
 
 namespace bela {
-size_t char32tochar16(char32_t rune, char16_t *dest, size_t dlen);
-size_t char32tochar8(char32_t rune, char *dest, size_t dlen);
 // UTF-8/UTF-16 codecvt
 std::string c16tomb(const char16_t *data, size_t len);
 std::wstring mbrtowc(const char8_t *str, size_t len);

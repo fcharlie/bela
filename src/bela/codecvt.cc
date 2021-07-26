@@ -58,62 +58,6 @@ constexpr const char32_t offsetfromu8[6] = {0x00000000UL, 0x00003080UL, 0x000E20
 // enough to represent any UTF-32 code unit (32 bits). It has the same size,
 // signedness, and alignment as std::uint_least32_t, but is a distinct type.
 
-constexpr bool IsSurrogate(char32_t rune) { return (rune >= 0xD800 && rune <= 0xDFFF); }
-
-size_t char32tochar16(char32_t rune, char16_t *dest, size_t dlen) {
-  if (dlen == 0 || dest == nullptr) {
-    return 0;
-  }
-  if (rune <= 0xFFFF) {
-    dest[0] = IsSurrogate(rune) ? 0xFFFD : static_cast<char16_t>(rune);
-    return 1;
-  }
-  if (rune > 0x0010FFFF) {
-    dest[0] = 0xFFFD;
-    return 1;
-  }
-  if (dlen < 2) {
-    return 0;
-  }
-  dest[0] = static_cast<char16_t>(0xD7C0 + (rune >> 10));
-  dest[1] = static_cast<char16_t>(0xDC00 + (rune & 0x3FF));
-  return 2;
-}
-
-static inline size_t char32tochar8_internal(char32_t rune, char *dest) {
-  if (rune <= 0x7F) {
-    dest[0] = static_cast<char>(rune);
-    return 1;
-  }
-  if (rune <= 0x7FF) {
-    dest[0] = static_cast<char>(0xC0 | ((rune >> 6) & 0x1F));
-    dest[1] = static_cast<char>(0x80 | (rune & 0x3F));
-    return 2;
-  }
-  if (rune <= 0xFFFF) {
-    dest[0] = static_cast<char>(0xE0 | ((rune >> 12) & 0x0F));
-    dest[1] = static_cast<char>(0x80 | ((rune >> 6) & 0x3F));
-    dest[2] = static_cast<char>(0x80 | (rune & 0x3F));
-    return 3;
-  }
-  if (rune <= 0x10FFFF) {
-    dest[0] = static_cast<char>(0xF0 | ((rune >> 18) & 0x07));
-    dest[1] = static_cast<char>(0x80 | ((rune >> 12) & 0x3F));
-    dest[2] = static_cast<char>(0x80 | ((rune >> 6) & 0x3F));
-    dest[3] = static_cast<char>(0x80 | (rune & 0x3F));
-    return 4;
-  }
-  return 0;
-}
-
-size_t char32tochar8(char32_t rune, char *dest, size_t dlen) {
-  constexpr const size_t kMaxEncodedUTF8Size = 4;
-  if (dlen < kMaxEncodedUTF8Size) {
-    return 0;
-  }
-  return char32tochar8_internal(rune, dest);
-}
-
 std::string c16tomb(const char16_t *data, size_t len) {
   std::string s;
   s.reserve(len);
@@ -133,8 +77,7 @@ std::string c16tomb(const char16_t *data, size_t len) {
       ch = ((ch - 0xD800) << 10) + (ch2 - 0xDC00) + 0x10000U;
       ++it;
     }
-    auto bw = char32tochar8_internal(ch, buffer);
-    s.append(reinterpret_cast<const char *>(buffer), bw);
+    s.append(buffer, bela::unicode::encode_into_unchecked(ch, buffer));
   }
   return s;
 }

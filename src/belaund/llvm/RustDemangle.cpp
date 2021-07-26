@@ -865,7 +865,7 @@ void Demangler::demangleConstChar() {
     break;
   default:
     if (isAsciiPrintable(CodePoint)) {
-      char C = CodePoint;
+      char C = static_cast<char>(CodePoint);
       print(C);
     } else {
       print(R"(\u{)");
@@ -1070,7 +1070,7 @@ void Demangler::printLifetime(uint64_t Index) {
   uint64_t Depth = BoundLifetimes - Index;
   print('\'');
   if (Depth < 26) {
-    char C = 'a' + Depth;
+    char C = static_cast<char>('a' + Depth);
     print(C);
   } else {
     print('z');

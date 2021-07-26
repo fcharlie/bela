@@ -2102,7 +2102,7 @@ ArrayTypeNode *Demangler::demangleArrayType(StringView &MangledName) {
       Tail = Tail->Next;
     }
   }
-  ATy->Dimensions = nodeListToNodeArray(Arena, Head, Rank);
+  ATy->Dimensions = nodeListToNodeArray(Arena, Head, static_cast<size_t>(Rank));
 
   if (MangledName.consumeFront("$$C")) {
     bool IsMember = false;

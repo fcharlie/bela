@@ -120,7 +120,7 @@ private:
       return;
 
     SwapAndRestore<size_t> SavePosition(Position, Position);
-    Position = Backref;
+    Position = static_cast<size_t>(Backref);
     Demangler();
   }
 
@@ -890,8 +890,8 @@ Identifier Demangler::parseIdentifier() {
     Error = true;
     return {};
   }
-  StringView S = Input.substr(Position, Bytes);
-  Position += Bytes;
+  StringView S = Input.substr(Position, static_cast<size_t>(Bytes));
+  Position += static_cast<size_t>(Bytes);
 
   if (!std::all_of(S.begin(), S.end(), isValid)) {
     Error = true;

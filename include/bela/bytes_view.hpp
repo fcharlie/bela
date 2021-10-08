@@ -85,7 +85,7 @@ public:
     }
     return std::string_view(reinterpret_cast<const char *>(p), cslength);
   }
-  // make_string_view convert bytes_view to base_string_view<T>
+  // make_string_view convert bytes_view to base_string_view<T> offset is byte offset
   template <typename T = char>
   requires bela::character<T>
   [[nodiscard]] auto make_string_view(const size_t offset = 0) const {

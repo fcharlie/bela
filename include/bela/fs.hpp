@@ -10,7 +10,7 @@
 #else
 #define BELA_FS_DEPRECATE_REMOVE [[deprecated("bela::fs::Remove is deprecated. Please use bela::fs::ForceDeleteFile")]]
 #define BELA_FS_DEPRECATE_REMOVE_ALL                                                                                   \
-  [[deprecated("bela::fs::Remove is deprecated. Please use bela::fs::ForceDeleteFolders")]]
+  [[deprecated("bela::fs::RemoveAll is deprecated. Please use bela::fs::ForceDeleteFolders")]]
 #endif
 
 namespace bela::fs {

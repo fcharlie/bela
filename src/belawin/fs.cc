@@ -97,11 +97,11 @@ bool force_delete_folders(std::wstring_view path, bela::error_code &ec) {
       }
       continue;
     }
-    if (!bela::fs::Remove(child, ec)) {
+    if (!bela::fs::ForceDeleteFile(child, ec)) {
       return false;
     }
   } while (finder.Next());
-  if (!bela::fs::Remove(path, ec)) {
+  if (!bela::fs::ForceDeleteFile(path, ec)) {
     return false;
   }
   return true;

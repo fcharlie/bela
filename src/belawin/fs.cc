@@ -1,5 +1,4 @@
 //
-#define BELA_FS_DISABLE_DEPRECATED_WARNING
 #include <bela/fs.hpp>
 #include <bela/terminal.hpp>
 namespace bela::fs {

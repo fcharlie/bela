@@ -67,6 +67,8 @@ char *rustDemangle(const std::string_view MangledName, char *Buf, size_t *N, int
 /// demangling occurred.
 std::string demangle(const std::string_view MangledName);
 
+bool nonMicrosoftDemangle(const std::string_view MangledName,std::string &Result);
+
 /// "Partial" demangler. This supports demangling a string into an AST
 /// (typically an intermediate stage in itaniumDemangle) and querying certain
 /// properties or partially printing the demangled name.

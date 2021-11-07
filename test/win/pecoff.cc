@@ -416,6 +416,6 @@ int wmain(int argc, wchar_t **argv) {
     bela::FPrintF(stderr, L"unable lookup overlay data details: %s\n", ec);
     return 1;
   }
-  bela::FPrintF(stderr, L"Description: %s", result.description());
+  bela::FPrintF(stderr, L"Overlay description: %s", result.description());
   return 0;
 }

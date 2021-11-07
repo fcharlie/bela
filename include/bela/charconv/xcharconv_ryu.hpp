@@ -124,7 +124,7 @@ inline constexpr int __DOUBLE_POW5_BITCOUNT = 121;
 
 // vvvvvvvvvv DERIVED FROM d2s_intrinsics.h vvvvvvvvvv
 
-#ifdef BELA_HAS_CHARCONV_INTRINSICS
+#if BELA_HAS_CHARCONV_INTRINSICS
 
 [[nodiscard]] inline uint64_t __ryu_umul128(const uint64_t __a, const uint64_t __b, uint64_t *const __productHi) {
   return _umul128(__a, __b, __productHi);
@@ -191,7 +191,7 @@ inline constexpr int __DOUBLE_POW5_BITCOUNT = 121;
 
 #endif // ^^^ intrinsics unavailable ^^^
 
-#ifndef BELA_HAS_CHARCONV_INTRINSICS
+#ifndef _WIN64
 
 // Returns the high 64 bits of the 128-bit product of __a and __b.
 [[nodiscard]] inline uint64_t __umulh(const uint64_t __a, const uint64_t __b) {
@@ -291,7 +291,7 @@ inline constexpr int __DOUBLE_POW5_BITCOUNT = 121;
 
 inline constexpr int __POW10_ADDITIONAL_BITS = 120;
 
-#ifdef BELA_HAS_CHARCONV_INTRINSICS
+#if BELA_HAS_CHARCONV_INTRINSICS
 // Returns the low 64 bits of the high 128 bits of the 256-bit product of a and
 // b.
 [[nodiscard]] inline uint64_t __umul256_hi128_lo64(const uint64_t __aHi, const uint64_t __aLo, const uint64_t __bHi,
@@ -1647,7 +1647,7 @@ struct __floating_decimal_32 {
 //    c. Split only the first factor into 31-bit pieces, which also guarantees
 //       no internal overflow, but requires extra work since the intermediate
 //       results are not perfectly aligned.
-#ifdef BELA_HAS_CHARCONV_INTRINSICS
+#if BELA_HAS_CHARCONV_INTRINSICS
 
 [[nodiscard]] inline uint64_t __mulShift(const uint64_t __m, const uint64_t *const __mul, const int32_t __j) {
   // __m is maximum 55 bits

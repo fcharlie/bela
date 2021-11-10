@@ -20,34 +20,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        Bela_target: [Bela-win64, Bela-win32, Bela-arm64]
-        include:
-          - Bela_target: Bela-win64
-            msvc_arch: amd64
-            build_dir: build
-          - Bela_target: Bela-win32
-            msvc_arch: amd64_x86
-            build_dir: build.win32
-          - Bela_target: Bela-arm64
-            msvc_arch: amd64_arm64
-            build_dir: build.arm64
+        target: [win64, win32, arm64]
     steps:
       - uses: lukka/get-cmake@latest
       - uses: actions/checkout@v2
         with:
           fetch-depth: 1
-      - name: compile-Bela
-        shell: cmd
-        env:
-          vc_arch: ${{ matrix.msvc_arch }}
-          workdir: ${{ matrix.build_dir }}
-        run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %vc_arch%
-          mkdir %workdir%
-          cd %workdir%
-          set CC=cl
-          set CXX=cl
-          cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DENABLE_TEST=ON ..
-          ninja all
+      - name: compile-bela
+        run: pwsh -NoProfile -NoLogo -ExecutionPolicy unrestricted -File "./build.ps1" -Target "${{ matrix.target }}"
 
       

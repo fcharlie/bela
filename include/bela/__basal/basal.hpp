@@ -51,7 +51,7 @@ std::wstring resolve_module_error_message(const wchar_t *moduleName, DWORD ec, s
   return output;
 }
 
-// bela::error_code
+// bela::error_code is a platform-dependent error code
 struct error_code {
   std::wstring message;
   long code{ErrNone};
@@ -85,8 +85,18 @@ struct error_code {
     code = ErrNone;
     message.clear();
   }
+  [[nodiscard]] const std::wstring &native() const { return message; }
   [[nodiscard]] const wchar_t *data() const { return message.data(); }
   [[nodiscard]] explicit operator bool() const noexcept { return code != ErrNone; }
+  [[nodiscard]] friend bool operator==(const error_code &_Left, const error_code &_Right) noexcept {
+    return _Left.code == _Right.code;
+  }
+  [[nodiscard]] friend bool operator==(const error_code &_Left, const long _Code) noexcept {
+    return _Left.code == _Code;
+  }
+  [[nodiscard]] friend std::strong_ordering operator<=>(const error_code &_Left, long _Code) noexcept {
+    return _Left.code <=> _Code;
+  }
   [[nodiscard]] friend std::strong_ordering operator<=>(const error_code &_Left, const error_code &_Right) noexcept {
     return _Left.code <=> _Right.code;
   }

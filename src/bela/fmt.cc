@@ -82,14 +82,15 @@ using StringWriter = Writer<std::wstring>;
 using BufferWriter = Writer<buffer>;
 
 /// because format string is Null-terminated_string
-template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, const FormatArg *args, size_t max_args) {
+template <typename T>
+bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatArg *args, size_t max_args) {
   if (args == nullptr || max_args == 0) {
     return false;
   }
   wchar_t digits[kFastToBufferSize];
   const auto dend = digits + kFastToBufferSize;
-  auto it = fmt;
-  auto end = it + wcslen(fmt);
+  auto it = fmt.data();
+  auto end = it + fmt.size();
   size_t ca = 0;
   wchar_t pc;
   size_t width;
@@ -132,13 +133,13 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      switch (args[ca].at) {
-      case ArgType::BOOLEAN:
-      case ArgType::CHARACTER:
+      switch (args[ca].type) {
+      case __types::__boolean:
+      case __types::__character:
         w.AddBoolean(args[ca].character.c != 0);
         break;
-      case ArgType::INTEGER:
-      case ArgType::UINTEGER:
+      case __types::__integral:
+      case __types::__unsigned_integral:
         w.AddBoolean(args[ca].integer.i != 0);
         break;
       default:
@@ -150,12 +151,12 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      switch (args[ca].at) {
-      case ArgType::CHARACTER:
+      switch (args[ca].type) {
+      case __types::__character:
         w.AddUnicode(args[ca].character.c, width, pc);
         break;
-      case ArgType::UINTEGER:
-      case ArgType::INTEGER:
+      case __types::__unsigned_integral:
+      case __types::__integral:
         w.AddUnicode(static_cast<char32_t>(args[ca].integer.i), width, pc);
         break;
       default:
@@ -167,10 +168,13 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at == ArgType::STRING) {
-        w.Append(args[ca].strings.data, args[ca].strings.len, width, pc, left);
-      } else if (args[ca].at == ArgType::USTRING) {
-        auto ws = bela::encode_into<char, wchar_t>({args[ca].ustring.data, args[ca].ustring.len});
+      if (args[ca].type == __types::__u16strings) {
+        w.Append(args[ca].u16_strings.data, args[ca].u16_strings.len, width, pc, left);
+      } else if (args[ca].type == __types::__u8strings) {
+        auto ws = bela::encode_into<char8_t, wchar_t>({args[ca].u8_strings.data, args[ca].u8_strings.len});
+        w.Append(ws.data(), ws.size(), width, pc, left);
+      } else if (args[ca].type == __types::__u32strings) {
+        auto ws = bela::encode_into<wchar_t>(std::u32string_view{args[ca].u32_strings.data, args[ca].u32_strings.len});
         w.Append(ws.data(), ws.size(), width, pc, left);
       }
       ca++;
@@ -179,7 +183,7 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at != ArgType::STRING) {
+      if (args[ca].type != __types::__u16strings) {
         bool sign = false;
         size_t off = 0;
         auto val = args[ca].ToInteger(&sign);
@@ -195,7 +199,7 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at != ArgType::STRING) {
+      if (args[ca].type != __types::__u16strings) {
         auto val = args[ca].ToInteger();
         auto p = AlphaNum(val, digits, 0, 8);
         w.Append(p, dend - p, width, pc, left);
@@ -206,7 +210,7 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at != ArgType::STRING) {
+      if (args[ca].type != __types::__u16strings) {
         auto val = args[ca].ToInteger();
         auto p = AlphaNum(val, digits, 0, 16);
         w.Append(p, dend - p, width, pc, left);
@@ -217,7 +221,7 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at != ArgType::STRING) {
+      if (args[ca].type != __types::__u16strings) {
         auto val = args[ca].ToInteger();
         auto p = AlphaNum(val, digits, 0, 16, ' ', true);
         w.Append(p, dend - p, width, pc, left);
@@ -228,12 +232,12 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      switch (args[ca].at) {
-      case ArgType::CHARACTER:
+      switch (args[ca].type) {
+      case __types::__character:
         w.AddUnicodePoint(args[ca].character.c);
         break;
-      case ArgType::INTEGER:
-      case ArgType::UINTEGER:
+      case __types::__integral:
+      case __types::__unsigned_integral:
         w.AddUnicodePoint(static_cast<char32_t>(args[ca].integer.i));
         break;
       default:
@@ -245,7 +249,7 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at == ArgType::FLOAT) {
+      if (args[ca].type == __types::__float) {
         w.Floating(args[ca].floating.d, width, frac_width, pc);
       }
       ca++;
@@ -254,7 +258,7 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at == ArgType::FLOAT) {
+      if (args[ca].type == __types::__float) {
         union {
           double d;
           uint64_t i;
@@ -269,19 +273,19 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      switch (args[ca].at) {
-      case ArgType::BOOLEAN:
+      switch (args[ca].type) {
+      case __types::__boolean:
         w.AddBoolean(args[ca].character.c != 0);
         break;
-      case ArgType::CHARACTER:
+      case __types::__character:
         w.AddUnicode(args[ca].character.c, width, pc);
         break;
-      case ArgType::FLOAT:
+      case __types::__float:
         // w.Floating(args[ca].floating.d, width, frac_width, pc);
         w.Append(digits, numbers_internal::SixDigitsToBuffer(args[ca].floating.d, digits));
         break;
-      case ArgType::INTEGER:
-      case ArgType::UINTEGER: {
+      case __types::__integral:
+      case __types::__unsigned_integral: {
         bool sign = false;
         size_t off = 0;
         auto val = args[ca].ToInteger(&sign);
@@ -291,11 +295,15 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
         auto p = Decimal(val, digits + off, sign);
         w.Append(p, dend - p + off, width, pc, left);
       } break;
-      case ArgType::STRING:
-        w.Append(args[ca].strings.data, args[ca].strings.len, width, pc, left);
+      case __types::__u16strings:
+        w.Append(args[ca].u16_strings.data, args[ca].u16_strings.len, width, pc, left);
         break;
-      case ArgType::USTRING: {
-        auto ws = bela::encode_into<char, wchar_t>({args[ca].ustring.data, args[ca].ustring.len});
+      case __types::__u8strings: {
+        auto ws = bela::encode_into<char8_t, wchar_t>({args[ca].u8_strings.data, args[ca].u8_strings.len});
+        w.Append(ws.data(), ws.size(), width, pc, left);
+      } break;
+      case __types::__u32strings: {
+        auto ws = bela::encode_into<wchar_t>({args[ca].u32_strings.data, args[ca].u32_strings.len});
         w.Append(ws.data(), ws.size(), width, pc, left);
       } break;
       default:
@@ -307,8 +315,8 @@ template <typename T> bool StrFormatInternal(Writer<T> &w, const wchar_t *fmt, c
       if (ca >= max_args) {
         return false;
       }
-      if (args[ca].at == ArgType::POINTER) {
-        auto ptr = reinterpret_cast<ptrdiff_t>(args[ca].ptr);
+      if (args[ca].type == __types::__pointer) {
+        auto ptr = static_cast<ptrdiff_t>(args[ca].value);
         constexpr auto plen = sizeof(intptr_t) * 2;
         auto p = AlphaNum(ptr, digits, plen, 16, '0', true);
         w.Append(L"0x", 2);    /// Force append 0x to pointer

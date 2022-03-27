@@ -39,7 +39,8 @@ int wmain(int argc, wchar_t **argv) {
                 bela::encode_into(sh, buf3));
 
   auto s = bela::StringCat(L"Look emoji -->", em, L" U+", bela::AlphaNum(bela::Hex(em)));
-  bela::FPrintF(stderr, L"emoji %c %c %c %c %U %U %s P: %p\n", em, sh, blueheart, se, em, em2, s, &em);
+  bela::FPrintF(stderr, L"emoji %c %c %c %c %U %U %s P: %p\n", em, sh, blueheart, se, em, em2, s,
+                reinterpret_cast<const void *>(&em));
   bela::FPrintF(stderr, L"Unicode %c Width: %d \u2600 %d 中 %d ©: %d [%c] %d [%c] %d \n", em, bela::rune_width(em),
                 bela::rune_width(0x2600), bela::rune_width(L'中'), bela::rune_width(0xA9), 161, bela::rune_width(161),
                 hammerandwrench, bela::rune_width(hammerandwrench));

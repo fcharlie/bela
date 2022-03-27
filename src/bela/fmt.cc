@@ -21,7 +21,7 @@ size_t memsearch(const wchar_t *begin, const wchar_t *end, int ch) {
   return npos;
 }
 
-const wchar_t *Decimal(uint64_t value, wchar_t *digits, bool sign) {
+std::wstring_view u16string_view_decimal_cast(uint64_t value, wchar_t *digits, bool sign) {
   wchar_t *const end = digits + kFastToBufferSize;
   wchar_t *writer = end;
   constexpr const wchar_t dec[] = L"0123456789";
@@ -32,10 +32,10 @@ const wchar_t *Decimal(uint64_t value, wchar_t *digits, bool sign) {
   if (sign) {
     *--writer = L'-';
   }
-  return writer;
+  return {writer, static_cast<size_t>(end - writer)};
 }
 
-const wchar_t *AlphaNum(uint64_t value, wchar_t *digits, size_t width, int base, wchar_t fill, bool u) {
+std::wstring_view u16string_view_cast(uint64_t value, wchar_t *digits, size_t width, int base, wchar_t fill, bool u) {
   wchar_t *const end = digits + kFastToBufferSize;
   wchar_t *writer = end;
   constexpr const wchar_t hex[] = L"0123456789abcdef";
@@ -75,7 +75,7 @@ const wchar_t *AlphaNum(uint64_t value, wchar_t *digits, size_t width, int base,
   } else {
     beg = writer;
   }
-  return beg;
+  return {beg, static_cast<size_t>(end - beg)};
 }
 
 using StringWriter = Writer<std::wstring>;
@@ -100,10 +100,10 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
     ///  Fast search %,
     auto pos = memsearch(it, end, '%');
     if (pos == npos) {
-      w.Append(it, end - it);
+      w.Append({it, static_cast<size_t>(end - it)});
       return !w.overflow();
     }
-    w.Append(it, pos);
+    w.Append({it, pos});
     /// fmt endswith '\0'
     it += pos + 1;
     if (it >= end) {
@@ -128,11 +128,14 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
         frac_width = frac_width * 10 + (*it++ - '0');
       }
     }
+    if (ca >= max_args) {
+      w.Add('%');
+      w.Add(*it);
+      it++;
+      continue;
+    }
     switch (*it) {
     case 'b':
-      if (ca >= max_args) {
-        return false;
-      }
       switch (args[ca].type) {
       case __types::__boolean:
       case __types::__character:
@@ -148,9 +151,6 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
       ca++;
       break;
     case 'c':
-      if (ca >= max_args) {
-        return false;
-      }
       switch (args[ca].type) {
       case __types::__character:
         w.AddUnicode(args[ca].character.c, width, pc);
@@ -165,73 +165,52 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
       ca++;
       break;
     case 's':
-      if (ca >= max_args) {
-        return false;
-      }
-      if (args[ca].type == __types::__u16strings) {
-        w.Append(args[ca].u16_strings.data, args[ca].u16_strings.len, width, pc, left);
-      } else if (args[ca].type == __types::__u8strings) {
-        auto ws = bela::encode_into<char8_t, wchar_t>({args[ca].u8_strings.data, args[ca].u8_strings.len});
-        w.Append(ws.data(), ws.size(), width, pc, left);
-      } else if (args[ca].type == __types::__u32strings) {
-        auto ws = bela::encode_into<wchar_t>(std::u32string_view{args[ca].u32_strings.data, args[ca].u32_strings.len});
-        w.Append(ws.data(), ws.size(), width, pc, left);
+      switch (args[ca].type) {
+      case __types::__u16strings:
+        w.Append(args[ca].u16string_view_cast(), width, pc, left);
+        break;
+      case __types::__u8strings:
+        w.Append(bela::encode_into<char8_t, wchar_t>(args[ca].u8string_view_cast()), width, pc, left);
+        break;
+      case __types::__u32strings:
+        w.Append(bela::encode_into<wchar_t>(args[ca].u32string_view_cast()), width, pc, left);
+        break;
+      default:
+        break;
       }
       ca++;
       break;
     case 'd':
-      if (ca >= max_args) {
-        return false;
-      }
       if (args[ca].type != __types::__u16strings) {
         bool sign = false;
         size_t off = 0;
-        auto val = args[ca].ToInteger(&sign);
+        auto val = args[ca].uint64_cast(&sign);
         if (sign) {
           pc = ' '; /// when sign ignore '0
         }
-        auto p = Decimal(val, digits + off, sign);
-        w.Append(p, dend - p + off, width, pc, left);
+        w.Append(u16string_view_decimal_cast(val, digits + off, sign), width, pc, left);
       }
       ca++;
       break;
     case 'o':
-      if (ca >= max_args) {
-        return false;
-      }
       if (args[ca].type != __types::__u16strings) {
-        auto val = args[ca].ToInteger();
-        auto p = AlphaNum(val, digits, 0, 8);
-        w.Append(p, dend - p, width, pc, left);
+        w.Append(u16string_view_cast(args[ca].uint64_cast(), digits, 0, 8), width, pc, left);
       }
       ca++;
       break;
     case 'x':
-      if (ca >= max_args) {
-        return false;
-      }
       if (args[ca].type != __types::__u16strings) {
-        auto val = args[ca].ToInteger();
-        auto p = AlphaNum(val, digits, 0, 16);
-        w.Append(p, dend - p, width, pc, left);
+        w.Append(u16string_view_cast(args[ca].uint64_cast(), digits, 0, 16), width, pc, left);
       }
       ca++;
       break;
     case 'X':
-      if (ca >= max_args) {
-        return false;
-      }
       if (args[ca].type != __types::__u16strings) {
-        auto val = args[ca].ToInteger();
-        auto p = AlphaNum(val, digits, 0, 16, ' ', true);
-        w.Append(p, dend - p, width, pc, left);
+        w.Append(u16string_view_cast(args[ca].uint64_cast(), digits, 0, 16, ' ', true), width, pc, left);
       }
       ca++;
       break;
     case 'U':
-      if (ca >= max_args) {
-        return false;
-      }
       switch (args[ca].type) {
       case __types::__character:
         w.AddUnicodePoint(args[ca].character.c);
@@ -246,33 +225,23 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
       ca++;
       break;
     case 'f':
-      if (ca >= max_args) {
-        return false;
-      }
       if (args[ca].type == __types::__float) {
         w.Floating(args[ca].floating.d, width, frac_width, pc);
       }
       ca++;
       break;
     case 'a':
-      if (ca >= max_args) {
-        return false;
-      }
       if (args[ca].type == __types::__float) {
         union {
           double d;
           uint64_t i;
         } x;
         x.d = args[ca].floating.d;
-        auto p = AlphaNum(x.i, digits, 0, 16);
-        w.Append(p, dend - p, width, pc, left);
+        w.Append(u16string_view_cast(x.i, digits, 0, 16), width, pc, left);
       }
       ca++;
       break;
     case 'v':
-      if (ca >= max_args) {
-        return false;
-      }
       switch (args[ca].type) {
       case __types::__boolean:
         w.AddBoolean(args[ca].character.c != 0);
@@ -281,51 +250,42 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
         w.AddUnicode(args[ca].character.c, width, pc);
         break;
       case __types::__float:
-        // w.Floating(args[ca].floating.d, width, frac_width, pc);
-        w.Append(digits, numbers_internal::SixDigitsToBuffer(args[ca].floating.d, digits));
+        w.Append({digits, numbers_internal::SixDigitsToBuffer(args[ca].floating.d, digits)});
         break;
       case __types::__integral:
       case __types::__unsigned_integral: {
         bool sign = false;
         size_t off = 0;
-        auto val = args[ca].ToInteger(&sign);
+        auto val = args[ca].uint64_cast(&sign);
         if (sign) {
           pc = ' '; /// when sign ignore '0
         }
-        auto p = Decimal(val, digits + off, sign);
-        w.Append(p, dend - p + off, width, pc, left);
+        w.Append(u16string_view_decimal_cast(val, digits + off, sign), width, pc, left);
       } break;
       case __types::__u16strings:
-        w.Append(args[ca].u16_strings.data, args[ca].u16_strings.len, width, pc, left);
+        w.Append(args[ca].u16string_view_cast(), width, pc, left);
         break;
-      case __types::__u8strings: {
-        auto ws = bela::encode_into<char8_t, wchar_t>({args[ca].u8_strings.data, args[ca].u8_strings.len});
-        w.Append(ws.data(), ws.size(), width, pc, left);
-      } break;
-      case __types::__u32strings: {
-        auto ws = bela::encode_into<wchar_t>({args[ca].u32_strings.data, args[ca].u32_strings.len});
-        w.Append(ws.data(), ws.size(), width, pc, left);
-      } break;
+      case __types::__u8strings:
+        w.Append(bela::encode_into<char8_t, wchar_t>(args[ca].u8string_view_cast()), width, pc, left);
+        break;
+      case __types::__u32strings:
+        w.Append(bela::encode_into<wchar_t>(args[ca].u32string_view_cast()), width, pc, left);
+        break;
       default:
         break;
       }
       ca++;
       break;
     case 'p':
-      if (ca >= max_args) {
-        return false;
-      }
       if (args[ca].type == __types::__pointer) {
-        auto ptr = static_cast<ptrdiff_t>(args[ca].value);
-        constexpr auto plen = sizeof(intptr_t) * 2;
-        auto p = AlphaNum(ptr, digits, plen, 16, '0', true);
-        w.Append(L"0x", 2);    /// Force append 0x to pointer
-        w.Append(p, dend - p); // 0xffff00000;
+        w.Append(L"0x"sv); // Force append 0x to pointer
+        w.Append(u16string_view_cast(args[ca].value, digits, sizeof(intptr_t) * 2, 16, '0', true)); // 0xffff00000;
       }
       ca++;
       break;
     default:
       // % and other
+      w.Add('%');
       w.Add(*it);
       break;
     }

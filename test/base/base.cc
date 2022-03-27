@@ -50,8 +50,75 @@ void string_print() {
   bela::FPrintF(stderr, L"string_print: %s %s %s %s %s\n", s1, s2, s3, s4, s5);
 }
 
+// constexpr size_t check_fmt_args(std::wstring_view sv) {
+//   size_t count = 0;
+//   for (size_t i = 0; i < sv.size(); i++) {
+//     auto c = sv[i];
+//     if (c != '%' || i + 1 == sv.size()) {
+//       continue;
+//     }
+//     switch (sv[i + 1]) {
+//     case '%':
+//       i++;
+//       break;
+//     case 'B':
+//       [[fallthrough]];
+//     case 'b':
+//       [[fallthrough]];
+//     case 'c':
+//       [[fallthrough]];
+//     case 's':
+//       [[fallthrough]];
+//     case 'd':
+//       [[fallthrough]];
+//     case 'o':
+//       [[fallthrough]];
+//     case 'x':
+//       [[fallthrough]];
+//     case 'X':
+//       [[fallthrough]];
+//     case 'U':
+//       [[fallthrough]];
+//     case 'f':
+//       [[fallthrough]];
+//     case 'a':
+//       [[fallthrough]];
+//     case 'p':
+//       [[fallthrough]];
+//     case 'v':
+//       count++;
+//       i++;
+//       break;
+//     default:
+//       break;
+//     }
+//   }
+//   return count;
+// }
+
+// template <class _CharT, class... _Args> struct _Basic_format_string {
+//   std::basic_string_view<_CharT> _Str;
+//   template <class _Ty>
+//   requires std::convertible_to<const _Ty &, std::basic_string_view<_CharT>>
+//   consteval _Basic_format_string(const _Ty &_Str_val) : _Str(_Str_val) {
+//     static_assert(check_fmt_args(_Str) != sizeof...(Args), "args not equal");
+//   }
+// };
+
+// template <class... _Args> using _Fmt_string = _Basic_format_string<wchar_t, std::type_identity_t<_Args>...>;
+
+// template <typename... Args> bela::ssize_t FPrintF(FILE *out, const _Fmt_string<Args...> fmt, const Args &...args) {
+//   const bela::format_internal::FormatArg arg_array[] = {args...};
+//   auto str = bela::format_internal::StrFormatInternal(fmt._Str.data(), arg_array, sizeof...(args));
+//   return bela::terminal::WriteAuto(out, str);
+// }
+
 void print() {
-  bela::FPrintF(stderr, L"short: %v - %v\n", (std::numeric_limits<short>::min)(),
+  // FPrintF(stderr, L"%v ---- %d %s %d", 1, 2, 3);
+  // constexpr auto n = check_fmt_args(L"%v %d");
+  // constexpr auto n2 = check_fmt_args(L"%v %%");
+  // constexpr auto n3 = check_fmt_args(L"---------------");
+  bela::FPrintF(stderr, L"short: %Q %v - %v\n", (std::numeric_limits<short>::min)(),
                 (std::numeric_limits<short>::max)()); //
   bela::FPrintF(stderr, L"unsigned short: %v - %v\n", (std::numeric_limits<unsigned short>::min)(),
                 (std::numeric_limits<unsigned short>::max)()); //
@@ -71,6 +138,9 @@ void print() {
                 (std::numeric_limits<float>::max)()); //
   bela::FPrintF(stderr, L"double: %v - %v\n", (std::numeric_limits<double>::min)(),
                 (std::numeric_limits<double>::max)()); //
+
+  bela::FPrintF(stderr, L"unsigned long hex: 0x%08x - 0x%08X\n", (std::numeric_limits<unsigned long>::min)(),
+                (std::numeric_limits<unsigned long>::max)()); //
 }
 
 int wmain(int argc, wchar_t **argv) {
@@ -83,7 +153,7 @@ int wmain(int argc, wchar_t **argv) {
   std::filesystem::path p{argv[0]};
   constexpr char32_t sh = 0x1F496; //  💖
   auto xx = 199.9654321f;
-  bela::FPrintF(stderr, L"usage: %v [%4c] %.2f\n", p, sh, xx);
+  bela::FPrintF(stderr, L"usage: %v [%4c] %.2f --------------- %j %k --------%W\n", p, sh, xx);
 
   if (argc >= 2) {
     FILE *fd = nullptr;

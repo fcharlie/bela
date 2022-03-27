@@ -156,8 +156,12 @@ struct FormatArg {
   template <class T>
   requires bela::not_character<T> FormatArg(T *p) : value(reinterpret_cast<intptr_t>(p)), type(__types::__pointer) {}
 
+  // -------------------------------
+  std::u8string_view u8string_view_cast() const { return {u8_strings.data, u8_strings.len}; }
+  std::wstring_view u16string_view_cast() const { return {u16_strings.data, u16_strings.len}; }
+  std::u32string_view u32string_view_cast() const { return {u32_strings.data, u32_strings.len}; }
   /// Convert To integer
-  uint64_t ToInteger(bool *sign = nullptr) const noexcept {
+  uint64_t uint64_cast(bool *sign = nullptr) const noexcept {
     switch (type) {
     case __types::__pointer:
       return value;

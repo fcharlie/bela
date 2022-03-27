@@ -203,7 +203,9 @@ struct FormatArg {
     }
     return static_cast<uint64_t>(i);
   }
-
+  bool is_integral_superset() const {
+    return type != __types::__u8strings && type != __types::__u16strings && type != __types::__u32strings;
+  }
   union {
     struct {
       int64_t i;

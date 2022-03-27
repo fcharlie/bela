@@ -138,9 +138,39 @@ void print() {
                 (std::numeric_limits<float>::max)()); //
   bela::FPrintF(stderr, L"double: %v - %v\n", (std::numeric_limits<double>::min)(),
                 (std::numeric_limits<double>::max)()); //
+  bela::FPrintF(stderr, L"long hex: 0x%08x - 0x%08X\n", (std::numeric_limits<long>::min)(),
+                (std::numeric_limits<long>::max)()); //
+  printf("printf long hex: %08X - %08X\n", (std::numeric_limits<long>::min)(), (std::numeric_limits<long>::max)());
+}
 
-  bela::FPrintF(stderr, L"unsigned long hex: 0x%08x - 0x%08X\n", (std::numeric_limits<unsigned long>::min)(),
+void print_binary() {
+  bela::FPrintF(stderr, L"short: %B - %B\n", (std::numeric_limits<short>::min)(),
+                (std::numeric_limits<short>::max)()); //
+  bela::FPrintF(stderr, L"unsigned short: %B - %B\n", (std::numeric_limits<unsigned short>::min)(),
+                (std::numeric_limits<unsigned short>::max)()); //
+  bela::FPrintF(stderr, L"int: %B - %B\n", (std::numeric_limits<int>::min)(),
+                (std::numeric_limits<int>::max)()); //
+  bela::FPrintF(stderr, L"unsigned int: %B - %B\n", (std::numeric_limits<unsigned int>::min)(),
+                (std::numeric_limits<unsigned int>::max)()); //
+  bela::FPrintF(stderr, L"long: %B - %B\n", (std::numeric_limits<long>::min)(),
+                (std::numeric_limits<long>::max)()); //
+  bela::FPrintF(stderr, L"unsigned long: %B - %B\n", (std::numeric_limits<unsigned long>::min)(),
                 (std::numeric_limits<unsigned long>::max)()); //
+  bela::FPrintF(stderr, L"long long: %B - %B\n", (std::numeric_limits<long long>::min)(),
+                (std::numeric_limits<long long>::max)()); //
+  bela::FPrintF(stderr, L"unsigned long long: %B - %B\n", (std::numeric_limits<unsigned long long>::min)(),
+                (std::numeric_limits<unsigned long long>::max)()); //
+  bela::FPrintF(stderr, L"float: %B - %B\n", (std::numeric_limits<float>::min)(),
+                (std::numeric_limits<float>::max)()); //
+  bela::FPrintF(stderr, L"double: %B - %B\n", (std::numeric_limits<double>::min)(),
+                (std::numeric_limits<double>::max)()); //
+  bela::FPrintF(stderr, L"short 36B: %36B - %36B\n", (std::numeric_limits<short>::min)(),
+                (std::numeric_limits<short>::max)()); //
+  bela::FPrintF(stderr, L"char %B\n", static_cast<char>('c'));
+  bela::FPrintF(stderr, L"wchar_t %B\n", static_cast<wchar_t>('W'));
+  bela::FPrintF(stderr, L"char32_t %B\n", U'💖');
+  bela::FPrintF(stderr, L"char16_t %B\n", u'小');
+  bela::FPrintF(stderr, L"1045 %B\n", static_cast<short>(1045));
 }
 
 int wmain(int argc, wchar_t **argv) {
@@ -150,6 +180,7 @@ int wmain(int argc, wchar_t **argv) {
   string_const_print();
   string_no_const_print_v0();
   print();
+  print_binary();
   std::filesystem::path p{argv[0]};
   constexpr char32_t sh = 0x1F496; //  💖
   auto xx = 199.9654321f;

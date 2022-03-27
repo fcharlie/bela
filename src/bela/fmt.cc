@@ -135,6 +135,10 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
       continue;
     }
     switch (*it) {
+    case 'B':
+      w.AddBinary(args[ca], width, pc);
+      ca++;
+      break;
     case 'b':
       switch (args[ca].type) {
       case __types::__boolean:
@@ -156,6 +160,7 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
         w.AddUnicode(args[ca].character.c, width, pc);
         break;
       case __types::__unsigned_integral:
+        [[fallthrough]];
       case __types::__integral:
         w.AddUnicode(static_cast<char32_t>(args[ca].integer.i), width, pc);
         break;
@@ -181,7 +186,7 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
       ca++;
       break;
     case 'd':
-      if (args[ca].type != __types::__u16strings) {
+      if (args[ca].is_integral_superset()) {
         bool sign = false;
         size_t off = 0;
         auto val = args[ca].uint64_cast(&sign);
@@ -193,19 +198,19 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
       ca++;
       break;
     case 'o':
-      if (args[ca].type != __types::__u16strings) {
+      if (args[ca].is_integral_superset()) {
         w.Append(u16string_view_cast(args[ca].uint64_cast(), digits, 0, 8), width, pc, left);
       }
       ca++;
       break;
     case 'x':
-      if (args[ca].type != __types::__u16strings) {
+      if (args[ca].is_integral_superset()) {
         w.Append(u16string_view_cast(args[ca].uint64_cast(), digits, 0, 16), width, pc, left);
       }
       ca++;
       break;
     case 'X':
-      if (args[ca].type != __types::__u16strings) {
+      if (args[ca].is_integral_superset()) {
         w.Append(u16string_view_cast(args[ca].uint64_cast(), digits, 0, 16, ' ', true), width, pc, left);
       }
       ca++;
@@ -216,6 +221,7 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
         w.AddUnicodePoint(args[ca].character.c);
         break;
       case __types::__integral:
+        [[fallthrough]];
       case __types::__unsigned_integral:
         w.AddUnicodePoint(static_cast<char32_t>(args[ca].integer.i));
         break;
@@ -279,7 +285,7 @@ bool StrFormatInternal(Writer<T> &w, const std::wstring_view fmt, const FormatAr
     case 'p':
       if (args[ca].type == __types::__pointer) {
         w.Append(L"0x"sv); // Force append 0x to pointer
-        w.Append(u16string_view_cast(args[ca].value, digits, sizeof(intptr_t) * 2, 16, '0', true)); // 0xffff00000;
+        w.Append(u16string_view_cast(args[ca].value, digits, sizeof(intptr_t) * 2, sizeof(uintptr_t) * 2, '0', true));
       }
       ca++;
       break;

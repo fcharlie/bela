@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <vector>
 #include <cmath>
+#include <bitset>
 #include <bela/fmt.hpp>
 #include <bela/codecvt.hpp>
 
@@ -109,6 +110,30 @@ public:
     }
     Append(L"u+"sv);
     Append(u16string_view_cast(val, digits, 4, 16, '0', true));
+    return *this;
+  }
+  Writer &AddBinary(const FormatArg &a, size_t width, wchar_t kc = '0') {
+    if (!a.is_integral_superset()) {
+      return *this;
+    }
+    if (kc == ' ') {
+      kc = '0';
+    }
+    wchar_t digits[72];
+    auto u16string_view_binary_cast = [&](uint64_t v) -> std::wstring_view {
+      auto end = digits + 72;
+      auto writer = end;
+      for (;;) {
+        *--writer = L'0' + (v & 0x1);
+        v >>= 1;
+        if (v == 0) {
+          break;
+        }
+      }
+      return {writer, static_cast<size_t>(end - writer)};
+    };
+    Append(L"0b"sv);
+    Append(u16string_view_binary_cast(a.uint64_cast()), width, kc);
     return *this;
   }
   // Add boolean

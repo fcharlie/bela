@@ -32,9 +32,15 @@ template <class T>
 constexpr bool is_strict_unsigned_integral_v =
     is_any_of_v<std::remove_cv_t<T>, unsigned short, unsigned int, unsigned long, unsigned long long>;
 template <class T>
+constexpr bool is_strict_integral_v = is_any_of_v<std::remove_cv_t<T>, short, int, long, long long, unsigned short,
+                                                  unsigned int, unsigned long, unsigned long long>;
+
+template <class T>
 concept strict_signed_integral = is_strict_signed_integral_v<T>;
 template <class T>
 concept strict_unsigned_integral = is_strict_unsigned_integral_v<T>;
+template <class T>
+concept strict_integral = is_strict_integral_v<T>;
 
 template <class T>
 concept character = is_character_v<T>;

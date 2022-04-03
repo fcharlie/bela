@@ -788,12 +788,11 @@ struct Floating_point_string {
 };
 
 // Stores a positive or negative zero into the result object
-template <class FloatingType>
-void Assemble_floating_point_zero(const bool _Is_negative, FloatingType &result) noexcept {
+template <class FloatingType> void Assemble_floating_point_zero(const bool Is_negative, FloatingType &result) noexcept {
   using Floating_traits = Floating_type_traits<FloatingType>;
   using Uint_type = typename Floating_traits::Uint_type;
 
-  Uint_type Sign_component = _Is_negative;
+  Uint_type Sign_component = Is_negative;
   Sign_component <<= Floating_traits::Sign_shift;
 
   result = std::bit_cast<FloatingType>(Sign_component);
@@ -801,11 +800,11 @@ void Assemble_floating_point_zero(const bool _Is_negative, FloatingType &result)
 
 // Stores a positive or negative infinity into the result object
 template <class FloatingType>
-void Assemble_floating_point_infinity(const bool _Is_negative, FloatingType &result) noexcept {
+void Assemble_floating_point_infinity(const bool Is_negative, FloatingType &result) noexcept {
   using Floating_traits = Floating_type_traits<FloatingType>;
   using Uint_type = typename Floating_traits::Uint_type;
 
-  Uint_type Sign_component = _Is_negative;
+  Uint_type Sign_component = Is_negative;
   Sign_component <<= Floating_traits::Sign_shift;
 
   const Uint_type Exponent_component = Floating_traits::Shifted_exponent_mask;
@@ -914,7 +913,7 @@ void Assemble_floating_point_infinity(const bool _Is_negative, FloatingType &res
 // This function correctly handles overflow and stores an infinity in the result object.
 // (The result overflows if and only if exponent == max_exponent && mantissa == 2^precision)
 template <class FloatingType>
-void Assemble_floating_point_value_no_shift(const bool _Is_negative, const int32_t Exponent,
+void Assemble_floating_point_value_no_shift(const bool Is_negative, const int32_t Exponent,
                                             const typename Floating_type_traits<FloatingType>::Uint_type Mantissa,
                                             FloatingType &result) noexcept {
   // The following code assembles floating-point values based on an alternative interpretation of the IEEE 754 binary
@@ -937,7 +936,7 @@ void Assemble_floating_point_value_no_shift(const bool _Is_negative, const int32
   using Floating_traits = Floating_type_traits<FloatingType>;
   using Uint_type = typename Floating_traits::Uint_type;
 
-  Uint_type Sign_component = _Is_negative;
+  Uint_type Sign_component = Is_negative;
   Sign_component <<= Floating_traits::Sign_shift;
 
   Uint_type Exponent_component = static_cast<uint32_t>(Exponent + (Floating_traits::Exponent_bias - 1));
@@ -961,7 +960,7 @@ void Assemble_floating_point_value_no_shift(const bool _Is_negative, const int32
 // (The caller should not round the mantissa before calling this function.)
 template <class FloatingType>
 [[nodiscard]] errc Assemble_floating_point_value(const uint64_t _Initial_mantissa, const int32_t _Initial_exponent,
-                                                 const bool _Is_negative, const bool Has_zero_tail,
+                                                 const bool Is_negative, const bool Has_zero_tail,
                                                  FloatingType &result) noexcept {
   using Traits = Floating_type_traits<FloatingType>;
 
@@ -974,7 +973,7 @@ template <class FloatingType>
 
   if (_Normal_exponent > Traits::Maximum_binary_exponent) {
     // The exponent is too large to be represented by the floating-point type; report the overflow condition:
-    Assemble_floating_point_infinity(_Is_negative, result);
+    Assemble_floating_point_infinity(Is_negative, result);
     return errc::result_out_of_range; // Overflow example: "1e+1000"
   }
 
@@ -991,10 +990,10 @@ template <class FloatingType>
     Exponent = Traits::Minimum_binary_exponent;
 
     // Compute the number of bits by which we need to shift the mantissa in order to form a denormal number.
-    const int32_t _Denormal_mantissa_shift = _Initial_exponent - Exponent;
+    const int32_t Denormal_mantissa_shift = _Initial_exponent - Exponent;
 
-    if (_Denormal_mantissa_shift < 0) {
-      Mantissa = _Right_shift_with_rounding(Mantissa, static_cast<uint32_t>(-_Denormal_mantissa_shift), Has_zero_tail);
+    if (Denormal_mantissa_shift < 0) {
+      Mantissa = _Right_shift_with_rounding(Mantissa, static_cast<uint32_t>(-Denormal_mantissa_shift), Has_zero_tail);
 
       // from_chars in MSVC STL and strto[f|d|ld] in UCRT reports underflow only when the result is zero after
       // rounding to the floating-point format. This behavior is different from IEEE 754 underflow exception.
@@ -1015,7 +1014,7 @@ template <class FloatingType>
       // We detect this case here and re-adjust the mantissa and exponent appropriately, to form a normal number.
       // This is handled by Assemble_floating_point_value_no_shift.
     } else {
-      Mantissa <<= _Denormal_mantissa_shift;
+      Mantissa <<= Denormal_mantissa_shift;
     }
   } else {
     if (_Normal_mantissa_shift < 0) {
@@ -1039,7 +1038,7 @@ template <class FloatingType>
   // Assemble the floating-point value from the computed components:
   using Uint_type = typename Traits::Uint_type;
 
-  Assemble_floating_point_value_no_shift(_Is_negative, Exponent, static_cast<Uint_type>(Mantissa), result);
+  Assemble_floating_point_value_no_shift(Is_negative, Exponent, static_cast<Uint_type>(Mantissa), result);
 
   return _Error_code;
 }
@@ -1051,8 +1050,8 @@ template <class FloatingType>
 template <class FloatingType>
 [[nodiscard]] errc Assemble_floating_point_value_from_big_integer_flt(const Big_integer_flt &Integer_value,
                                                                       const uint32_t Integer_bits_of_precision,
-                                                                      const bool _Is_negative,
-                                                                      const bool _Has_nonzero_fractional_part,
+                                                                      const bool Is_negative,
+                                                                      const bool Has_nonzero_fractional_part,
                                                                       FloatingType &result) noexcept {
   using Traits = Floating_type_traits<FloatingType>;
 
@@ -1067,88 +1066,88 @@ template <class FloatingType>
     const uint32_t Mantissa_high = Integer_value.Myused > 1 ? Integer_value.Mydata[1] : 0;
     const uint64_t Mantissa = Mantissa_low + (static_cast<uint64_t>(Mantissa_high) << 32);
 
-    return Assemble_floating_point_value(Mantissa, Exponent, _Is_negative, !_Has_nonzero_fractional_part, result);
+    return Assemble_floating_point_value(Mantissa, Exponent, Is_negative, !Has_nonzero_fractional_part, result);
   }
 
-  const uint32_t _Top_element_bits = Integer_bits_of_precision % 32;
+  const uint32_t Top_element_bits = Integer_bits_of_precision % 32;
   const uint32_t _Top_element_index = Integer_bits_of_precision / 32;
 
-  const uint32_t _Middle_element_index = _Top_element_index - 1;
-  const uint32_t _Bottom_element_index = _Top_element_index - 2;
+  const uint32_t Middle_element_index = _Top_element_index - 1;
+  const uint32_t Bottom_element_index = _Top_element_index - 2;
 
   // Pretty fast case: If the top 64 bits occupy only two elements, we can just combine those two elements:
-  if (_Top_element_bits == 0) {
-    const int32_t Exponent = static_cast<int32_t>(Base_exponent + _Bottom_element_index * 32);
+  if (Top_element_bits == 0) {
+    const int32_t Exponent = static_cast<int32_t>(Base_exponent + Bottom_element_index * 32);
 
-    const uint64_t Mantissa = Integer_value.Mydata[_Bottom_element_index] +
-                              (static_cast<uint64_t>(Integer_value.Mydata[_Middle_element_index]) << 32);
+    const uint64_t Mantissa = Integer_value.Mydata[Bottom_element_index] +
+                              (static_cast<uint64_t>(Integer_value.Mydata[Middle_element_index]) << 32);
 
-    bool Has_zero_tail = !_Has_nonzero_fractional_part;
-    for (uint32_t Ix = 0; Has_zero_tail && Ix != _Bottom_element_index; ++Ix) {
+    bool Has_zero_tail = !Has_nonzero_fractional_part;
+    for (uint32_t Ix = 0; Has_zero_tail && Ix != Bottom_element_index; ++Ix) {
       Has_zero_tail = Integer_value.Mydata[Ix] == 0;
     }
 
-    return Assemble_floating_point_value(Mantissa, Exponent, _Is_negative, Has_zero_tail, result);
+    return Assemble_floating_point_value(Mantissa, Exponent, Is_negative, Has_zero_tail, result);
   }
 
   // Not quite so fast case: The top 64 bits span three elements in the Big_integer_flt. Assemble the three pieces:
-  const uint32_t _Top_element_mask = (1u << _Top_element_bits) - 1;
-  const uint32_t _Top_element_shift = 64 - _Top_element_bits; // Left
+  const uint32_t Top_element_mask = (1u << Top_element_bits) - 1;
+  const uint32_t _Top_element_shift = 64 - Top_element_bits; // Left
 
   const uint32_t _Middle_element_shift = _Top_element_shift - 32; // Left
 
-  const uint32_t _Bottom_element_bits = 32 - _Top_element_bits;
-  const uint32_t _Bottom_element_mask = ~_Top_element_mask;
+  const uint32_t _Bottom_element_bits = 32 - Top_element_bits;
+  const uint32_t _Bottom_element_mask = ~Top_element_mask;
   const uint32_t _Bottom_element_shift = 32 - _Bottom_element_bits; // Right
 
-  const int32_t Exponent = static_cast<int32_t>(Base_exponent + _Bottom_element_index * 32 + _Top_element_bits);
+  const int32_t Exponent = static_cast<int32_t>(Base_exponent + Bottom_element_index * 32 + Top_element_bits);
 
   const uint64_t Mantissa =
-      (static_cast<uint64_t>(Integer_value.Mydata[_Top_element_index] & _Top_element_mask) << _Top_element_shift) +
-      (static_cast<uint64_t>(Integer_value.Mydata[_Middle_element_index]) << _Middle_element_shift) +
-      (static_cast<uint64_t>(Integer_value.Mydata[_Bottom_element_index] & _Bottom_element_mask) >>
+      (static_cast<uint64_t>(Integer_value.Mydata[_Top_element_index] & Top_element_mask) << _Top_element_shift) +
+      (static_cast<uint64_t>(Integer_value.Mydata[Middle_element_index]) << _Middle_element_shift) +
+      (static_cast<uint64_t>(Integer_value.Mydata[Bottom_element_index] & _Bottom_element_mask) >>
        _Bottom_element_shift);
 
   bool Has_zero_tail =
-      !_Has_nonzero_fractional_part && (Integer_value.Mydata[_Bottom_element_index] & _Top_element_mask) == 0;
+      !Has_nonzero_fractional_part && (Integer_value.Mydata[Bottom_element_index] & Top_element_mask) == 0;
 
-  for (uint32_t Ix = 0; Has_zero_tail && Ix != _Bottom_element_index; ++Ix) {
+  for (uint32_t Ix = 0; Has_zero_tail && Ix != Bottom_element_index; ++Ix) {
     Has_zero_tail = Integer_value.Mydata[Ix] == 0;
   }
 
-  return Assemble_floating_point_value(Mantissa, Exponent, _Is_negative, Has_zero_tail, result);
+  return Assemble_floating_point_value(Mantissa, Exponent, Is_negative, Has_zero_tail, result);
 }
 
 // Accumulates the decimal digits in [first_digit, last_digit) into the result high-precision integer.
 // This function assumes that no overflow will occur.
-inline void _Accumulate_decimal_digits_into_big_integer_flt(const uint8_t *const first_digit,
-                                                            const uint8_t *const last_digit,
-                                                            Big_integer_flt &result) noexcept {
+inline void Accumulate_decimal_digits_into_big_integer_flt(const uint8_t *const first_digit,
+                                                           const uint8_t *const last_digit,
+                                                           Big_integer_flt &result) noexcept {
   // We accumulate nine digit chunks, transforming the base ten string into base one billion on the fly,
   // allowing us to reduce the number of high-precision multiplication and addition operations by 8/9.
-  uint32_t _Accumulator = 0;
-  uint32_t _Accumulator_count = 0;
+  uint32_t Accumulator = 0;
+  uint32_t Accumulator_count = 0;
   for (const uint8_t *_It = first_digit; _It != last_digit; ++_It) {
-    if (_Accumulator_count == 9) {
-      [[maybe_unused]] const bool _Success1 = Multiply(result, 1'000'000'000); // assumes no overflow
-      assert(_Success1);
-      [[maybe_unused]] const bool _Success2 = Add(result, _Accumulator); // assumes no overflow
-      assert(_Success2);
+    if (Accumulator_count == 9) {
+      [[maybe_unused]] const bool Success1 = Multiply(result, 1'000'000'000); // assumes no overflow
+      assert(Success1);
+      [[maybe_unused]] const bool Success2 = Add(result, Accumulator); // assumes no overflow
+      assert(Success2);
 
-      _Accumulator = 0;
-      _Accumulator_count = 0;
+      Accumulator = 0;
+      Accumulator_count = 0;
     }
 
-    _Accumulator *= 10;
-    _Accumulator += *_It;
-    ++_Accumulator_count;
+    Accumulator *= 10;
+    Accumulator += *_It;
+    ++Accumulator_count;
   }
 
-  if (_Accumulator_count != 0) {
-    [[maybe_unused]] const bool _Success3 = Multiply_by_power_of_ten(result, _Accumulator_count); // assumes no overflow
-    assert(_Success3);
-    [[maybe_unused]] const bool _Success4 = Add(result, _Accumulator); // assumes no overflow
-    assert(_Success4);
+  if (Accumulator_count != 0) {
+    [[maybe_unused]] const bool Success3 = Multiply_by_power_of_ten(result, Accumulator_count); // assumes no overflow
+    assert(Success3);
+    [[maybe_unused]] const bool Success4 = Add(result, Accumulator); // assumes no overflow
+    assert(Success4);
   }
 }
 
@@ -1163,29 +1162,29 @@ template <class FloatingType>
   // To generate an N bit mantissa we require N + 1 bits of precision. The extra bit is used to correctly round
   // the mantissa (if there are fewer bits than this available, then that's totally okay;
   // in that case we use what we have and we don't need to round).
-  const uint32_t _Required_bits_of_precision = static_cast<uint32_t>(Traits::Mantissa_bits + 1);
+  const uint32_t Required_bits_of_precision = static_cast<uint32_t>(Traits::Mantissa_bits + 1);
 
   // The input is of the form 0.mantissa * 10^exponent, where 'mantissa' are the decimal digits of the mantissa
   // and 'exponent' is the decimal exponent. We decompose the mantissa into two parts: an integer part and a
   // fractional part. If the exponent is positive, then the integer part consists of the first 'exponent' digits,
   // or all present digits if there are fewer digits. If the exponent is zero or negative, then the integer part
   // is empty. In either case, the remaining digits form the fractional part of the mantissa.
-  const uint32_t _Positive_exponent = static_cast<uint32_t>((std::max)(0, data.Myexponent));
-  const uint32_t _Integer_digits_present = (std::min)(_Positive_exponent, data.Mymantissa_count);
-  const uint32_t _Integer_digits_missing = _Positive_exponent - _Integer_digits_present;
-  const uint8_t *const _Integer_first = data._Mymantissa;
-  const uint8_t *const _Integer_last = data._Mymantissa + _Integer_digits_present;
+  const uint32_t Positive_exponent = static_cast<uint32_t>((std::max)(0, data.Myexponent));
+  const uint32_t Integer_digits_present = (std::min)(Positive_exponent, data.Mymantissa_count);
+  const uint32_t Integer_digits_missing = Positive_exponent - Integer_digits_present;
+  const uint8_t *const Integer_first = data._Mymantissa;
+  const uint8_t *const Integer_last = data._Mymantissa + Integer_digits_present;
 
-  const uint8_t *const _Fractional_first = _Integer_last;
-  const uint8_t *const _Fractional_last = data._Mymantissa + data.Mymantissa_count;
-  const uint32_t _Fractional_digits_present = static_cast<uint32_t>(_Fractional_last - _Fractional_first);
+  const uint8_t *const Fractional_first = Integer_last;
+  const uint8_t *const Fractional_last = data._Mymantissa + data.Mymantissa_count;
+  const uint32_t Fractional_digits_present = static_cast<uint32_t>(Fractional_last - Fractional_first);
 
   // First, we accumulate the integer part of the mantissa into a Big_integer_flt:
   Big_integer_flt Integer_value{};
-  _Accumulate_decimal_digits_into_big_integer_flt(_Integer_first, _Integer_last, Integer_value);
+  Accumulate_decimal_digits_into_big_integer_flt(Integer_first, Integer_last, Integer_value);
 
-  if (_Integer_digits_missing > 0) {
-    if (!Multiply_by_power_of_ten(Integer_value, _Integer_digits_missing)) {
+  if (Integer_digits_missing > 0) {
+    if (!Multiply_by_power_of_ten(Integer_value, Integer_digits_missing)) {
       Assemble_floating_point_infinity(data.Myis_negative, result);
       return errc::result_out_of_range; // Overflow example: "1e+2000"
     }
@@ -1196,9 +1195,9 @@ template <class FloatingType>
   // [2] the mantissa has no fractional part, then we can assemble the result immediately:
   const uint32_t Integer_bits_of_precision = bit_scan_reverse(Integer_value);
   {
-    const bool _Has_zero_fractional_part = _Fractional_digits_present == 0 && Has_zero_tail;
+    const bool _Has_zero_fractional_part = Fractional_digits_present == 0 && Has_zero_tail;
 
-    if (Integer_bits_of_precision >= _Required_bits_of_precision || _Has_zero_fractional_part) {
+    if (Integer_bits_of_precision >= Required_bits_of_precision || _Has_zero_fractional_part) {
       return Assemble_floating_point_value_from_big_integer_flt(Integer_value, Integer_bits_of_precision,
                                                                 data.Myis_negative, !_Has_zero_fractional_part, result);
     }
@@ -1209,15 +1208,15 @@ template <class FloatingType>
   // the fractional part into an actual fraction N/M, where the numerator N is computed from the digits of the
   // fractional part, and the denominator M is computed as the power of 10 such that N/M is equal to the value
   // of the fractional part of the mantissa.
-  Big_integer_flt _Fractional_numerator{};
-  _Accumulate_decimal_digits_into_big_integer_flt(_Fractional_first, _Fractional_last, _Fractional_numerator);
+  Big_integer_flt Fractional_numerator{};
+  Accumulate_decimal_digits_into_big_integer_flt(Fractional_first, Fractional_last, Fractional_numerator);
 
-  const uint32_t _Fractional_denominator_exponent =
-      data.Myexponent < 0 ? _Fractional_digits_present + static_cast<uint32_t>(-data.Myexponent)
-                          : _Fractional_digits_present;
+  const uint32_t Fractional_denominator_exponent =
+      data.Myexponent < 0 ? Fractional_digits_present + static_cast<uint32_t>(-data.Myexponent)
+                          : Fractional_digits_present;
 
-  Big_integer_flt _Fractional_denominator = Make_big_integer_flt_one();
-  if (!Multiply_by_power_of_ten(_Fractional_denominator, _Fractional_denominator_exponent)) {
+  Big_integer_flt Fractional_denominator = Make_big_integer_flt_one();
+  if (!Multiply_by_power_of_ten(Fractional_denominator, Fractional_denominator_exponent)) {
     // If there were any digits in the integer part, it is impossible to underflow (because the exponent
     // cannot possibly be small enough), so if we underflow here it is a true underflow and we return zero.
     Assemble_floating_point_zero(data.Myis_negative, result);
@@ -1228,20 +1227,20 @@ template <class FloatingType>
   // than the denominator. We normalize the fraction such that the most significant bit of the numerator is in the
   // same position as the most significant bit in the denominator. This ensures that when we later shift the
   // numerator N bits to the left, we will produce N bits of precision.
-  const uint32_t _Fractional_numerator_bits = bit_scan_reverse(_Fractional_numerator);
-  const uint32_t _Fractional_denominator_bits = bit_scan_reverse(_Fractional_denominator);
+  const uint32_t Fractional_numerator_bits = bit_scan_reverse(Fractional_numerator);
+  const uint32_t Fractional_denominator_bits = bit_scan_reverse(Fractional_denominator);
 
-  const uint32_t _Fractional_shift = _Fractional_denominator_bits > _Fractional_numerator_bits
-                                         ? _Fractional_denominator_bits - _Fractional_numerator_bits
+  const uint32_t Fractional_shift = Fractional_denominator_bits > Fractional_numerator_bits
+                                         ? Fractional_denominator_bits - Fractional_numerator_bits
                                          : 0;
 
-  if (_Fractional_shift > 0) {
+  if (Fractional_shift > 0) {
     [[maybe_unused]] const bool _Shift_success1 =
-        Shift_left(_Fractional_numerator, _Fractional_shift); // assumes no overflow
+        Shift_left(Fractional_numerator, Fractional_shift); // assumes no overflow
     assert(_Shift_success1);
   }
 
-  const uint32_t Required_fractional_bits_of_precision = _Required_bits_of_precision - Integer_bits_of_precision;
+  const uint32_t Required_fractional_bits_of_precision = Required_bits_of_precision - Integer_bits_of_precision;
 
   uint32_t _Remaining_bits_of_precision_required = Required_fractional_bits_of_precision;
   if (Integer_bits_of_precision > 0) {
@@ -1254,28 +1253,28 @@ template <class FloatingType>
     // then no fractional bits will be part of the result, but the result may affect rounding.
     // This is e.g. the case for large, odd integers with a fractional part greater than or equal to .5.
     // Thus, we need to do the division to correctly round the result.
-    if (_Fractional_shift > _Remaining_bits_of_precision_required) {
+    if (Fractional_shift > _Remaining_bits_of_precision_required) {
       return Assemble_floating_point_value_from_big_integer_flt(
           Integer_value, Integer_bits_of_precision, data.Myis_negative,
-          _Fractional_digits_present != 0 || !Has_zero_tail, result);
+          Fractional_digits_present != 0 || !Has_zero_tail, result);
     }
 
-    _Remaining_bits_of_precision_required -= _Fractional_shift;
+    _Remaining_bits_of_precision_required -= Fractional_shift;
   }
 
   // If there was no integer part of the mantissa, we will need to compute the exponent from the fractional part.
   // The fractional exponent is the power of two by which we must multiply the fractional part to move it into the
   // range [1.0, 2.0). This will either be the same as the shift we computed earlier, or one greater than that shift:
   const uint32_t Fractional_exponent =
-      _Fractional_numerator < _Fractional_denominator ? _Fractional_shift + 1 : _Fractional_shift;
+      Fractional_numerator < Fractional_denominator ? Fractional_shift + 1 : Fractional_shift;
 
   [[maybe_unused]] const bool _Shift_success2 =
-      Shift_left(_Fractional_numerator, _Remaining_bits_of_precision_required); // assumes no overflow
+      Shift_left(Fractional_numerator, _Remaining_bits_of_precision_required); // assumes no overflow
   assert(_Shift_success2);
 
-  uint64_t Fractional_mantissa = Divide(_Fractional_numerator, _Fractional_denominator);
+  uint64_t Fractional_mantissa = Divide(Fractional_numerator, Fractional_denominator);
 
-  Has_zero_tail = Has_zero_tail && _Fractional_numerator.Myused == 0;
+  Has_zero_tail = Has_zero_tail && Fractional_numerator.Myused == 0;
 
   // We may have produced more bits of precision than were required. Check, and remove any "extra" bits:
   const uint32_t Fractional_mantissa_bits = bit_scan_reverse(Fractional_mantissa);
@@ -2352,7 +2351,7 @@ template <class Floating>
 
   // Profiling indicates that linear search is faster than binary search for small tables.
   // Performance note: lambda captures may have a small performance cost.
-  const Uint_type *const _Table_lower_bound = [=] {
+  const Uint_type *const Table_lower_bound = [=] {
     if constexpr (!std::is_same_v<Floating, float>) {
       if (precision > 155) { // threshold determined via profiling
         return std::lower_bound(Table_begin, Table_end, Uint_value, std::less{});
@@ -2362,8 +2361,8 @@ template <class Floating>
     return std::find_if(Table_begin, Table_end, [=](const Uint_type _Elem) { return Uint_value <= _Elem; });
   }();
 
-  const ptrdiff_t _Table_index = _Table_lower_bound - Table_begin;
-  const int Scientific_exponent_X = static_cast<int>(_Table_index - 5);
+  const ptrdiff_t Table_index = Table_lower_bound - Table_begin;
+  const int Scientific_exponent_X = static_cast<int>(Table_index - 5);
   const bool Use_fixed_notation = precision > Scientific_exponent_X && Scientific_exponent_X >= -4;
 
   // Performance note: it might (or might not) be faster to modify Ryu Printf to perform zero-trimming.
@@ -2373,18 +2372,18 @@ template <class Floating>
   // the output range. The necessary buffer size is reasonably small, the zero-trimming logic is simple and fast,
   // and the final copying is also fast.
 
-  constexpr int _Max_output_length =
+  constexpr int Max_output_length =
       std::is_same_v<Floating, float> ? 117 : 773; // cases: 0x1.fffffep-126f and 0x1.fffffffffffffp-1022
   constexpr int Max_fixed_precision =
       std::is_same_v<Floating, float> ? 37 : 66; // cases: 0x1.fffffep-14f and 0x1.fffffffffffffp-14
   constexpr int Max_scientific_precision =
       std::is_same_v<Floating, float> ? 111 : 766; // cases: 0x1.fffffep-126f and 0x1.fffffffffffffp-1022
 
-  // Note that _Max_output_length is determined by scientific notation and is more than enough for fixed notation.
+  // Note that Max_output_length is determined by scientific notation and is more than enough for fixed notation.
   // 0x1.fffffep+127f is 39 digits, plus 1 for '.', plus Max_fixed_precision for '0' digits, equals 77.
   // 0x1.fffffffffffffp+1023 is 309 digits, plus 1 for '.', plus Max_fixed_precision for '0' digits, equals 376.
 
-  wchar_t Buffer[_Max_output_length];
+  wchar_t Buffer[Max_output_length];
   const wchar_t *const _Significand_first = Buffer; // e.g. "1.234"
   const wchar_t *Significand_last = nullptr;
   const wchar_t *Exponent_first = nullptr; // e.g. "e-05"
@@ -2443,11 +2442,11 @@ template <class Floating>
 
 enum class Floating_to_chars_overload { Plain, Format_only, Format_precision };
 
-template <Floating_to_chars_overload _Overload, class Floating>
+template <Floating_to_chars_overload Overload, class Floating>
 [[nodiscard]] to_chars_result Floating_to_chars(wchar_t *first, wchar_t *const last, Floating value,
                                                 const chars_format fmt, const int precision) noexcept {
 
-  if constexpr (_Overload == Floating_to_chars_overload::Plain) {
+  if constexpr (Overload == Floating_to_chars_overload::Plain) {
     assert(fmt == chars_format{}); // plain overload must pass chars_format{} internally
   } else {
     _BELA_ASSERT(fmt == chars_format::general || fmt == chars_format::scientific || fmt == chars_format::fixed ||
@@ -2505,15 +2504,15 @@ template <Floating_to_chars_overload _Overload, class Floating>
     return {first + Len, errc{}};
   }
 
-  if constexpr (_Overload == Floating_to_chars_overload::Plain) {
+  if constexpr (Overload == Floating_to_chars_overload::Plain) {
     return Floating_to_chars_ryu(first, last, value, chars_format{});
-  } else if constexpr (_Overload == Floating_to_chars_overload::Format_only) {
+  } else if constexpr (Overload == Floating_to_chars_overload::Format_only) {
     if (fmt == chars_format::hex) {
       return Floating_to_chars_hex_shortest(first, last, value);
     }
 
     return Floating_to_chars_ryu(first, last, value, fmt);
-  } else if constexpr (_Overload == Floating_to_chars_overload::Format_precision) {
+  } else if constexpr (Overload == Floating_to_chars_overload::Format_precision) {
     switch (fmt) {
     case chars_format::scientific:
       return Floating_to_chars_scientific_precision(first, last, value, precision);

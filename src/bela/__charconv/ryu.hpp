@@ -905,11 +905,11 @@ template <class _CharT>
     Sign_character = '+';
   }
 
-  const int _Exponent_part_length = __exp >= 100
+  const int Exponent_part_length = __exp >= 100
     ? 5 // "e+NNN"
     : 4; // "e+NN"
 
-  if (last - first < _Exponent_part_length) {
+  if (last - first < Exponent_part_length) {
     return { last, errc::value_too_large };
   }
 
@@ -1175,12 +1175,12 @@ struct __floating_decimal_32 {
 
 template <class _CharT>
 [[nodiscard]] std::pair<_CharT*, errc> _Large_integer_to_chars(_CharT* const first, _CharT* const last,
-  const uint32_t Mantissa2, const int32_t _Exponent2) {
+  const uint32_t Mantissa2, const int32_t Exponent2) {
 
-  // Print the integer Mantissa2 * 2^_Exponent2 exactly.
+  // Print the integer Mantissa2 * 2^Exponent2 exactly.
 
-  // For nonzero integers, _Exponent2 >= -23. (The minimum value occurs when Mantissa2 * 2^_Exponent2 is 1.
-  // In that case, Mantissa2 is the implicit 1 bit followed by 23 zeros, so _Exponent2 is -23 to shift away
+  // For nonzero integers, Exponent2 >= -23. (The minimum value occurs when Mantissa2 * 2^Exponent2 is 1.
+  // In that case, Mantissa2 is the implicit 1 bit followed by 23 zeros, so Exponent2 is -23 to shift away
   // the zeros.) The dense range of exactly representable integers has negative or zero exponents
   // (as positive exponents make the range non-dense). For that dense range, Ryu will always be used:
   // every digit is necessary to uniquely identify the value, so Ryu must print them all.
@@ -1191,33 +1191,33 @@ template <class _CharT>
   // Performance note: Long division appears to be faster than losslessly widening float to double and calling
   // __d2fixed_buffered_n(). If __f2fixed_buffered_n() is implemented, it might be faster than long division.
 
-  assert(_Exponent2 > 0);
-  assert(_Exponent2 <= 104); // because __ieeeExponent <= 254
+  assert(Exponent2 > 0);
+  assert(Exponent2 <= 104); // because __ieeeExponent <= 254
 
-  // Manually represent Mantissa2 * 2^_Exponent2 as a large integer. Mantissa2 is always 24 bits
-  // (due to the implicit bit), while _Exponent2 indicates a shift of at most 104 bits.
+  // Manually represent Mantissa2 * 2^Exponent2 as a large integer. Mantissa2 is always 24 bits
+  // (due to the implicit bit), while Exponent2 indicates a shift of at most 104 bits.
   // 24 + 104 equals 128 equals 4 * 32, so we need exactly 4 32-bit elements.
   // We use a little-endian representation, visualized like this:
 
   // << left shift <<
   // most significant
-  // _Data[3] _Data[2] _Data[1] _Data[0]
+  // data[3] data[2] data[1] data[0]
   //                   least significant
   //                   >> right shift >>
 
-  constexpr uint32_t _Data_size = 4;
-  uint32_t _Data[_Data_size]{};
+  constexpr uint32_t data_size = 4;
+  uint32_t data[data_size]{};
 
   // _Maxidx is the index of the most significant nonzero element.
-  uint32_t _Maxidx = ((24 + static_cast<uint32_t>(_Exponent2) + 31) / 32) - 1;
-  assert(_Maxidx < _Data_size);
+  uint32_t _Maxidx = ((24 + static_cast<uint32_t>(Exponent2) + 31) / 32) - 1;
+  assert(_Maxidx < data_size);
 
-  const uint32_t _Bit_shift = static_cast<uint32_t>(_Exponent2) % 32;
+  const uint32_t _Bit_shift = static_cast<uint32_t>(Exponent2) % 32;
   if (_Bit_shift <= 8) { // Mantissa2's 24 bits don't cross an element boundary
-    _Data[_Maxidx] = Mantissa2 << _Bit_shift;
+    data[_Maxidx] = Mantissa2 << _Bit_shift;
   } else { // Mantissa2's 24 bits cross an element boundary
-    _Data[_Maxidx - 1] = Mantissa2 << _Bit_shift;
-    _Data[_Maxidx] = Mantissa2 >> (32 - _Bit_shift);
+    data[_Maxidx - 1] = Mantissa2 << _Bit_shift;
+    data[_Maxidx] = Mantissa2 >> (32 - _Bit_shift);
   }
 
   // If Ryu hasn't determined the total output length, we need to buffer the digits generated from right to left
@@ -1225,19 +1225,19 @@ template <class _CharT>
   uint32_t _Blocks[4];
   int32_t _Filled_blocks = 0;
   // From left to right, we're going to print:
-  // _Data[0] will be [1, 10] digits.
+  // data[0] will be [1, 10] digits.
   // Then if _Filled_blocks > 0:
   // _Blocks[_Filled_blocks - 1], ..., _Blocks[0] will be 0-filled 9-digit blocks.
 
   if (_Maxidx != 0) { // If the integer is actually large, perform long division.
-                      // Otherwise, skip to printing _Data[0].
+                      // Otherwise, skip to printing data[0].
     for (;;) {
       // Loop invariant: _Maxidx != 0 (i.e. the integer is actually large)
 
-      const uint32_t _Most_significant_elem = _Data[_Maxidx];
+      const uint32_t _Most_significant_elem = data[_Maxidx];
       const uint32_t _Initial_remainder = _Most_significant_elem % 1000000000;
       const uint32_t _Initial_quotient = _Most_significant_elem / 1000000000;
-      _Data[_Maxidx] = _Initial_quotient;
+      data[_Maxidx] = _Initial_quotient;
       uint64_t _Remainder = _Initial_remainder;
 
       // Process less significant elements.
@@ -1246,7 +1246,7 @@ template <class _CharT>
         --_Idx; // Initially, _Remainder is at most 10^9 - 1.
 
         // Now, _Remainder is at most (10^9 - 1) * 2^32 + 2^32 - 1, simplified to 10^9 * 2^32 - 1.
-        _Remainder = (_Remainder << 32) | _Data[_Idx];
+        _Remainder = (_Remainder << 32) | data[_Idx];
 
         // floor((10^9 * 2^32 - 1) / 10^9) == 2^32 - 1, so uint32_t _Quotient is lossless.
         const uint32_t _Quotient = static_cast<uint32_t>(__div1e9(_Remainder));
@@ -1255,7 +1255,7 @@ template <class _CharT>
         // For uint32_t truncation, see the __mod1e9() comment in d2s_intrinsics.h.
         _Remainder = static_cast<uint32_t>(_Remainder) - 1000000000u * _Quotient;
 
-        _Data[_Idx] = _Quotient;
+        data[_Idx] = _Quotient;
       } while (_Idx != 0);
 
       // Store a 0-filled 9-digit block.
@@ -1264,19 +1264,19 @@ template <class _CharT>
       if (_Initial_quotient == 0) { // Is the large integer shrinking?
         --_Maxidx; // log2(10^9) is 29.9, so we can't shrink by more than one element.
         if (_Maxidx == 0) {
-          break; // We've finished long division. Now we need to print _Data[0].
+          break; // We've finished long division. Now we need to print data[0].
         }
       }
     }
   }
 
-  assert(_Data[0] != 0);
-  for (uint32_t _Idx = 1; _Idx < _Data_size; ++_Idx) {
-    assert(_Data[_Idx] == 0);
+  assert(data[0] != 0);
+  for (uint32_t _Idx = 1; _Idx < data_size; ++_Idx) {
+    assert(data[_Idx] == 0);
   }
 
-  const uint32_t _Data_olength = _Data[0] >= 1000000000 ? 10 : __decimalLength9(_Data[0]);
-  const uint32_t _Total_fixed_length = _Data_olength + 9 * _Filled_blocks;
+  const uint32_t data_olength = data[0] >= 1000000000 ? 10 : __decimalLength9(data[0]);
+  const uint32_t _Total_fixed_length = data_olength + 9 * _Filled_blocks;
 
   if (last - first < static_cast<ptrdiff_t>(_Total_fixed_length)) {
     return { last, errc::value_too_large };
@@ -1284,10 +1284,10 @@ template <class _CharT>
 
   _CharT* result = first;
 
-  // Print _Data[0]. While it's up to 10 digits,
+  // Print data[0]. While it's up to 10 digits,
   // which is more than Ryu generates, the code below can handle this.
-  __append_n_digits(_Data_olength, _Data[0], result);
-  result += _Data_olength;
+  __append_n_digits(data_olength, data[0], result);
+  result += data_olength;
 
   // Print 0-filled 9-digit blocks.
   for (int32_t _Idx = _Filled_blocks - 1; _Idx >= 0; --_Idx) {
@@ -1424,11 +1424,11 @@ template <class _CharT>
 
       if (!_Can_use_ryu) {
         const uint32_t Mantissa2 = __ieeeMantissa | (1u << __FLOAT_MANTISSA_BITS); // restore implicit bit
-        const int32_t _Exponent2 = static_cast<int32_t>(__ieeeExponent)
+        const int32_t Exponent2 = static_cast<int32_t>(__ieeeExponent)
           - __FLOAT_BIAS - __FLOAT_MANTISSA_BITS; // bias and normalization
 
         // Performance note: We've already called Ryu, so this will redundantly perform buffering and bounds checking.
-        return _Large_integer_to_chars(first, last, Mantissa2, _Exponent2);
+        return _Large_integer_to_chars(first, last, Mantissa2, Exponent2);
       }
 
       // _Can_use_ryu
@@ -1588,14 +1588,14 @@ template <class _CharT>
   // it's faster to skip Ryu and immediately print the integer exactly.
   if (fmt == chars_format::fixed) {
     const uint32_t Mantissa2 = __ieeeMantissa | (1u << __FLOAT_MANTISSA_BITS); // restore implicit bit
-    const int32_t _Exponent2 = static_cast<int32_t>(__ieeeExponent)
+    const int32_t Exponent2 = static_cast<int32_t>(__ieeeExponent)
       - __FLOAT_BIAS - __FLOAT_MANTISSA_BITS; // bias and normalization
 
-    // Normal values are equal to Mantissa2 * 2^_Exponent2.
-    // (Subnormals are different, but they'll be rejected by the _Exponent2 test here, so they can be ignored.)
+    // Normal values are equal to Mantissa2 * 2^Exponent2.
+    // (Subnormals are different, but they'll be rejected by the Exponent2 test here, so they can be ignored.)
 
-    if (_Exponent2 > 0) {
-      return _Large_integer_to_chars(first, last, Mantissa2, _Exponent2);
+    if (Exponent2 > 0) {
+      return _Large_integer_to_chars(first, last, Mantissa2, Exponent2);
     }
   }
 
@@ -2294,14 +2294,14 @@ template <class _CharT>
 
   if (fmt == chars_format::fixed) {
     // const uint64_t Mantissa2 = __ieeeMantissa | (1ull << __DOUBLE_MANTISSA_BITS); // restore implicit bit
-    const int32_t _Exponent2 = static_cast<int32_t>(__ieeeExponent)
+    const int32_t Exponent2 = static_cast<int32_t>(__ieeeExponent)
       - __DOUBLE_BIAS - __DOUBLE_MANTISSA_BITS; // bias and normalization
 
-    // Normal values are equal to Mantissa2 * 2^_Exponent2.
-    // (Subnormals are different, but they'll be rejected by the _Exponent2 test here, so they can be ignored.)
+    // Normal values are equal to Mantissa2 * 2^Exponent2.
+    // (Subnormals are different, but they'll be rejected by the Exponent2 test here, so they can be ignored.)
 
-    // For nonzero integers, _Exponent2 >= -52. (The minimum value occurs when Mantissa2 * 2^_Exponent2 is 1.
-    // In that case, Mantissa2 is the implicit 1 bit followed by 52 zeros, so _Exponent2 is -52 to shift away
+    // For nonzero integers, Exponent2 >= -52. (The minimum value occurs when Mantissa2 * 2^Exponent2 is 1.
+    // In that case, Mantissa2 is the implicit 1 bit followed by 52 zeros, so Exponent2 is -52 to shift away
     // the zeros.) The dense range of exactly representable integers has negative or zero exponents
     // (as positive exponents make the range non-dense). For that dense range, Ryu will always be used:
     // every digit is necessary to uniquely identify the value, so Ryu must print them all.
@@ -2310,7 +2310,7 @@ template <class _CharT>
     // for which Ryu can't be used (and a few Ryu-friendly values). We can save time by detecting positive
     // exponents here and skipping Ryu. Calling __d2fixed_buffered_n() with precision 0 is valid for all integers
     // (so it's okay if we call it with a Ryu-friendly value).
-    if (_Exponent2 > 0) {
+    if (Exponent2 > 0) {
       return __d2fixed_buffered_n(first, last, __f, 0);
     }
   }

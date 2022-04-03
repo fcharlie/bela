@@ -442,17 +442,17 @@ inline from_chars_result __from_chars_integral(const wchar_t *__first, const wch
 
   return __subject_seq_combinator(
       __first, __last, __value,
-      [](const wchar_t *__p, const wchar_t *__lastp, I &__val, int _Base) -> from_chars_result {
+      [](const wchar_t *__p, const wchar_t *__lastp, I &__val, int base) -> from_chars_result {
         using __tl = std::numeric_limits<I>;
-        auto __digits = __tl::digits / log2f(float(_Base));
-        I __a = __in_pattern(*__p++, _Base).__val, __b = 0;
+        auto __digits = __tl::digits / log2f(float(base));
+        I __a = __in_pattern(*__p++, base).__val, __b = 0;
 
         for (int __i = 1; __p != __lastp; ++__i, ++__p) {
-          if (auto __c = __in_pattern(*__p, _Base)) {
+          if (auto __c = __in_pattern(*__p, base)) {
             if (__i < __digits - 1)
-              __a = __a * _Base + __c.__val;
+              __a = __a * base + __c.__val;
             else {
-              if (!__itoa::__mul_overflowed(__a, _Base, __a))
+              if (!__itoa::__mul_overflowed(__a, base, __a))
                 ++__p;
               __b = __c.__val;
               break;
@@ -461,7 +461,7 @@ inline from_chars_result __from_chars_integral(const wchar_t *__first, const wch
             break;
         }
 
-        if (__p == __lastp || !__in_pattern(*__p, _Base)) {
+        if (__p == __lastp || !__in_pattern(*__p, base)) {
           if ((__tl::max)() - __a >= __b) {
             __val = __a + __b;
             return {__p, successful};

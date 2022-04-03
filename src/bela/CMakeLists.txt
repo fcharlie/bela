@@ -21,7 +21,9 @@ add_library(
   str_cat_narrow.cc
   subsitute.cc
   subsitute_narrow.cc
-  terminal.cc)
+  terminal.cc
+  __charconv/charconv.cc
+  __charconv/charconv_float.cc)
 
 if(BELA_ENABLE_LTO)
   set_property(TARGET bela PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)

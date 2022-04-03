@@ -70,6 +70,10 @@ template <typename E>
 requires std::is_enum_v<E>
 constexpr auto integral_cast(E e) { return static_cast<std::underlying_type_t<E>>(e); }
 
+template <class T> constexpr typename std::make_unsigned<T>::type unsigned_cast(T __x) noexcept {
+  return static_cast<typename std::make_unsigned<T>::type>(__x);
+}
+
 template <typename T, typename K>
 requires integral_superset<T> && integral_superset<K>
 constexpr bool FlagIsTrue(T a, K b) { return (a & static_cast<T>(b)) != 0; }

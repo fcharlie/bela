@@ -896,13 +896,13 @@ template <class _CharT>
     }
   }
 
-  char _Sign_character;
+  char Sign_character;
 
   if (__exp < 0) {
-    _Sign_character = '-';
+    Sign_character = '-';
     __exp = -__exp;
   } else {
-    _Sign_character = '+';
+    Sign_character = '+';
   }
 
   const int _Exponent_part_length = __exp >= 100
@@ -914,7 +914,7 @@ template <class _CharT>
   }
 
   *first++ = 'e';
-  *first++ = _Sign_character;
+  *first++ = Sign_character;
 
   if (__exp >= 100) {
     const int32_t __c = __exp % 10;
@@ -1175,12 +1175,12 @@ struct __floating_decimal_32 {
 
 template <class _CharT>
 [[nodiscard]] std::pair<_CharT*, errc> _Large_integer_to_chars(_CharT* const first, _CharT* const last,
-  const uint32_t _Mantissa2, const int32_t _Exponent2) {
+  const uint32_t Mantissa2, const int32_t _Exponent2) {
 
-  // Print the integer _Mantissa2 * 2^_Exponent2 exactly.
+  // Print the integer Mantissa2 * 2^_Exponent2 exactly.
 
-  // For nonzero integers, _Exponent2 >= -23. (The minimum value occurs when _Mantissa2 * 2^_Exponent2 is 1.
-  // In that case, _Mantissa2 is the implicit 1 bit followed by 23 zeros, so _Exponent2 is -23 to shift away
+  // For nonzero integers, _Exponent2 >= -23. (The minimum value occurs when Mantissa2 * 2^_Exponent2 is 1.
+  // In that case, Mantissa2 is the implicit 1 bit followed by 23 zeros, so _Exponent2 is -23 to shift away
   // the zeros.) The dense range of exactly representable integers has negative or zero exponents
   // (as positive exponents make the range non-dense). For that dense range, Ryu will always be used:
   // every digit is necessary to uniquely identify the value, so Ryu must print them all.
@@ -1194,7 +1194,7 @@ template <class _CharT>
   assert(_Exponent2 > 0);
   assert(_Exponent2 <= 104); // because __ieeeExponent <= 254
 
-  // Manually represent _Mantissa2 * 2^_Exponent2 as a large integer. _Mantissa2 is always 24 bits
+  // Manually represent Mantissa2 * 2^_Exponent2 as a large integer. Mantissa2 is always 24 bits
   // (due to the implicit bit), while _Exponent2 indicates a shift of at most 104 bits.
   // 24 + 104 equals 128 equals 4 * 32, so we need exactly 4 32-bit elements.
   // We use a little-endian representation, visualized like this:
@@ -1213,11 +1213,11 @@ template <class _CharT>
   assert(_Maxidx < _Data_size);
 
   const uint32_t _Bit_shift = static_cast<uint32_t>(_Exponent2) % 32;
-  if (_Bit_shift <= 8) { // _Mantissa2's 24 bits don't cross an element boundary
-    _Data[_Maxidx] = _Mantissa2 << _Bit_shift;
-  } else { // _Mantissa2's 24 bits cross an element boundary
-    _Data[_Maxidx - 1] = _Mantissa2 << _Bit_shift;
-    _Data[_Maxidx] = _Mantissa2 >> (32 - _Bit_shift);
+  if (_Bit_shift <= 8) { // Mantissa2's 24 bits don't cross an element boundary
+    _Data[_Maxidx] = Mantissa2 << _Bit_shift;
+  } else { // Mantissa2's 24 bits cross an element boundary
+    _Data[_Maxidx - 1] = Mantissa2 << _Bit_shift;
+    _Data[_Maxidx] = Mantissa2 >> (32 - _Bit_shift);
   }
 
   // If Ryu hasn't determined the total output length, we need to buffer the digits generated from right to left
@@ -1282,20 +1282,20 @@ template <class _CharT>
     return { last, errc::value_too_large };
   }
 
-  _CharT* _Result = first;
+  _CharT* result = first;
 
   // Print _Data[0]. While it's up to 10 digits,
   // which is more than Ryu generates, the code below can handle this.
-  __append_n_digits(_Data_olength, _Data[0], _Result);
-  _Result += _Data_olength;
+  __append_n_digits(_Data_olength, _Data[0], result);
+  result += _Data_olength;
 
   // Print 0-filled 9-digit blocks.
   for (int32_t _Idx = _Filled_blocks - 1; _Idx >= 0; --_Idx) {
-    __append_nine_digits(_Blocks[_Idx], _Result);
-    _Result += 9;
+    __append_nine_digits(_Blocks[_Idx], result);
+    result += 9;
   }
 
-  return { _Result, std::errc{} };
+  return { result, std::errc{} };
 }
 
 template <class _CharT>
@@ -1423,12 +1423,12 @@ template <class _CharT>
       }
 
       if (!_Can_use_ryu) {
-        const uint32_t _Mantissa2 = __ieeeMantissa | (1u << __FLOAT_MANTISSA_BITS); // restore implicit bit
+        const uint32_t Mantissa2 = __ieeeMantissa | (1u << __FLOAT_MANTISSA_BITS); // restore implicit bit
         const int32_t _Exponent2 = static_cast<int32_t>(__ieeeExponent)
           - __FLOAT_BIAS - __FLOAT_MANTISSA_BITS; // bias and normalization
 
         // Performance note: We've already called Ryu, so this will redundantly perform buffering and bounds checking.
-        return _Large_integer_to_chars(first, last, _Mantissa2, _Exponent2);
+        return _Large_integer_to_chars(first, last, Mantissa2, _Exponent2);
       }
 
       // _Can_use_ryu
@@ -1587,15 +1587,15 @@ template <class _CharT>
   // When fmt == chars_format::fixed and the floating-point number is a large integer,
   // it's faster to skip Ryu and immediately print the integer exactly.
   if (fmt == chars_format::fixed) {
-    const uint32_t _Mantissa2 = __ieeeMantissa | (1u << __FLOAT_MANTISSA_BITS); // restore implicit bit
+    const uint32_t Mantissa2 = __ieeeMantissa | (1u << __FLOAT_MANTISSA_BITS); // restore implicit bit
     const int32_t _Exponent2 = static_cast<int32_t>(__ieeeExponent)
       - __FLOAT_BIAS - __FLOAT_MANTISSA_BITS; // bias and normalization
 
-    // Normal values are equal to _Mantissa2 * 2^_Exponent2.
+    // Normal values are equal to Mantissa2 * 2^_Exponent2.
     // (Subnormals are different, but they'll be rejected by the _Exponent2 test here, so they can be ignored.)
 
     if (_Exponent2 > 0) {
-      return _Large_integer_to_chars(first, last, _Mantissa2, _Exponent2);
+      return _Large_integer_to_chars(first, last, Mantissa2, _Exponent2);
     }
   }
 
@@ -2293,15 +2293,15 @@ template <class _CharT>
   const uint32_t __ieeeExponent = static_cast<uint32_t>(__bits >> __DOUBLE_MANTISSA_BITS);
 
   if (fmt == chars_format::fixed) {
-    // const uint64_t _Mantissa2 = __ieeeMantissa | (1ull << __DOUBLE_MANTISSA_BITS); // restore implicit bit
+    // const uint64_t Mantissa2 = __ieeeMantissa | (1ull << __DOUBLE_MANTISSA_BITS); // restore implicit bit
     const int32_t _Exponent2 = static_cast<int32_t>(__ieeeExponent)
       - __DOUBLE_BIAS - __DOUBLE_MANTISSA_BITS; // bias and normalization
 
-    // Normal values are equal to _Mantissa2 * 2^_Exponent2.
+    // Normal values are equal to Mantissa2 * 2^_Exponent2.
     // (Subnormals are different, but they'll be rejected by the _Exponent2 test here, so they can be ignored.)
 
-    // For nonzero integers, _Exponent2 >= -52. (The minimum value occurs when _Mantissa2 * 2^_Exponent2 is 1.
-    // In that case, _Mantissa2 is the implicit 1 bit followed by 52 zeros, so _Exponent2 is -52 to shift away
+    // For nonzero integers, _Exponent2 >= -52. (The minimum value occurs when Mantissa2 * 2^_Exponent2 is 1.
+    // In that case, Mantissa2 is the implicit 1 bit followed by 52 zeros, so _Exponent2 is -52 to shift away
     // the zeros.) The dense range of exactly representable integers has negative or zero exponents
     // (as positive exponents make the range non-dense). For that dense range, Ryu will always be used:
     // every digit is necessary to uniquely identify the value, so Ryu must print them all.
@@ -2342,19 +2342,19 @@ template <class _CharT>
 
 // clang-format on
 // __f2s_buffered_n namespace escape ?
-template <class _Floating>
+template <class Floating>
 [[nodiscard]] to_chars_result Floating_to_chars_ryu(wchar_t *const first, wchar_t *const last,
-                                                     const _Floating value, const chars_format fmt) noexcept {
-  if constexpr (std::is_same_v<_Floating, float>) {
+                                                     const Floating value, const chars_format fmt) noexcept {
+  if constexpr (std::is_same_v<Floating, float>) {
     return _Convert_to_chars_result(bela::__f2s_buffered_n(first, last, value, fmt));
   } else {
     return _Convert_to_chars_result(bela::__d2s_buffered_n(first, last, value, fmt));
   }
 }
 
-template <class _Floating>
+template <class Floating>
 [[nodiscard]] to_chars_result Floating_to_chars_scientific_precision(wchar_t *const first, wchar_t *const last,
-                                                                      const _Floating value, int precision) noexcept {
+                                                                      const Floating value, int precision) noexcept {
 
   // C11 7.21.6.1 "The fprintf function"/5:
   // "A negative precision argument is taken as if the precision were omitted."
@@ -2373,9 +2373,9 @@ template <class _Floating>
   return __d2exp_buffered_n(first, last, value, static_cast<uint32_t>(precision));
 }
 
-template <class _Floating>
+template <class Floating>
 [[nodiscard]] to_chars_result Floating_to_chars_fixed_precision(wchar_t *const first, wchar_t *const last,
-                                                                 const _Floating value, int precision) noexcept {
+                                                                 const Floating value, int precision) noexcept {
 
   // C11 7.21.6.1 "The fprintf function"/5:
   // "A negative precision argument is taken as if the precision were omitted."

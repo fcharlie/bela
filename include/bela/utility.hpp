@@ -5,6 +5,7 @@
 
 #if (defined(_M_AMD64) || defined(__x86_64__)) || (defined(_M_ARM) || defined(__arm__))
 #define _BELA_HAS_BITSCAN64
+#define _BELA_64BIT 1
 #endif
 
 namespace bela {
@@ -111,10 +112,12 @@ inline int __bela_popcount(unsigned long __x) {
   return __popcnt(__x);
 }
 
+#ifdef _BELA_64BIT
 inline int __bela_popcount(unsigned long long __x) {
   static_assert(sizeof(unsigned long long) == 8, "");
   return static_cast<int>(__popcnt64(__x));
 }
+#endif
 
 #endif // _LIBCPP_COMPILER_MSVC
 

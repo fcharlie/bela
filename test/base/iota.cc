@@ -213,6 +213,17 @@ void check_base_convert_2() {
   }
 }
 
+template <typename I>
+requires std::unsigned_integral<I>
+inline I __format_complement(I __x) { return I(~__x + 1); }
+
+uint64_t make_unsigned_unchecked(int64_t v, bool &sign) noexcept {
+  if (sign = v < 0; sign) {
+    return static_cast<uint64_t>(-v);
+  }
+  return static_cast<uint64_t>(v);
+}
+
 int wmain() {
   check_wchar_t_view();
   check_char_view();
@@ -222,5 +233,26 @@ int wmain() {
   check_base_convert_2();
   auto e = std::errc{};
   bela::FPrintF(stderr, L"std::errc{} %d\n", bela::integral_cast(e));
+  constexpr int64_t vvv[] = {
+      -1,
+      0,
+      1,
+      2,
+      34324324, //
+      -997712,
+      (std::numeric_limits<int64_t>::max)(),
+      (std::numeric_limits<int64_t>::min)(),
+      (std::numeric_limits<int32_t>::max)(),
+      (std::numeric_limits<int32_t>::min)(), //
+      (std::numeric_limits<int16_t>::max)(),
+      (std::numeric_limits<int16_t>::min)(), //
+  };
+
+  for (const auto i : vvv) {
+    bool sign = false;
+    auto n = make_unsigned_unchecked(i, sign);
+    bela::FPrintF(stderr, L"%d -- %s%d\n", i, sign ? L"-" : L"+", n);
+  }
+
   return 0;
 }

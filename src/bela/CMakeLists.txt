@@ -7,7 +7,6 @@ add_library(
   city.cc
   codecvt.cc
   escaping.cc
-  fmt.cc
   fnmatch.cc
   int128.cc
   match.cc
@@ -23,7 +22,8 @@ add_library(
   subsitute_narrow.cc
   terminal.cc
   __charconv/charconv.cc
-  __charconv/charconv_float.cc)
+  __charconv/charconv_float.cc
+  __format/fmt.cc)
 
 if(BELA_ENABLE_LTO)
   set_property(TARGET bela PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)

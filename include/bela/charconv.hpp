@@ -412,10 +412,10 @@ inline from_chars_result __from_chars_atoi(const wchar_t *__first, const wchar_t
   using __output_type = typename __tx::type;
 
   return __subject_seq_combinator(__first, __last, __value,
-                                  [](const wchar_t *_First, const wchar_t *_Last, I &__val) -> from_chars_result {
+                                  [](const wchar_t *first, const wchar_t *last, I &__val) -> from_chars_result {
                                     __output_type __a, __b;
-                                    auto __p = __tx::__read(_First, _Last, __a, __b);
-                                    if (__p == _Last || !__in_pattern(*__p)) {
+                                    auto __p = __tx::__read(first, last, __a, __b);
+                                    if (__p == last || !__in_pattern(*__p)) {
                                       __output_type __m = (std::numeric_limits<I>::max)();
                                       if (__m >= __a && __m - __a >= __b) {
                                         __val = __a + __b;

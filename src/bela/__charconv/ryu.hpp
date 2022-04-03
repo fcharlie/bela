@@ -496,9 +496,9 @@ void __append_nine_digits(uint32_t __digits, _CharT* const __result) {
 }
 
 template <class _CharT>
-[[nodiscard]] std::pair<_CharT*, errc> __d2fixed_buffered_n(_CharT* _First, _CharT* const _Last, const double __d,
+[[nodiscard]] std::pair<_CharT*, errc> __d2fixed_buffered_n(_CharT* first, _CharT* const last, const double __d,
   const uint32_t __precision) {
-  _CharT* const _Original_first = _First;
+  _CharT* const _Original_first = first;
 
   const uint64_t __bits = __double_to_bits(__d);
 
@@ -508,17 +508,17 @@ template <class _CharT>
       + static_cast<int32_t>(__precision != 0) // possible decimal point
       + static_cast<int32_t>(__precision); // zeroes after decimal point
 
-    if (_Last - _First < _Total_zero_length) {
-      return { _Last, errc::value_too_large };
+    if (last - first < _Total_zero_length) {
+      return { last, errc::value_too_large };
     }
 
-    *_First++ = _WIDEN(_CharT, '0');
+    *first++ = _WIDEN(_CharT, '0');
     if (__precision > 0) {
-      *_First++ = _WIDEN(_CharT, '.');
-      std::fill_n(_First, __precision, _WIDEN(_CharT, '0'));
-      _First += __precision;
+      *first++ = _WIDEN(_CharT, '.');
+      std::fill_n(first, __precision, _WIDEN(_CharT, '0'));
+      first += __precision;
     }
-    return { _First, std::errc{} };
+    return { first, std::errc{} };
   }
 
   // Decode __bits into mantissa and exponent.
@@ -547,33 +547,33 @@ template <class _CharT>
       const uint32_t __digits = __mulShift_mod1e9(__m2 << 8, __POW10_SPLIT[__POW10_OFFSET[__idx] + __i],
         static_cast<int32_t>(__j + 8));
       if (__nonzero) {
-        if (_Last - _First < 9) {
-          return { _Last, errc::value_too_large };
+        if (last - first < 9) {
+          return { last, errc::value_too_large };
         }
-        __append_nine_digits(__digits, _First);
-        _First += 9;
+        __append_nine_digits(__digits, first);
+        first += 9;
       } else if (__digits != 0) {
         const uint32_t __olength = __decimalLength9(__digits);
-        if (_Last - _First < static_cast<ptrdiff_t>(__olength)) {
-          return { _Last, errc::value_too_large };
+        if (last - first < static_cast<ptrdiff_t>(__olength)) {
+          return { last, errc::value_too_large };
         }
-        __append_n_digits(__olength, __digits, _First);
-        _First += __olength;
+        __append_n_digits(__olength, __digits, first);
+        first += __olength;
         __nonzero = true;
       }
     }
   }
   if (!__nonzero) {
-    if (_First == _Last) {
-      return { _Last, errc::value_too_large };
+    if (first == last) {
+      return { last, errc::value_too_large };
     }
-    *_First++ = _WIDEN(_CharT, '0');
+    *first++ = _WIDEN(_CharT, '0');
   }
   if (__precision > 0) {
-    if (_First == _Last) {
-      return { _Last, errc::value_too_large };
+    if (first == last) {
+      return { last, errc::value_too_large };
     }
-    *_First++ = _WIDEN(_CharT, '.');
+    *first++ = _WIDEN(_CharT, '.');
   }
   if (__e2 < 0) {
     const int32_t __idx = -__e2 / 16;
@@ -583,18 +583,18 @@ template <class _CharT>
     uint32_t __i = 0;
     if (__blocks <= __MIN_BLOCK_2[__idx]) {
       __i = __blocks;
-      if (_Last - _First < static_cast<ptrdiff_t>(__precision)) {
-        return { _Last, errc::value_too_large };
+      if (last - first < static_cast<ptrdiff_t>(__precision)) {
+        return { last, errc::value_too_large };
       }
-      std::fill_n(_First, __precision, _WIDEN(_CharT, '0'));
-      _First += __precision;
+      std::fill_n(first, __precision, _WIDEN(_CharT, '0'));
+      first += __precision;
     } else if (__i < __MIN_BLOCK_2[__idx]) {
       __i = __MIN_BLOCK_2[__idx];
-      if (_Last - _First < static_cast<ptrdiff_t>(9 * __i)) {
-        return { _Last, errc::value_too_large };
+      if (last - first < static_cast<ptrdiff_t>(9 * __i)) {
+        return { last, errc::value_too_large };
       }
-      std::fill_n(_First, 9 * __i, _WIDEN(_CharT, '0'));
-      _First += 9 * __i;
+      std::fill_n(first, 9 * __i, _WIDEN(_CharT, '0'));
+      first += 9 * __i;
     }
     for (; __i < __blocks; ++__i) {
       const int32_t __j = __ADDITIONAL_BITS_2 + (-__e2 - 16 * __idx);
@@ -603,22 +603,22 @@ template <class _CharT>
         // If the remaining digits are all 0, then we might as well use memset.
         // No rounding required in this case.
         const uint32_t __fill = __precision - 9 * __i;
-        if (_Last - _First < static_cast<ptrdiff_t>(__fill)) {
-          return { _Last, errc::value_too_large };
+        if (last - first < static_cast<ptrdiff_t>(__fill)) {
+          return { last, errc::value_too_large };
         }
-        std::fill_n(_First, __fill, _WIDEN(_CharT, '0'));
-        _First += __fill;
+        std::fill_n(first, __fill, _WIDEN(_CharT, '0'));
+        first += __fill;
         break;
       }
       // Temporary: __j is usually around 128, and by shifting a bit, we push it to 128 or above, which is
       // a slightly faster code path in __mulShift_mod1e9. Instead, we can just increase the multipliers.
       uint32_t __digits = __mulShift_mod1e9(__m2 << 8, __POW10_SPLIT_2[__p], __j + 8);
       if (__i < __blocks - 1) {
-        if (_Last - _First < 9) {
-          return { _Last, errc::value_too_large };
+        if (last - first < 9) {
+          return { last, errc::value_too_large };
         }
-        __append_nine_digits(__digits, _First);
-        _First += 9;
+        __append_nine_digits(__digits, first);
+        first += 9;
       } else {
         const uint32_t __maximum = __precision - 9 * __i;
         uint32_t __lastDigit = 0;
@@ -636,29 +636,29 @@ template <class _CharT>
           __roundUp = __trailingZeros ? 2 : 1;
         }
         if (__maximum > 0) {
-          if (_Last - _First < static_cast<ptrdiff_t>(__maximum)) {
-            return { _Last, errc::value_too_large };
+          if (last - first < static_cast<ptrdiff_t>(__maximum)) {
+            return { last, errc::value_too_large };
           }
-          __append_c_digits(__maximum, __digits, _First);
-          _First += __maximum;
+          __append_c_digits(__maximum, __digits, first);
+          first += __maximum;
         }
         break;
       }
     }
     if (__roundUp != 0) {
-      _CharT* _Round = _First;
-      _CharT* _Dot = _Last;
+      _CharT* _Round = first;
+      _CharT* _Dot = last;
       while (true) {
         if (_Round == _Original_first) {
           _Round[0] = _WIDEN(_CharT, '1');
-          if (_Dot != _Last) {
+          if (_Dot != last) {
             _Dot[0] = _WIDEN(_CharT, '0');
             _Dot[1] = _WIDEN(_CharT, '.');
           }
-          if (_First == _Last) {
-            return { _Last, errc::value_too_large };
+          if (first == last) {
+            return { last, errc::value_too_large };
           }
-          *_First++ = _WIDEN(_CharT, '0');
+          *first++ = _WIDEN(_CharT, '0');
           break;
         }
         --_Round;
@@ -677,18 +677,18 @@ template <class _CharT>
       }
     }
   } else {
-    if (_Last - _First < static_cast<ptrdiff_t>(__precision)) {
-      return { _Last, errc::value_too_large };
+    if (last - first < static_cast<ptrdiff_t>(__precision)) {
+      return { last, errc::value_too_large };
     }
-    std::fill_n(_First, __precision, _WIDEN(_CharT, '0'));
-    _First += __precision;
+    std::fill_n(first, __precision, _WIDEN(_CharT, '0'));
+    first += __precision;
   }
-  return { _First, std::errc{} };
+  return { first, std::errc{} };
 }
 
-[[nodiscard]] inline to_chars_result __d2exp_buffered_n(wchar_t* _First, wchar_t* const _Last, const double __d,
+[[nodiscard]] inline to_chars_result __d2exp_buffered_n(wchar_t* first, wchar_t* const last, const double __d,
   uint32_t __precision) {
-  wchar_t* const _Original_first = _First;
+  wchar_t* const _Original_first = first;
 
   const uint64_t __bits = __double_to_bits(__d);
 
@@ -698,18 +698,18 @@ template <class _CharT>
       + static_cast<int32_t>(__precision != 0) // possible decimal point
       + static_cast<int32_t>(__precision) // zeroes after decimal point
       + 4; // "e+00"
-    if (_Last - _First < _Total_zero_length) {
-      return { _Last, errc::value_too_large };
+    if (last - first < _Total_zero_length) {
+      return { last, errc::value_too_large };
     }
-    *_First++ = L'0';
+    *first++ = L'0';
     if (__precision > 0) {
-      *_First++ = L'.';
-       wmemset(_First, L'0', __precision);
-      _First += __precision;
+      *first++ = L'.';
+       wmemset(first, L'0', __precision);
+      first += __precision;
     }
-     memcpy(_First, L"e+00", 4*sizeof(wchar_t));
-    _First += 4;
-    return { _First, std::errc{} };
+     memcpy(first, L"e+00", 4*sizeof(wchar_t));
+    first += 4;
+    return { first, std::errc{} };
   }
 
   // Decode __bits into mantissa and exponent.
@@ -747,11 +747,11 @@ template <class _CharT>
           __availableDigits = 9;
           break;
         }
-        if (_Last - _First < 9) {
-          return { _Last, errc::value_too_large };
+        if (last - first < 9) {
+          return { last, errc::value_too_large };
         }
-        __append_nine_digits(__digits, _First);
-        _First += 9;
+        __append_nine_digits(__digits, first);
+        first += 9;
         __printedDigits += 9;
       } else if (__digits != 0) {
         __availableDigits = __decimalLength9(__digits);
@@ -760,16 +760,16 @@ template <class _CharT>
           break;
         }
         if (__printDecimalPoint) {
-          if (_Last - _First < static_cast<ptrdiff_t>(__availableDigits + 1)) {
-            return { _Last, errc::value_too_large };
+          if (last - first < static_cast<ptrdiff_t>(__availableDigits + 1)) {
+            return { last, errc::value_too_large };
           }
-          __append_d_digits(__availableDigits, __digits, _First);
-          _First += __availableDigits + 1; // +1 for decimal point
+          __append_d_digits(__availableDigits, __digits, first);
+          first += __availableDigits + 1; // +1 for decimal point
         } else {
-          if (_First == _Last) {
-            return { _Last, errc::value_too_large };
+          if (first == last) {
+            return { last, errc::value_too_large };
           }
-          *_First++ = static_cast<char>('0' + __digits);
+          *first++ = static_cast<char>('0' + __digits);
         }
         __printedDigits = __availableDigits;
         __availableDigits = 0;
@@ -790,11 +790,11 @@ template <class _CharT>
           __availableDigits = 9;
           break;
         }
-        if (_Last - _First < 9) {
-          return { _Last, errc::value_too_large };
+        if (last - first < 9) {
+          return { last, errc::value_too_large };
         }
-        __append_nine_digits(__digits, _First);
-        _First += 9;
+        __append_nine_digits(__digits, first);
+        first += 9;
         __printedDigits += 9;
       } else if (__digits != 0) {
         __availableDigits = __decimalLength9(__digits);
@@ -803,16 +803,16 @@ template <class _CharT>
           break;
         }
         if (__printDecimalPoint) {
-          if (_Last - _First < static_cast<ptrdiff_t>(__availableDigits + 1)) {
-            return { _Last, errc::value_too_large };
+          if (last - first < static_cast<ptrdiff_t>(__availableDigits + 1)) {
+            return { last, errc::value_too_large };
           }
-          __append_d_digits(__availableDigits, __digits, _First);
-          _First += __availableDigits + 1; // +1 for decimal point
+          __append_d_digits(__availableDigits, __digits, first);
+          first += __availableDigits + 1; // +1 for decimal point
         } else {
-          if (_First == _Last) {
-            return { _Last, errc::value_too_large };
+          if (first == last) {
+            return { last, errc::value_too_large };
           }
-          *_First++ = static_cast<char>('0' + __digits);
+          *first++ = static_cast<char>('0' + __digits);
         }
         __printedDigits = __availableDigits;
         __availableDigits = 0;
@@ -849,31 +849,31 @@ template <class _CharT>
     __roundUp = __trailingZeros ? 2 : 1;
   }
   if (__printedDigits != 0) {
-    if (_Last - _First < static_cast<ptrdiff_t>(__maximum)) {
-      return { _Last, errc::value_too_large };
+    if (last - first < static_cast<ptrdiff_t>(__maximum)) {
+      return { last, errc::value_too_large };
     }
     if (__digits == 0) {
-       wmemset(_First, '0', __maximum);
+       wmemset(first, '0', __maximum);
     } else {
-      __append_c_digits(__maximum, __digits, _First);
+      __append_c_digits(__maximum, __digits, first);
     }
-    _First += __maximum;
+    first += __maximum;
   } else {
     if (__printDecimalPoint) {
-      if (_Last - _First < static_cast<ptrdiff_t>(__maximum + 1)) {
-        return { _Last, errc::value_too_large };
+      if (last - first < static_cast<ptrdiff_t>(__maximum + 1)) {
+        return { last, errc::value_too_large };
       }
-      __append_d_digits(__maximum, __digits, _First);
-      _First += __maximum + 1; // +1 for decimal point
+      __append_d_digits(__maximum, __digits, first);
+      first += __maximum + 1; // +1 for decimal point
     } else {
-      if (_First == _Last) {
-        return { _Last, errc::value_too_large };
+      if (first == last) {
+        return { last, errc::value_too_large };
       }
-      *_First++ = static_cast<char>('0' + __digits);
+      *first++ = static_cast<char>('0' + __digits);
     }
   }
   if (__roundUp != 0) {
-    wchar_t* _Round = _First;
+    wchar_t* _Round = first;
     while (true) {
       if (_Round == _Original_first) {
         _Round[0] = '1';
@@ -909,24 +909,24 @@ template <class _CharT>
     ? 5 // "e+NNN"
     : 4; // "e+NN"
 
-  if (_Last - _First < _Exponent_part_length) {
-    return { _Last, errc::value_too_large };
+  if (last - first < _Exponent_part_length) {
+    return { last, errc::value_too_large };
   }
 
-  *_First++ = 'e';
-  *_First++ = _Sign_character;
+  *first++ = 'e';
+  *first++ = _Sign_character;
 
   if (__exp >= 100) {
     const int32_t __c = __exp % 10;
-     memcpy(_First, __DIGIT_TABLE<wchar_t> + 2 * (__exp / 10), 2*sizeof(wchar_t));
-    _First[2] = static_cast<char>('0' + __c);
-    _First += 3;
+     memcpy(first, __DIGIT_TABLE<wchar_t> + 2 * (__exp / 10), 2*sizeof(wchar_t));
+    first[2] = static_cast<char>('0' + __c);
+    first += 3;
   } else {
-     memcpy(_First, __DIGIT_TABLE<wchar_t> + 2 * __exp, 2*sizeof(wchar_t));
-    _First += 2;
+     memcpy(first, __DIGIT_TABLE<wchar_t> + 2 * __exp, 2*sizeof(wchar_t));
+    first += 2;
   }
 
-  return { _First, std::errc{} };
+  return { first, std::errc{} };
 }
 
 // ^^^^^^^^^^ DERIVED FROM d2fixed.c ^^^^^^^^^^
@@ -1174,7 +1174,7 @@ struct __floating_decimal_32 {
 }
 
 template <class _CharT>
-[[nodiscard]] std::pair<_CharT*, errc> _Large_integer_to_chars(_CharT* const _First, _CharT* const _Last,
+[[nodiscard]] std::pair<_CharT*, errc> _Large_integer_to_chars(_CharT* const first, _CharT* const last,
   const uint32_t _Mantissa2, const int32_t _Exponent2) {
 
   // Print the integer _Mantissa2 * 2^_Exponent2 exactly.
@@ -1278,11 +1278,11 @@ template <class _CharT>
   const uint32_t _Data_olength = _Data[0] >= 1000000000 ? 10 : __decimalLength9(_Data[0]);
   const uint32_t _Total_fixed_length = _Data_olength + 9 * _Filled_blocks;
 
-  if (_Last - _First < static_cast<ptrdiff_t>(_Total_fixed_length)) {
-    return { _Last, errc::value_too_large };
+  if (last - first < static_cast<ptrdiff_t>(_Total_fixed_length)) {
+    return { last, errc::value_too_large };
   }
 
-  _CharT* _Result = _First;
+  _CharT* _Result = first;
 
   // Print _Data[0]. While it's up to 10 digits,
   // which is more than Ryu generates, the code below can handle this.
@@ -1299,15 +1299,15 @@ template <class _CharT>
 }
 
 template <class _CharT>
-[[nodiscard]] std::pair<_CharT*, errc> __to_chars(_CharT* const _First, _CharT* const _Last, const __floating_decimal_32 __v,
-  chars_format _Fmt, const uint32_t __ieeeMantissa, const uint32_t __ieeeExponent) {
+[[nodiscard]] std::pair<_CharT*, errc> __to_chars(_CharT* const first, _CharT* const last, const __floating_decimal_32 __v,
+  chars_format fmt, const uint32_t __ieeeMantissa, const uint32_t __ieeeExponent) {
   // Step 5: Print the decimal representation.
   uint32_t _Output = __v.__mantissa;
   int32_t _Ryu_exponent = __v.__exponent;
   const uint32_t __olength = __decimalLength9(_Output);
   int32_t _Scientific_exponent = _Ryu_exponent + static_cast<int32_t>(__olength) - 1;
 
-  if (_Fmt == chars_format{}) {
+  if (fmt == chars_format{}) {
     int32_t _Lower;
     int32_t _Upper;
 
@@ -1326,24 +1326,24 @@ template <class _CharT>
     }
 
     if (_Lower <= _Ryu_exponent && _Ryu_exponent <= _Upper) {
-      _Fmt = chars_format::fixed;
+      fmt = chars_format::fixed;
     } else {
-      _Fmt = chars_format::scientific;
+      fmt = chars_format::scientific;
     }
-  } else if (_Fmt == chars_format::general) {
+  } else if (fmt == chars_format::general) {
     // C11 7.21.6.1 "The fprintf function"/8:
     // "Let P equal [...] 6 if the precision is omitted [...].
     // Then, if a conversion with style E would have an exponent of X:
     // - if P > X >= -4, the conversion is with style f [...].
     // - otherwise, the conversion is with style e [...]."
     if (-4 <= _Scientific_exponent && _Scientific_exponent < 6) {
-      _Fmt = chars_format::fixed;
+      fmt = chars_format::fixed;
     } else {
-      _Fmt = chars_format::scientific;
+      fmt = chars_format::scientific;
     }
   }
 
-  if (_Fmt == chars_format::fixed) {
+  if (fmt == chars_format::fixed) {
     // Example: _Output == 1729, __olength == 4
 
     // _Ryu_exponent | Printed  | _Whole_digits | _Total_fixed_length  | Notes
@@ -1381,8 +1381,8 @@ template <class _CharT>
       _Total_fixed_length = static_cast<uint32_t>(2 - _Ryu_exponent);
     }
 
-    if (_Last - _First < static_cast<ptrdiff_t>(_Total_fixed_length)) {
-      return { _Last, errc::value_too_large };
+    if (last - first < static_cast<ptrdiff_t>(_Total_fixed_length)) {
+      return { last, errc::value_too_large };
     }
 
     _CharT* _Mid;
@@ -1428,15 +1428,15 @@ template <class _CharT>
           - __FLOAT_BIAS - __FLOAT_MANTISSA_BITS; // bias and normalization
 
         // Performance note: We've already called Ryu, so this will redundantly perform buffering and bounds checking.
-        return _Large_integer_to_chars(_First, _Last, _Mantissa2, _Exponent2);
+        return _Large_integer_to_chars(first, last, _Mantissa2, _Exponent2);
       }
 
       // _Can_use_ryu
-      // Print the decimal digits, left-aligned within [_First, _First + _Total_fixed_length).
-      _Mid = _First + __olength;
+      // Print the decimal digits, left-aligned within [first, first + _Total_fixed_length).
+      _Mid = first + __olength;
     } else { // cases "1729", "17.29", and "0.001729"
-      // Print the decimal digits, right-aligned within [_First, _First + _Total_fixed_length).
-      _Mid = _First + _Total_fixed_length;
+      // Print the decimal digits, right-aligned within [first, first + _Total_fixed_length).
+      _Mid = first + _Total_fixed_length;
     }
 
     while (_Output >= 10000) {
@@ -1465,29 +1465,29 @@ template <class _CharT>
 
     if (_Ryu_exponent > 0) { // case "172900" with _Can_use_ryu
       // Performance note: it might be more efficient to do this immediately after setting _Mid.
-      std::fill_n(_First + __olength, _Ryu_exponent, _WIDEN(_CharT, '0'));
+      std::fill_n(first + __olength, _Ryu_exponent, _WIDEN(_CharT, '0'));
     } else if (_Ryu_exponent == 0) { // case "1729"
       // Done!
     } else if (_Whole_digits > 0) { // case "17.29"
       // Performance note: moving digits might not be optimal.
-       memmove(_First, _First + 1, static_cast<size_t>(_Whole_digits) * sizeof(_CharT));
-      _First[_Whole_digits] = _WIDEN(_CharT, '.');
+       memmove(first, first + 1, static_cast<size_t>(_Whole_digits) * sizeof(_CharT));
+      first[_Whole_digits] = _WIDEN(_CharT, '.');
     } else { // case "0.001729"
       // Performance note: a larger memset() followed by overwriting '.' might be more efficient.
-      _First[0] = _WIDEN(_CharT, '0');
-      _First[1] = _WIDEN(_CharT, '.');
-      std::fill_n(_First + 2, -_Whole_digits, _WIDEN(_CharT, '0'));
+      first[0] = _WIDEN(_CharT, '0');
+      first[1] = _WIDEN(_CharT, '.');
+      std::fill_n(first + 2, -_Whole_digits, _WIDEN(_CharT, '0'));
     }
 
-    return { _First + _Total_fixed_length, std::errc{} };
+    return { first + _Total_fixed_length, std::errc{} };
   }
 
   const uint32_t _Total_scientific_length =
     __olength + (__olength > 1) + 4; // digits + possible decimal point + scientific exponent
-  if (_Last - _First < static_cast<ptrdiff_t>(_Total_scientific_length)) {
-    return { _Last, errc::value_too_large };
+  if (last - first < static_cast<ptrdiff_t>(_Total_scientific_length)) {
+    return { last, errc::value_too_large };
   }
-  _CharT* const __result = _First;
+  _CharT* const __result = first;
 
   // Print the decimal digits.
   uint32_t __i = 0;
@@ -1540,7 +1540,7 @@ template <class _CharT>
    memcpy(__result + __index, __DIGIT_TABLE<_CharT> + 2 * _Scientific_exponent, 2 * sizeof(_CharT));
   __index += 2;
 
-  return { _First + _Total_scientific_length, std::errc{} };
+  return { first + _Total_scientific_length, std::errc{} };
 }
 
 [[nodiscard]] inline to_chars_result _Convert_to_chars_result(const std::pair<wchar_t*, errc>& _Pair) {
@@ -1548,45 +1548,45 @@ template <class _CharT>
 }
 
 template <class _CharT>
-[[nodiscard]] std::pair<_CharT*, std::errc> __f2s_buffered_n(_CharT* const _First, _CharT* const _Last, const float __f,
-  const chars_format _Fmt) {
+[[nodiscard]] std::pair<_CharT*, std::errc> __f2s_buffered_n(_CharT* const first, _CharT* const last, const float __f,
+  const chars_format fmt) {
 
   // Step 1: Decode the floating-point number, and unify normalized and subnormal cases.
   const uint32_t __bits = __float_to_bits(__f);
 
   // Case distinction; exit early for the easy cases.
   if (__bits == 0) {
-    if (_Fmt == chars_format::scientific) {
-      if (_Last - _First < 5) {
-        return { _Last, errc::value_too_large };
+    if (fmt == chars_format::scientific) {
+      if (last - first < 5) {
+        return { last, errc::value_too_large };
       }
 
       if constexpr (std::is_same_v<_CharT, char>) {
-         memcpy(_First, "0e+00", 5);
+         memcpy(first, "0e+00", 5);
       } else {
-         memcpy(_First, L"0e+00", 5 * sizeof(wchar_t));
+         memcpy(first, L"0e+00", 5 * sizeof(wchar_t));
       }
 
-      return { _First + 5, std::errc{} };
+      return { first + 5, std::errc{} };
     }
 
     // Print "0" for chars_format::fixed, chars_format::general, and chars_format{}.
-    if (_First == _Last) {
-      return { _Last, errc::value_too_large };
+    if (first == last) {
+      return { last, errc::value_too_large };
     }
 
-    *_First = _WIDEN(_CharT, '0');
+    *first = _WIDEN(_CharT, '0');
 
-    return { _First + 1, std::errc{} };
+    return { first + 1, std::errc{} };
   }
 
   // Decode __bits into mantissa and exponent.
   const uint32_t __ieeeMantissa = __bits & ((1u << __FLOAT_MANTISSA_BITS) - 1);
   const uint32_t __ieeeExponent = __bits >> __FLOAT_MANTISSA_BITS;
 
-  // When _Fmt == chars_format::fixed and the floating-point number is a large integer,
+  // When fmt == chars_format::fixed and the floating-point number is a large integer,
   // it's faster to skip Ryu and immediately print the integer exactly.
-  if (_Fmt == chars_format::fixed) {
+  if (fmt == chars_format::fixed) {
     const uint32_t _Mantissa2 = __ieeeMantissa | (1u << __FLOAT_MANTISSA_BITS); // restore implicit bit
     const int32_t _Exponent2 = static_cast<int32_t>(__ieeeExponent)
       - __FLOAT_BIAS - __FLOAT_MANTISSA_BITS; // bias and normalization
@@ -1595,12 +1595,12 @@ template <class _CharT>
     // (Subnormals are different, but they'll be rejected by the _Exponent2 test here, so they can be ignored.)
 
     if (_Exponent2 > 0) {
-      return _Large_integer_to_chars(_First, _Last, _Mantissa2, _Exponent2);
+      return _Large_integer_to_chars(first, last, _Mantissa2, _Exponent2);
     }
   }
 
   const __floating_decimal_32 __v = __f2d(__ieeeMantissa, __ieeeExponent);
-  return __to_chars(_First, _Last, __v, _Fmt, __ieeeMantissa, __ieeeExponent);
+  return __to_chars(first, last, __v, fmt, __ieeeMantissa, __ieeeExponent);
 }
 
 // ^^^^^^^^^^ DERIVED FROM f2s.c ^^^^^^^^^^
@@ -1907,15 +1907,15 @@ struct __floating_decimal_64 {
 }
 
 template <class _CharT>
-[[nodiscard]] std::pair<_CharT*, std::errc> __to_chars(_CharT* const _First, _CharT* const _Last, const __floating_decimal_64 __v,
-  chars_format _Fmt, const double __f) {
+[[nodiscard]] std::pair<_CharT*, std::errc> __to_chars(_CharT* const first, _CharT* const last, const __floating_decimal_64 __v,
+  chars_format fmt, const double __f) {
   // Step 5: Print the decimal representation.
   uint64_t _Output = __v.__mantissa;
   int32_t _Ryu_exponent = __v.__exponent;
   const uint32_t __olength = __decimalLength17(_Output);
   int32_t _Scientific_exponent = _Ryu_exponent + static_cast<int32_t>(__olength) - 1;
 
-  if (_Fmt == chars_format{}) {
+  if (fmt == chars_format{}) {
     int32_t _Lower;
     int32_t _Upper;
 
@@ -1934,24 +1934,24 @@ template <class _CharT>
     }
 
     if (_Lower <= _Ryu_exponent && _Ryu_exponent <= _Upper) {
-      _Fmt = chars_format::fixed;
+      fmt = chars_format::fixed;
     } else {
-      _Fmt = chars_format::scientific;
+      fmt = chars_format::scientific;
     }
-  } else if (_Fmt == chars_format::general) {
+  } else if (fmt == chars_format::general) {
     // C11 7.21.6.1 "The fprintf function"/8:
     // "Let P equal [...] 6 if the precision is omitted [...].
     // Then, if a conversion with style E would have an exponent of X:
     // - if P > X >= -4, the conversion is with style f [...].
     // - otherwise, the conversion is with style e [...]."
     if (-4 <= _Scientific_exponent && _Scientific_exponent < 6) {
-      _Fmt = chars_format::fixed;
+      fmt = chars_format::fixed;
     } else {
-      _Fmt = chars_format::scientific;
+      fmt = chars_format::scientific;
     }
   }
 
-  if (_Fmt == chars_format::fixed) {
+  if (fmt == chars_format::fixed) {
     // Example: _Output == 1729, __olength == 4
 
     // _Ryu_exponent | Printed  | _Whole_digits | _Total_fixed_length  | Notes
@@ -1995,8 +1995,8 @@ template <class _CharT>
       _Total_fixed_length = static_cast<uint32_t>(2 - _Ryu_exponent);
     }
 
-    if (_Last - _First < static_cast<ptrdiff_t>(_Total_fixed_length)) {
-      return { _Last, errc::value_too_large };
+    if (last - first < static_cast<ptrdiff_t>(_Total_fixed_length)) {
+      return { last, errc::value_too_large };
     }
 
     _CharT* _Mid;
@@ -2053,15 +2053,15 @@ template <class _CharT>
         // Print the integer exactly.
         // Performance note: This will redundantly perform bounds checking.
         // Performance note: This will redundantly decompose the IEEE representation.
-        return __d2fixed_buffered_n(_First, _Last, __f, 0);
+        return __d2fixed_buffered_n(first, last, __f, 0);
       }
 
       // _Can_use_ryu
-      // Print the decimal digits, left-aligned within [_First, _First + _Total_fixed_length).
-      _Mid = _First + __olength;
+      // Print the decimal digits, left-aligned within [first, first + _Total_fixed_length).
+      _Mid = first + __olength;
     } else { // cases "1729", "17.29", and "0.001729"
-      // Print the decimal digits, right-aligned within [_First, _First + _Total_fixed_length).
-      _Mid = _First + _Total_fixed_length;
+      // Print the decimal digits, right-aligned within [first, first + _Total_fixed_length).
+      _Mid = first + _Total_fixed_length;
     }
 
     // We prefer 32-bit operations, even on 64-bit platforms.
@@ -2114,29 +2114,29 @@ template <class _CharT>
 
     if (_Ryu_exponent > 0) { // case "172900" with _Can_use_ryu
       // Performance note: it might be more efficient to do this immediately after setting _Mid.
-      std::fill_n(_First + __olength, _Ryu_exponent, _WIDEN(_CharT, '0'));
+      std::fill_n(first + __olength, _Ryu_exponent, _WIDEN(_CharT, '0'));
     } else if (_Ryu_exponent == 0) { // case "1729"
       // Done!
     } else if (_Whole_digits > 0) { // case "17.29"
       // Performance note: moving digits might not be optimal.
-       memmove(_First, _First + 1, static_cast<size_t>(_Whole_digits) * sizeof(_CharT));
-      _First[_Whole_digits] = _WIDEN(_CharT, '.');
+       memmove(first, first + 1, static_cast<size_t>(_Whole_digits) * sizeof(_CharT));
+      first[_Whole_digits] = _WIDEN(_CharT, '.');
     } else { // case "0.001729"
       // Performance note: a larger memset() followed by overwriting '.' might be more efficient.
-      _First[0] = _WIDEN(_CharT, '0');
-      _First[1] = _WIDEN(_CharT, '.');
-      std::fill_n(_First + 2, -_Whole_digits, _WIDEN(_CharT, '0'));
+      first[0] = _WIDEN(_CharT, '0');
+      first[1] = _WIDEN(_CharT, '.');
+      std::fill_n(first + 2, -_Whole_digits, _WIDEN(_CharT, '0'));
     }
 
-    return { _First + _Total_fixed_length, std::errc{} };
+    return { first + _Total_fixed_length, std::errc{} };
   }
 
   const uint32_t _Total_scientific_length = __olength + (__olength > 1) // digits + possible decimal point
     + (-100 < _Scientific_exponent && _Scientific_exponent < 100 ? 4 : 5); // + scientific exponent
-  if (_Last - _First < static_cast<ptrdiff_t>(_Total_scientific_length)) {
-    return { _Last, errc::value_too_large };
+  if (last - first < static_cast<ptrdiff_t>(_Total_scientific_length)) {
+    return { last, errc::value_too_large };
   }
-  _CharT* const __result = _First;
+  _CharT* const __result = first;
 
   // Print the decimal digits.
   uint32_t __i = 0;
@@ -2220,7 +2220,7 @@ template <class _CharT>
     __index += 2;
   }
 
-  return { _First + _Total_scientific_length, std::errc{} };
+  return { first + _Total_scientific_length, std::errc{} };
 }
 
 [[nodiscard]] inline bool __d2d_small_int(const uint64_t __ieeeMantissa, const uint32_t __ieeeExponent,
@@ -2256,43 +2256,43 @@ template <class _CharT>
 }
 
 template <class _CharT>
-[[nodiscard]] std::pair<_CharT*, std::errc> __d2s_buffered_n(_CharT* const _First, _CharT* const _Last, const double __f,
-  const chars_format _Fmt) {
+[[nodiscard]] std::pair<_CharT*, std::errc> __d2s_buffered_n(_CharT* const first, _CharT* const last, const double __f,
+  const chars_format fmt) {
 
   // Step 1: Decode the floating-point number, and unify normalized and subnormal cases.
   const uint64_t __bits = __double_to_bits(__f);
 
   // Case distinction; exit early for the easy cases.
   if (__bits == 0) {
-    if (_Fmt == chars_format::scientific) {
-      if (_Last - _First < 5) {
-        return { _Last, errc::value_too_large };
+    if (fmt == chars_format::scientific) {
+      if (last - first < 5) {
+        return { last, errc::value_too_large };
       }
 
       if constexpr (std::is_same_v<_CharT, char>) {
-         memcpy(_First, "0e+00", 5);
+         memcpy(first, "0e+00", 5);
       } else {
-         memcpy(_First, L"0e+00", 5 * sizeof(wchar_t));
+         memcpy(first, L"0e+00", 5 * sizeof(wchar_t));
       }
 
-      return { _First + 5, std::errc{} };
+      return { first + 5, std::errc{} };
     }
 
     // Print "0" for chars_format::fixed, chars_format::general, and chars_format{}.
-    if (_First == _Last) {
-      return { _Last, std::errc::value_too_large };
+    if (first == last) {
+      return { last, std::errc::value_too_large };
     }
 
-    *_First = _WIDEN(_CharT, '0');
+    *first = _WIDEN(_CharT, '0');
 
-    return { _First + 1, std::errc{} };
+    return { first + 1, std::errc{} };
   }
 
   // Decode __bits into mantissa and exponent.
   const uint64_t __ieeeMantissa = __bits & ((1ull << __DOUBLE_MANTISSA_BITS) - 1);
   const uint32_t __ieeeExponent = static_cast<uint32_t>(__bits >> __DOUBLE_MANTISSA_BITS);
 
-  if (_Fmt == chars_format::fixed) {
+  if (fmt == chars_format::fixed) {
     // const uint64_t _Mantissa2 = __ieeeMantissa | (1ull << __DOUBLE_MANTISSA_BITS); // restore implicit bit
     const int32_t _Exponent2 = static_cast<int32_t>(__ieeeExponent)
       - __DOUBLE_BIAS - __DOUBLE_MANTISSA_BITS; // bias and normalization
@@ -2311,7 +2311,7 @@ template <class _CharT>
     // exponents here and skipping Ryu. Calling __d2fixed_buffered_n() with precision 0 is valid for all integers
     // (so it's okay if we call it with a Ryu-friendly value).
     if (_Exponent2 > 0) {
-      return __d2fixed_buffered_n(_First, _Last, __f, 0);
+      return __d2fixed_buffered_n(first, last, __f, 0);
     }
   }
 
@@ -2335,7 +2335,7 @@ template <class _CharT>
     __v = __d2d(__ieeeMantissa, __ieeeExponent);
   }
 
-  return __to_chars(_First, _Last, __v, _Fmt, __f);
+  return __to_chars(first, last, __v, fmt, __f);
 }
 
 // ^^^^^^^^^^ DERIVED FROM d2s.c ^^^^^^^^^^
@@ -2343,55 +2343,55 @@ template <class _CharT>
 // clang-format on
 // __f2s_buffered_n namespace escape ?
 template <class _Floating>
-[[nodiscard]] to_chars_result _Floating_to_chars_ryu(wchar_t *const _First, wchar_t *const _Last,
-                                                     const _Floating _Value, const chars_format _Fmt) noexcept {
+[[nodiscard]] to_chars_result Floating_to_chars_ryu(wchar_t *const first, wchar_t *const last,
+                                                     const _Floating value, const chars_format fmt) noexcept {
   if constexpr (std::is_same_v<_Floating, float>) {
-    return _Convert_to_chars_result(bela::__f2s_buffered_n(_First, _Last, _Value, _Fmt));
+    return _Convert_to_chars_result(bela::__f2s_buffered_n(first, last, value, fmt));
   } else {
-    return _Convert_to_chars_result(bela::__d2s_buffered_n(_First, _Last, _Value, _Fmt));
+    return _Convert_to_chars_result(bela::__d2s_buffered_n(first, last, value, fmt));
   }
 }
 
 template <class _Floating>
-[[nodiscard]] to_chars_result _Floating_to_chars_scientific_precision(wchar_t *const _First, wchar_t *const _Last,
-                                                                      const _Floating _Value, int _Precision) noexcept {
+[[nodiscard]] to_chars_result Floating_to_chars_scientific_precision(wchar_t *const first, wchar_t *const last,
+                                                                      const _Floating value, int precision) noexcept {
 
   // C11 7.21.6.1 "The fprintf function"/5:
   // "A negative precision argument is taken as if the precision were omitted."
   // /8: "e,E [...] if the precision is missing, it is taken as 6"
 
-  if (_Precision < 0) {
-    _Precision = 6;
-  } else if (_Precision < 1'000'000'000) {
-    // _Precision is ok.
+  if (precision < 0) {
+    precision = 6;
+  } else if (precision < 1'000'000'000) {
+    // precision is ok.
   } else {
     // Avoid integer overflow.
     // (This defensive check is slightly nonconformant; it can be carefully improved in the future.)
-    return {_Last, errc::value_too_large};
+    return {last, errc::value_too_large};
   }
 
-  return __d2exp_buffered_n(_First, _Last, _Value, static_cast<uint32_t>(_Precision));
+  return __d2exp_buffered_n(first, last, value, static_cast<uint32_t>(precision));
 }
 
 template <class _Floating>
-[[nodiscard]] to_chars_result _Floating_to_chars_fixed_precision(wchar_t *const _First, wchar_t *const _Last,
-                                                                 const _Floating _Value, int _Precision) noexcept {
+[[nodiscard]] to_chars_result Floating_to_chars_fixed_precision(wchar_t *const first, wchar_t *const last,
+                                                                 const _Floating value, int precision) noexcept {
 
   // C11 7.21.6.1 "The fprintf function"/5:
   // "A negative precision argument is taken as if the precision were omitted."
   // /8: "f,F [...] If the precision is missing, it is taken as 6"
 
-  if (_Precision < 0) {
-    _Precision = 6;
-  } else if (_Precision < 1'000'000'000) {
-    // _Precision is ok.
+  if (precision < 0) {
+    precision = 6;
+  } else if (precision < 1'000'000'000) {
+    // precision is ok.
   } else {
     // Avoid integer overflow.
     // (This defensive check is slightly nonconformant; it can be carefully improved in the future.)
-    return {_Last, errc::value_too_large};
+    return {last, errc::value_too_large};
   }
 
-  return _Convert_to_chars_result(__d2fixed_buffered_n(_First, _Last, _Value, static_cast<uint32_t>(_Precision)));
+  return _Convert_to_chars_result(__d2fixed_buffered_n(first, last, value, static_cast<uint32_t>(precision)));
 }
 
 } // namespace bela

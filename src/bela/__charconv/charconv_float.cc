@@ -23,12 +23,12 @@ template <> struct Floating_type_traits<float> {
 
   using Uint_type = uint32_t;
 
-  static constexpr uint32_t Exponent_mask = 0x000000FFu;             // (1u << Exponent_bits) - 1
-  static constexpr uint32_t Normal_mantissa_mask = 0x00FFFFFFu;      // (1u << Mantissa_bits) - 1
-  static constexpr uint32_t Denormal_mantissa_mask = 0x007FFFFFu;    // (1u << (Mantissa_bits - 1)) - 1
-  static constexpr uint32_t Special_nan_mantissa_mask = 0x00400000u; // 1u << (Mantissa_bits - 2)
-  static constexpr uint32_t Shifted_sign_mask = 0x80000000u;         // 1u << Sign_shift
-  static constexpr uint32_t Shifted_exponent_mask = 0x7F800000u;     // Exponent_mask << Exponent_shift
+  static constexpr uint32_t Exponent_mask = 0x000000FFU;             // (1u << Exponent_bits) - 1
+  static constexpr uint32_t Normal_mantissa_mask = 0x00FFFFFFU;      // (1u << Mantissa_bits) - 1
+  static constexpr uint32_t Denormal_mantissa_mask = 0x007FFFFFU;    // (1u << (Mantissa_bits - 1)) - 1
+  static constexpr uint32_t Special_nan_mantissa_mask = 0x00400000U; // 1u << (Mantissa_bits - 2)
+  static constexpr uint32_t Shifted_sign_mask = 0x80000000U;         // 1u << Sign_shift
+  static constexpr uint32_t Shifted_exponent_mask = 0x7F800000U;     // Exponent_mask << Exponent_shift
 };
 
 template <> struct Floating_type_traits<double> {
@@ -42,12 +42,12 @@ template <> struct Floating_type_traits<double> {
 
   using Uint_type = uint64_t;
 
-  static constexpr uint64_t Exponent_mask = 0x00000000000007FFu;             // (1ULL << Exponent_bits) - 1
-  static constexpr uint64_t Normal_mantissa_mask = 0x001FFFFFFFFFFFFFu;      // (1ULL << Mantissa_bits) - 1
-  static constexpr uint64_t Denormal_mantissa_mask = 0x000FFFFFFFFFFFFFu;    // (1ULL << (Mantissa_bits - 1)) - 1
-  static constexpr uint64_t Special_nan_mantissa_mask = 0x0008000000000000u; // 1ULL << (Mantissa_bits - 2)
-  static constexpr uint64_t Shifted_sign_mask = 0x8000000000000000u;         // 1ULL << Sign_shift
-  static constexpr uint64_t Shifted_exponent_mask = 0x7FF0000000000000u;     // Exponent_mask << Exponent_shift
+  static constexpr uint64_t Exponent_mask = 0x00000000000007FFU;             // (1ULL << Exponent_bits) - 1
+  static constexpr uint64_t Normal_mantissa_mask = 0x001FFFFFFFFFFFFFU;      // (1ULL << Mantissa_bits) - 1
+  static constexpr uint64_t Denormal_mantissa_mask = 0x000FFFFFFFFFFFFFU;    // (1ULL << (Mantissa_bits - 1)) - 1
+  static constexpr uint64_t Special_nan_mantissa_mask = 0x0008000000000000U; // 1ULL << (Mantissa_bits - 2)
+  static constexpr uint64_t Shifted_sign_mask = 0x8000000000000000U;         // 1ULL << Sign_shift
+  static constexpr uint64_t Shifted_exponent_mask = 0x7FF0000000000000U;     // Exponent_mask << Exponent_shift
 };
 
 template <> struct Floating_type_traits<long double> : Floating_type_traits<double> {};
@@ -55,7 +55,7 @@ template <> struct Floating_type_traits<long double> : Floating_type_traits<doub
 [[nodiscard]] inline uint32_t bit_scan_reverse(const uint32_t value) noexcept {
   unsigned long Index; // Intentionally uninitialized for better codegen
 
-  if (_BitScanReverse(&Index, value)) {
+  if (_BitScanReverse(&Index, value) != 0u) {
     return Index + 1;
   }
 
@@ -66,7 +66,7 @@ template <> struct Floating_type_traits<long double> : Floating_type_traits<doub
   unsigned long Index; // Intentionally uninitialized for better codegen
 
 #ifdef _WIN64
-  if (_BitScanReverse64(&Index, value)) {
+  if (_BitScanReverse64(&Index, value) != 0u) {
     return Index + 1;
   }
 #else  // ^^^ 64-bit ^^^ / vvv 32-bit vvv
@@ -151,7 +151,7 @@ inline constexpr wchar_t Charconv_digits[] = {'0', '1', '2', '3', '4', '5', '6',
 // - Otherwise, no initialization is performed."
 // Therefore, Mydata's elements are not initialized.
 struct Big_integer_flt {
-  Big_integer_flt() noexcept : Myused(0) {}
+  Big_integer_flt() noexcept {}
 
   Big_integer_flt(const Big_integer_flt &other) noexcept : Myused(other.Myused) {
     memcpy(Mydata, other.Mydata, other.Myused * sizeof(uint32_t));
@@ -163,14 +163,14 @@ struct Big_integer_flt {
     return *this;
   }
 
-  [[nodiscard]] bool operator<(const Big_integer_flt &_Rhs) const noexcept {
-    if (Myused != _Rhs.Myused) {
-      return Myused < _Rhs.Myused;
+  [[nodiscard]] bool operator<(const Big_integer_flt &Rhs) const noexcept {
+    if (Myused != Rhs.Myused) {
+      return Myused < Rhs.Myused;
     }
 
     for (uint32_t Ix = Myused - 1; Ix != static_cast<uint32_t>(-1); --Ix) {
-      if (Mydata[Ix] != _Rhs.Mydata[Ix]) {
-        return Mydata[Ix] < _Rhs.Mydata[Ix];
+      if (Mydata[Ix] != Rhs.Mydata[Ix]) {
+        return Mydata[Ix] < Rhs.Mydata[Ix];
       }
     }
 
@@ -185,7 +185,7 @@ struct Big_integer_flt {
 
   static constexpr uint32_t Element_count = (Maximum_bits + Element_bits - 1) / Element_bits;
 
-  uint32_t Myused;                // The number of elements currently in use
+  uint32_t Myused{0};             // The number of elements currently in use
   uint32_t Mydata[Element_count]; // The number, stored in little-endian form
 };
 
@@ -379,22 +379,22 @@ struct Big_integer_flt {
   }
 
   if (Multiplicand.Myused == 1) {
-    const uint32_t _Small_multiplier = Multiplicand.Mydata[0];
+    const uint32_t Small_multiplier = Multiplicand.Mydata[0];
     Multiplicand = Multiplier;
-    return Multiply(Multiplicand, _Small_multiplier); // when overflow occurs, resets to zero
+    return Multiply(Multiplicand, Small_multiplier); // when overflow occurs, resets to zero
   }
 
   // We prefer more iterations on the inner loop and fewer on the outer:
   const bool Multiplier_is_shorter = Multiplier.Myused < Multiplicand.Myused;
-  const uint32_t *const _Rgu1 = Multiplier_is_shorter ? Multiplier.Mydata : Multiplicand.Mydata;
-  const uint32_t *const _Rgu2 = Multiplier_is_shorter ? Multiplicand.Mydata : Multiplier.Mydata;
+  const uint32_t *const Rgu1 = Multiplier_is_shorter ? Multiplier.Mydata : Multiplicand.Mydata;
+  const uint32_t *const Rgu2 = Multiplier_is_shorter ? Multiplicand.Mydata : Multiplier.Mydata;
 
   const uint32_t Cu1 = Multiplier_is_shorter ? Multiplier.Myused : Multiplicand.Myused;
   const uint32_t Cu2 = Multiplier_is_shorter ? Multiplicand.Myused : Multiplier.Myused;
 
   Big_integer_flt result{};
   for (uint32_t Iu1 = 0; Iu1 != Cu1; ++Iu1) {
-    const uint32_t U_cur = _Rgu1[Iu1];
+    const uint32_t U_cur = Rgu1[Iu1];
     if (U_cur == 0) {
       if (Iu1 == result.Myused) {
         result.Mydata[Iu1] = 0;
@@ -412,7 +412,7 @@ struct Big_integer_flt {
         result.Myused = Iu_res + 1;
       }
 
-      U_carry = Add_multiply_carry(result.Mydata[Iu_res], U_cur, _Rgu2[Iu2], U_carry);
+      U_carry = Add_multiply_carry(result.Mydata[Iu_res], U_cur, Rgu2[Iu2], U_carry);
     }
 
     while (U_carry != 0 && Iu_res != Big_integer_flt::Element_count) {
@@ -437,7 +437,7 @@ struct Big_integer_flt {
 
 // Multiplies the high-precision integer Xval by 10^_Power. Returns true if the multiplication was successful;
 // false if it overflowed. When overflow occurs, the high-precision integer is reset to zero.
-[[nodiscard]] inline bool Multiply_by_power_of_ten(Big_integer_flt &Xval, const uint32_t _Power) noexcept {
+[[nodiscard]] inline bool Multiply_by_power_of_ten(Big_integer_flt &Xval, const uint32_t Power) noexcept {
   // To improve performance, we use a table of precomputed powers of ten, from 10^10 through 10^380, in increments
   // of ten. In its unpacked form, as an array of Big_integer_flt objects, this table consists mostly of zero
   // elements. Thus, we store the table in a packed form, trimming leading and trailing zero elements. We provide an
@@ -528,7 +528,7 @@ struct Big_integer_flt {
       {323, 9, 22},  {345, 9, 23},  {368, 9, 24}, {392, 10, 24}, {416, 10, 25}, {441, 10, 26}, {467, 10, 27},
       {494, 11, 27}, {521, 11, 28}, {549, 11, 29}};
 
-  for (uint32_t Large_power = _Power / 10; Large_power != 0;) {
+  for (uint32_t Large_power = Power / 10; Large_power != 0;) {
     const uint32_t Current_power = (std::min)(Large_power, static_cast<uint32_t>(std::size(Large_power_indices)));
 
     const Unpack_index &Index = Large_power_indices[Current_power - 1];
@@ -550,7 +550,7 @@ struct Big_integer_flt {
   static constexpr uint32_t Small_powers_of_ten[9] = {10,        100,        1'000,       10'000,       100'000,
                                                       1'000'000, 10'000'000, 100'000'000, 1'000'000'000};
 
-  const uint32_t Small_power = _Power % 10;
+  const uint32_t Small_power = Power % 10;
 
   if (Small_power == 0) {
     return true;
@@ -560,9 +560,9 @@ struct Big_integer_flt {
 }
 
 // Computes the number of zeroes higher than the most significant set bit in _Ux
-[[nodiscard]] inline uint32_t Count_sequential_high_zeroes(const uint32_t _Ux) noexcept {
+[[nodiscard]] inline uint32_t Count_sequential_high_zeroes(const uint32_t Ux) noexcept {
   unsigned long Index; // Intentionally uninitialized for better codegen
-  return _BitScanReverse(&Index, _Ux) ? 31 - Index : 32;
+  return _BitScanReverse(&Index, Ux) != 0u ? 31 - Index : 32;
 }
 
 // This high-precision integer division implementation was translated from the implementation of
@@ -595,7 +595,7 @@ struct Big_integer_flt {
       }
 
       Numerator.Mydata[0] = Small_numerator % Small_denominator;
-      Numerator.Myused = Numerator.Mydata[0] > 0 ? 1u : 0u;
+      Numerator.Myused = Numerator.Mydata[0] > 0 ? 1U : 0U;
       return Small_numerator / Small_denominator;
     }
 
@@ -611,8 +611,8 @@ struct Big_integer_flt {
     uint64_t Quotient = 0;
 
     uint64_t Uu = 0;
-    for (uint32_t _Iv = Max_numerator_element_index; _Iv != static_cast<uint32_t>(-1); --_Iv) {
-      Uu = (Uu << 32) | Numerator.Mydata[_Iv];
+    for (uint32_t Iv = Max_numerator_element_index; Iv != static_cast<uint32_t>(-1); --Iv) {
+      Uu = (Uu << 32) | Numerator.Mydata[Iv];
       Quotient = (Quotient << 32) + static_cast<uint32_t>(Uu / Small_denominator);
       Uu %= Small_denominator;
     }
@@ -621,11 +621,11 @@ struct Big_integer_flt {
     Numerator.Mydata[0] = static_cast<uint32_t>(Uu);
 
     if (Numerator.Mydata[1] > 0) {
-      Numerator.Myused = 2u;
+      Numerator.Myused = 2U;
     } else if (Numerator.Mydata[0] > 0) {
-      Numerator.Myused = 1u;
+      Numerator.Myused = 1U;
     } else {
-      Numerator.Myused = 0u;
+      Numerator.Myused = 0U;
     }
 
     return Quotient;
@@ -636,11 +636,11 @@ struct Big_integer_flt {
   }
 
   const uint32_t Cu_den = Max_denominator_element_index + 1;
-  const int32_t Cu_diff = static_cast<int32_t>(Max_numerator_element_index - Max_denominator_element_index);
+  const auto Cu_diff = static_cast<int32_t>(Max_numerator_element_index - Max_denominator_element_index);
 
   // Determine whether the result will have Cu_diff or Cu_diff + 1 digits:
   int32_t Cu_quo = Cu_diff;
-  for (int32_t Iu = static_cast<int32_t>(Max_numerator_element_index);; --Iu) {
+  for (auto Iu = static_cast<int32_t>(Max_numerator_element_index);; --Iu) {
     if (Iu < Cu_diff) {
       ++Cu_quo;
       break;
@@ -663,14 +663,14 @@ struct Big_integer_flt {
   uint32_t U_den = Denominator.Mydata[Cu_den - 1];
   uint32_t U_den_next = Denominator.Mydata[Cu_den - 2];
 
-  const uint32_t _Cbit_shift_left = Count_sequential_high_zeroes(U_den);
-  const uint32_t _Cbit_shift_right = 32 - _Cbit_shift_left;
-  if (_Cbit_shift_left > 0) {
-    U_den = (U_den << _Cbit_shift_left) | (U_den_next >> _Cbit_shift_right);
-    U_den_next <<= _Cbit_shift_left;
+  const uint32_t Cbit_shift_left = Count_sequential_high_zeroes(U_den);
+  const uint32_t Cbit_shift_right = 32 - Cbit_shift_left;
+  if (Cbit_shift_left > 0) {
+    U_den = (U_den << Cbit_shift_left) | (U_den_next >> Cbit_shift_right);
+    U_den_next <<= Cbit_shift_left;
 
     if (Cu_den > 2) {
-      U_den_next |= Denominator.Mydata[Cu_den - 3] >> _Cbit_shift_right;
+      U_den_next |= Denominator.Mydata[Cu_den - 3] >> Cbit_shift_right;
     }
   }
 
@@ -683,12 +683,12 @@ struct Big_integer_flt {
         (static_cast<uint64_t>(U_num_hi) << 32) | static_cast<uint64_t>(Numerator.Mydata[Iu + Cu_den - 1]);
 
     uint32_t U_num_next = Numerator.Mydata[Iu + Cu_den - 2];
-    if (_Cbit_shift_left > 0) {
-      Uu_num = (Uu_num << _Cbit_shift_left) | (U_num_next >> _Cbit_shift_right);
-      U_num_next <<= _Cbit_shift_left;
+    if (Cbit_shift_left > 0) {
+      Uu_num = (Uu_num << Cbit_shift_left) | (U_num_next >> Cbit_shift_right);
+      U_num_next <<= Cbit_shift_left;
 
       if (Iu + Cu_den >= 3) {
-        U_num_next |= Numerator.Mydata[Iu + Cu_den - 3] >> _Cbit_shift_right;
+        U_num_next |= Numerator.Mydata[Iu + Cu_den - 3] >> Cbit_shift_right;
       }
     }
 
@@ -714,7 +714,7 @@ struct Big_integer_flt {
       for (uint32_t Iu2 = 0; Iu2 < Cu_den; ++Iu2) {
         Uu_borrow += Uu_quo * Denominator.Mydata[Iu2];
 
-        const uint32_t U_sub = static_cast<uint32_t>(Uu_borrow);
+        const auto U_sub = static_cast<uint32_t>(Uu_borrow);
         Uu_borrow >>= 32;
         if (Numerator.Mydata[Iu + Iu2] < U_sub) {
           ++Uu_borrow;
@@ -727,11 +727,11 @@ struct Big_integer_flt {
         // Add, tracking carry:
         uint32_t U_carry = 0;
         for (uint32_t Iu2 = 0; Iu2 < Cu_den; ++Iu2) {
-          const uint64_t _Sum = static_cast<uint64_t>(Numerator.Mydata[Iu + Iu2]) +
-                                static_cast<uint64_t>(Denominator.Mydata[Iu2]) + U_carry;
+          const uint64_t Sum = static_cast<uint64_t>(Numerator.Mydata[Iu + Iu2]) +
+                               static_cast<uint64_t>(Denominator.Mydata[Iu2]) + U_carry;
 
-          Numerator.Mydata[Iu + Iu2] = static_cast<uint32_t>(_Sum);
-          U_carry = static_cast<uint32_t>(_Sum >> 32);
+          Numerator.Mydata[Iu + Iu2] = static_cast<uint32_t>(Sum);
+          U_carry = static_cast<uint32_t>(Sum >> 32);
         }
 
         --Uu_quo;
@@ -784,7 +784,7 @@ struct Floating_point_string {
   bool Myis_negative;
   int32_t Myexponent;
   uint32_t Mymantissa_count;
-  uint8_t _Mymantissa[768];
+  uint8_t Mymantissa[768];
 };
 
 // Stores a positive or negative zero into the result object
@@ -838,24 +838,22 @@ void Assemble_floating_point_infinity(const bool Is_negative, FloatingType &resu
 // Computes value / 2^_Shift, then rounds the result according to round_to_nearest.
 // By the time we call this function, we will already have discarded most digits.
 // The caller must pass true for Has_zero_tail if all discarded bits were zeroes.
-[[nodiscard]] inline uint64_t _Right_shift_with_rounding(const uint64_t value, const uint32_t _Shift,
-                                                         const bool Has_zero_tail) noexcept {
-  constexpr uint32_t _Total_number_of_bits = 64;
-  if (_Shift >= _Total_number_of_bits) {
-    if (_Shift == _Total_number_of_bits) {
-      constexpr uint64_t _Extra_bits_mask = (1ULL << (_Total_number_of_bits - 1)) - 1;
-      constexpr uint64_t Round_bit_mask = (1ULL << (_Total_number_of_bits - 1));
+[[nodiscard]] inline uint64_t Right_shift_with_rounding(const uint64_t value, const uint32_t Shift,
+                                                        const bool Has_zero_tail) noexcept {
+  constexpr uint32_t Total_number_of_bits = 64;
+  if (Shift >= Total_number_of_bits) {
+    if (Shift == Total_number_of_bits) {
+      constexpr uint64_t Extra_bits_mask = (1ULL << (Total_number_of_bits - 1)) - 1;
+      constexpr uint64_t Round_bit_mask = (1ULL << (Total_number_of_bits - 1));
 
       const bool Round_bit = (value & Round_bit_mask) != 0;
-      const bool _Tail_bits = !Has_zero_tail || (value & _Extra_bits_mask) != 0;
+      const bool Tail_bits = !Has_zero_tail || (value & Extra_bits_mask) != 0;
 
       // We round up the answer to 1 if the answer is greater than 0.5. Otherwise, we round down the answer to 0
       // if either [1] the answer is less than 0.5 or [2] the answer is exactly 0.5.
-      return static_cast<uint64_t>(Round_bit && _Tail_bits);
-    } else {
-      // If we'd need to shift 65 or more bits, the answer is less than 0.5 and is always rounded to zero:
-      return 0;
-    }
+      return static_cast<uint64_t>(Round_bit && Tail_bits);
+    } // If we'd need to shift 65 or more bits, the answer is less than 0.5 and is always rounded to zero:
+    return 0;
   }
 
   // Reference implementation with suboptimal codegen:
@@ -896,10 +894,10 @@ void Assemble_floating_point_infinity(const bool Is_negative, FloatingType &resu
 
   // Finally, we can use Should_round_up() logic with bitwise-AND and bitwise-OR,
   // selecting just the bit at index _Shift.
-  const uint64_t Should_round = ((Round_bit & (Has_tail_bits | Lsb_bit)) >> _Shift) & uint64_t{1};
+  const uint64_t Should_round = ((Round_bit & (Has_tail_bits | Lsb_bit)) >> Shift) & uint64_t{1};
 
   // This rounding technique is dedicated to the memory of Peppermint. =^..^=
-  return (value >> _Shift) + Should_round;
+  return (value >> Shift) + Should_round;
 }
 
 // Converts the floating-point value [sign] (mantissa / 2^(precision-1)) * 2^exponent into the correct form for
@@ -939,7 +937,7 @@ void Assemble_floating_point_value_no_shift(const bool Is_negative, const int32_
   Uint_type Sign_component = Is_negative;
   Sign_component <<= Floating_traits::Sign_shift;
 
-  Uint_type Exponent_component = static_cast<uint32_t>(Exponent + (Floating_traits::Exponent_bias - 1));
+  auto Exponent_component = static_cast<uint32_t>(Exponent + (Floating_traits::Exponent_bias - 1));
   Exponent_component <<= Floating_traits::Exponent_shift;
 
   result = std::bit_cast<FloatingType>(Sign_component | (Exponent_component + Mantissa));
@@ -959,7 +957,7 @@ void Assemble_floating_point_value_no_shift(const bool Is_negative, const int32_
 // more bit of precision than is required, to ensure that the mantissa is correctly rounded.
 // (The caller should not round the mantissa before calling this function.)
 template <class FloatingType>
-[[nodiscard]] errc Assemble_floating_point_value(const uint64_t _Initial_mantissa, const int32_t _Initial_exponent,
+[[nodiscard]] errc Assemble_floating_point_value(const uint64_t Initial_mantissa, const int32_t Initial_exponent,
                                                  const bool Is_negative, const bool Has_zero_tail,
                                                  FloatingType &result) noexcept {
   using Traits = Floating_type_traits<FloatingType>;
@@ -967,21 +965,21 @@ template <class FloatingType>
   // Assume that the number is representable as a normal value.
   // Compute the number of bits by which we must adjust the mantissa to shift it into the correct position,
   // and compute the resulting base two exponent for the normalized mantissa:
-  const uint32_t _Initial_mantissa_bits = bit_scan_reverse(_Initial_mantissa);
-  const int32_t _Normal_mantissa_shift = static_cast<int32_t>(Traits::Mantissa_bits - _Initial_mantissa_bits);
-  const int32_t _Normal_exponent = _Initial_exponent - _Normal_mantissa_shift;
+  const uint32_t Initial_mantissa_bits = bit_scan_reverse(Initial_mantissa);
+  const auto Normal_mantissa_shift = static_cast<int32_t>(Traits::Mantissa_bits - Initial_mantissa_bits);
+  const int32_t Normal_exponent = Initial_exponent - Normal_mantissa_shift;
 
-  if (_Normal_exponent > Traits::Maximum_binary_exponent) {
+  if (Normal_exponent > Traits::Maximum_binary_exponent) {
     // The exponent is too large to be represented by the floating-point type; report the overflow condition:
     Assemble_floating_point_infinity(Is_negative, result);
     return errc::result_out_of_range; // Overflow example: "1e+1000"
   }
 
-  uint64_t Mantissa = _Initial_mantissa;
-  int32_t Exponent = _Normal_exponent;
-  errc _Error_code{};
+  uint64_t Mantissa = Initial_mantissa;
+  int32_t Exponent = Normal_exponent;
+  errc Error_code{};
 
-  if (_Normal_exponent < Traits::Minimum_binary_exponent) {
+  if (Normal_exponent < Traits::Minimum_binary_exponent) {
     // The exponent is too small to be represented by the floating-point type as a normal value, but it may be
     // representable as a denormal value.
 
@@ -990,15 +988,15 @@ template <class FloatingType>
     Exponent = Traits::Minimum_binary_exponent;
 
     // Compute the number of bits by which we need to shift the mantissa in order to form a denormal number.
-    const int32_t Denormal_mantissa_shift = _Initial_exponent - Exponent;
+    const int32_t Denormal_mantissa_shift = Initial_exponent - Exponent;
 
     if (Denormal_mantissa_shift < 0) {
-      Mantissa = _Right_shift_with_rounding(Mantissa, static_cast<uint32_t>(-Denormal_mantissa_shift), Has_zero_tail);
+      Mantissa = Right_shift_with_rounding(Mantissa, static_cast<uint32_t>(-Denormal_mantissa_shift), Has_zero_tail);
 
       // from_chars in MSVC STL and strto[f|d|ld] in UCRT reports underflow only when the result is zero after
       // rounding to the floating-point format. This behavior is different from IEEE 754 underflow exception.
       if (Mantissa == 0) {
-        _Error_code = errc::result_out_of_range; // Underflow example: "1e-1000"
+        Error_code = errc::result_out_of_range; // Underflow example: "1e-1000"
       }
 
       // When we round the mantissa, the result may be so large that the number becomes a normal value.
@@ -1017,8 +1015,8 @@ template <class FloatingType>
       Mantissa <<= Denormal_mantissa_shift;
     }
   } else {
-    if (_Normal_mantissa_shift < 0) {
-      Mantissa = _Right_shift_with_rounding(Mantissa, static_cast<uint32_t>(-_Normal_mantissa_shift), Has_zero_tail);
+    if (Normal_mantissa_shift < 0) {
+      Mantissa = Right_shift_with_rounding(Mantissa, static_cast<uint32_t>(-Normal_mantissa_shift), Has_zero_tail);
 
       // When we round the mantissa, it may produce a result that is too large. In this case,
       // we divide the mantissa by two and increment the exponent (this does not change the value).
@@ -1027,11 +1025,11 @@ template <class FloatingType>
       // The increment of the exponent may have generated a value too large to be represented.
       // In this case, report the overflow:
       if (Mantissa > Traits::Normal_mantissa_mask && Exponent == Traits::Maximum_binary_exponent) {
-        _Error_code = errc::result_out_of_range; // Overflow example: "1.ffffffp+127" for float
-                                                 // Overflow example: "1.fffffffffffff8p+1023" for double
+        Error_code = errc::result_out_of_range; // Overflow example: "1.ffffffp+127" for float
+                                                // Overflow example: "1.fffffffffffff8p+1023" for double
       }
     } else {
-      Mantissa <<= _Normal_mantissa_shift;
+      Mantissa <<= Normal_mantissa_shift;
     }
   }
 
@@ -1040,7 +1038,7 @@ template <class FloatingType>
 
   Assemble_floating_point_value_no_shift(Is_negative, Exponent, static_cast<Uint_type>(Mantissa), result);
 
-  return _Error_code;
+  return Error_code;
 }
 
 // This function is part of the fast track for integer floating-point strings. It takes an integer and a sign and
@@ -1070,14 +1068,14 @@ template <class FloatingType>
   }
 
   const uint32_t Top_element_bits = Integer_bits_of_precision % 32;
-  const uint32_t _Top_element_index = Integer_bits_of_precision / 32;
+  const uint32_t Top_element_index = Integer_bits_of_precision / 32;
 
-  const uint32_t Middle_element_index = _Top_element_index - 1;
-  const uint32_t Bottom_element_index = _Top_element_index - 2;
+  const uint32_t Middle_element_index = Top_element_index - 1;
+  const uint32_t Bottom_element_index = Top_element_index - 2;
 
   // Pretty fast case: If the top 64 bits occupy only two elements, we can just combine those two elements:
   if (Top_element_bits == 0) {
-    const int32_t Exponent = static_cast<int32_t>(Base_exponent + Bottom_element_index * 32);
+    const auto Exponent = static_cast<int32_t>(Base_exponent + Bottom_element_index * 32);
 
     const uint64_t Mantissa = Integer_value.Mydata[Bottom_element_index] +
                               (static_cast<uint64_t>(Integer_value.Mydata[Middle_element_index]) << 32);
@@ -1091,22 +1089,21 @@ template <class FloatingType>
   }
 
   // Not quite so fast case: The top 64 bits span three elements in the Big_integer_flt. Assemble the three pieces:
-  const uint32_t Top_element_mask = (1u << Top_element_bits) - 1;
-  const uint32_t _Top_element_shift = 64 - Top_element_bits; // Left
+  const uint32_t Top_element_mask = (1U << Top_element_bits) - 1;
+  const uint32_t Top_element_shift = 64 - Top_element_bits; // Left
 
-  const uint32_t _Middle_element_shift = _Top_element_shift - 32; // Left
+  const uint32_t Middle_element_shift = Top_element_shift - 32; // Left
 
-  const uint32_t _Bottom_element_bits = 32 - Top_element_bits;
-  const uint32_t _Bottom_element_mask = ~Top_element_mask;
-  const uint32_t _Bottom_element_shift = 32 - _Bottom_element_bits; // Right
+  const uint32_t Bottom_element_bits = 32 - Top_element_bits;
+  const uint32_t Bottom_element_mask = ~Top_element_mask;
+  const uint32_t Bottom_element_shift = 32 - Bottom_element_bits; // Right
 
-  const int32_t Exponent = static_cast<int32_t>(Base_exponent + Bottom_element_index * 32 + Top_element_bits);
+  const auto Exponent = static_cast<int32_t>(Base_exponent + Bottom_element_index * 32 + Top_element_bits);
 
   const uint64_t Mantissa =
-      (static_cast<uint64_t>(Integer_value.Mydata[_Top_element_index] & Top_element_mask) << _Top_element_shift) +
-      (static_cast<uint64_t>(Integer_value.Mydata[Middle_element_index]) << _Middle_element_shift) +
-      (static_cast<uint64_t>(Integer_value.Mydata[Bottom_element_index] & _Bottom_element_mask) >>
-       _Bottom_element_shift);
+      (static_cast<uint64_t>(Integer_value.Mydata[Top_element_index] & Top_element_mask) << Top_element_shift) +
+      (static_cast<uint64_t>(Integer_value.Mydata[Middle_element_index]) << Middle_element_shift) +
+      (static_cast<uint64_t>(Integer_value.Mydata[Bottom_element_index] & Bottom_element_mask) >> Bottom_element_shift);
 
   bool Has_zero_tail =
       !Has_nonzero_fractional_part && (Integer_value.Mydata[Bottom_element_index] & Top_element_mask) == 0;
@@ -1127,7 +1124,7 @@ inline void Accumulate_decimal_digits_into_big_integer_flt(const uint8_t *const 
   // allowing us to reduce the number of high-precision multiplication and addition operations by 8/9.
   uint32_t Accumulator = 0;
   uint32_t Accumulator_count = 0;
-  for (const uint8_t *_It = first_digit; _It != last_digit; ++_It) {
+  for (const uint8_t *It = first_digit; It != last_digit; ++It) {
     if (Accumulator_count == 9) {
       [[maybe_unused]] const bool Success1 = Multiply(result, 1'000'000'000); // assumes no overflow
       assert(Success1);
@@ -1139,7 +1136,7 @@ inline void Accumulate_decimal_digits_into_big_integer_flt(const uint8_t *const 
     }
 
     Accumulator *= 10;
-    Accumulator += *_It;
+    Accumulator += *It;
     ++Accumulator_count;
   }
 
@@ -1162,7 +1159,7 @@ template <class FloatingType>
   // To generate an N bit mantissa we require N + 1 bits of precision. The extra bit is used to correctly round
   // the mantissa (if there are fewer bits than this available, then that's totally okay;
   // in that case we use what we have and we don't need to round).
-  const uint32_t Required_bits_of_precision = static_cast<uint32_t>(Traits::Mantissa_bits + 1);
+  const auto Required_bits_of_precision = static_cast<uint32_t>(Traits::Mantissa_bits + 1);
 
   // The input is of the form 0.mantissa * 10^exponent, where 'mantissa' are the decimal digits of the mantissa
   // and 'exponent' is the decimal exponent. We decompose the mantissa into two parts: an integer part and a
@@ -1172,12 +1169,12 @@ template <class FloatingType>
   const uint32_t Positive_exponent = static_cast<uint32_t>((std::max)(0, data.Myexponent));
   const uint32_t Integer_digits_present = (std::min)(Positive_exponent, data.Mymantissa_count);
   const uint32_t Integer_digits_missing = Positive_exponent - Integer_digits_present;
-  const uint8_t *const Integer_first = data._Mymantissa;
-  const uint8_t *const Integer_last = data._Mymantissa + Integer_digits_present;
+  const uint8_t *const Integer_first = data.Mymantissa;
+  const uint8_t *const Integer_last = data.Mymantissa + Integer_digits_present;
 
   const uint8_t *const Fractional_first = Integer_last;
-  const uint8_t *const Fractional_last = data._Mymantissa + data.Mymantissa_count;
-  const uint32_t Fractional_digits_present = static_cast<uint32_t>(Fractional_last - Fractional_first);
+  const uint8_t *const Fractional_last = data.Mymantissa + data.Mymantissa_count;
+  const auto Fractional_digits_present = static_cast<uint32_t>(Fractional_last - Fractional_first);
 
   // First, we accumulate the integer part of the mantissa into a Big_integer_flt:
   Big_integer_flt Integer_value{};
@@ -1195,11 +1192,11 @@ template <class FloatingType>
   // [2] the mantissa has no fractional part, then we can assemble the result immediately:
   const uint32_t Integer_bits_of_precision = bit_scan_reverse(Integer_value);
   {
-    const bool _Has_zero_fractional_part = Fractional_digits_present == 0 && Has_zero_tail;
+    const bool Has_zero_fractional_part = Fractional_digits_present == 0 && Has_zero_tail;
 
-    if (Integer_bits_of_precision >= Required_bits_of_precision || _Has_zero_fractional_part) {
+    if (Integer_bits_of_precision >= Required_bits_of_precision || Has_zero_fractional_part) {
       return Assemble_floating_point_value_from_big_integer_flt(Integer_value, Integer_bits_of_precision,
-                                                                data.Myis_negative, !_Has_zero_fractional_part, result);
+                                                                data.Myis_negative, !Has_zero_fractional_part, result);
     }
   }
 
@@ -1231,18 +1228,18 @@ template <class FloatingType>
   const uint32_t Fractional_denominator_bits = bit_scan_reverse(Fractional_denominator);
 
   const uint32_t Fractional_shift = Fractional_denominator_bits > Fractional_numerator_bits
-                                         ? Fractional_denominator_bits - Fractional_numerator_bits
-                                         : 0;
+                                        ? Fractional_denominator_bits - Fractional_numerator_bits
+                                        : 0;
 
   if (Fractional_shift > 0) {
-    [[maybe_unused]] const bool _Shift_success1 =
+    [[maybe_unused]] const bool Shift_success1 =
         Shift_left(Fractional_numerator, Fractional_shift); // assumes no overflow
-    assert(_Shift_success1);
+    assert(Shift_success1);
   }
 
   const uint32_t Required_fractional_bits_of_precision = Required_bits_of_precision - Integer_bits_of_precision;
 
-  uint32_t _Remaining_bits_of_precision_required = Required_fractional_bits_of_precision;
+  uint32_t Remaining_bits_of_precision_required = Required_fractional_bits_of_precision;
   if (Integer_bits_of_precision > 0) {
     // If the fractional part of the mantissa provides no bits of precision and cannot affect rounding,
     // we can just take whatever bits we got from the integer part of the mantissa. This is the case for numbers
@@ -1253,13 +1250,13 @@ template <class FloatingType>
     // then no fractional bits will be part of the result, but the result may affect rounding.
     // This is e.g. the case for large, odd integers with a fractional part greater than or equal to .5.
     // Thus, we need to do the division to correctly round the result.
-    if (Fractional_shift > _Remaining_bits_of_precision_required) {
+    if (Fractional_shift > Remaining_bits_of_precision_required) {
       return Assemble_floating_point_value_from_big_integer_flt(
           Integer_value, Integer_bits_of_precision, data.Myis_negative,
           Fractional_digits_present != 0 || !Has_zero_tail, result);
     }
 
-    _Remaining_bits_of_precision_required -= Fractional_shift;
+    Remaining_bits_of_precision_required -= Fractional_shift;
   }
 
   // If there was no integer part of the mantissa, we will need to compute the exponent from the fractional part.
@@ -1268,9 +1265,9 @@ template <class FloatingType>
   const uint32_t Fractional_exponent =
       Fractional_numerator < Fractional_denominator ? Fractional_shift + 1 : Fractional_shift;
 
-  [[maybe_unused]] const bool _Shift_success2 =
-      Shift_left(Fractional_numerator, _Remaining_bits_of_precision_required); // assumes no overflow
-  assert(_Shift_success2);
+  [[maybe_unused]] const bool Shift_success2 =
+      Shift_left(Fractional_numerator, Remaining_bits_of_precision_required); // assumes no overflow
+  assert(Shift_success2);
 
   uint64_t Fractional_mantissa = Divide(Fractional_numerator, Fractional_denominator);
 
@@ -1279,9 +1276,9 @@ template <class FloatingType>
   // We may have produced more bits of precision than were required. Check, and remove any "extra" bits:
   const uint32_t Fractional_mantissa_bits = bit_scan_reverse(Fractional_mantissa);
   if (Fractional_mantissa_bits > Required_fractional_bits_of_precision) {
-    const uint32_t _Shift = Fractional_mantissa_bits - Required_fractional_bits_of_precision;
-    Has_zero_tail = Has_zero_tail && (Fractional_mantissa & ((1ULL << _Shift) - 1)) == 0;
-    Fractional_mantissa >>= _Shift;
+    const uint32_t Shift = Fractional_mantissa_bits - Required_fractional_bits_of_precision;
+    Has_zero_tail = Has_zero_tail && (Fractional_mantissa & ((1ULL << Shift) - 1)) == 0;
+    Fractional_mantissa >>= Shift;
   }
 
   // Compose the mantissa from the integer and fractional parts:
@@ -1313,8 +1310,8 @@ template <class FloatingType>
   int32_t Exponent = data.Myexponent + Traits::Mantissa_bits - 1;
 
   // Accumulate bits into the mantissa buffer
-  const uint8_t *const Mantissa_last = data._Mymantissa + data.Mymantissa_count;
-  const uint8_t *Mantissa_it = data._Mymantissa;
+  const uint8_t *const Mantissa_last = data.Mymantissa + data.Mymantissa_count;
+  const uint8_t *Mantissa_it = data.Mymantissa;
   while (Mantissa_it != Mantissa_last && Mantissa <= Traits::Normal_mantissa_mask) {
     Mantissa *= 16;
     Mantissa += *Mantissa_it++;
@@ -1393,8 +1390,8 @@ template <class Floating>
   // Record the optional minus sign:
   Fp_string.Myis_negative = Minus_sign;
 
-  uint8_t *const Mantissa_first = Fp_string._Mymantissa;
-  uint8_t *const Mantissa_last = std::end(Fp_string._Mymantissa);
+  uint8_t *const Mantissa_first = Fp_string.Mymantissa;
+  uint8_t *const Mantissa_last = std::end(Fp_string.Mymantissa);
   uint8_t *Mantissa_it = Mantissa_first;
 
   // [Whole_begin, Whole_end) will contain 0 or more digits/hexits
@@ -1622,7 +1619,7 @@ template <class Floating>
   // definitely nan
   next += 3;
 
-  bool _Quiet = true;
+  bool Quiet = true;
 
   if (next != last && *next == '(') { // possibly nan(n-char-sequence[opt])
     const wchar_t *const Seq_begin = next + 1;
@@ -1637,13 +1634,14 @@ template <class Floating>
           Minus_sign = true;
         } else if (Temp - Seq_begin == 4 &&
                    Starts_with_case_insensitive(Seq_begin, Temp, L"snan")) { // definitely nan(snan)
-          _Quiet = false;
+          Quiet = false;
         }
 
         break;
-      } else if (*Temp == '_' || ('0' <= *Temp && *Temp <= '9') || ('A' <= *Temp && *Temp <= 'Z') ||
-                 ('a' <= *Temp && *Temp <= 'z')) { // possibly nan(n-char-sequence[opt]), keep going
-      } else {                                     // definitely nan, not nan(n-char-sequence[opt])
+      }
+      if (*Temp == '_' || ('0' <= *Temp && *Temp <= '9') || ('A' <= *Temp && *Temp <= 'Z') ||
+          ('a' <= *Temp && *Temp <= 'z')) { // possibly nan(n-char-sequence[opt]), keep going
+      } else {                              // definitely nan, not nan(n-char-sequence[opt])
         break;
       }
     }
@@ -1663,7 +1661,7 @@ template <class Floating>
     Uint_value |= Traits::Shifted_sign_mask;
   }
 
-  if (_Quiet) {
+  if (Quiet) {
     Uint_value |= Traits::Special_nan_mantissa_mask;
   } else {
     Uint_value |= 1;
@@ -1708,11 +1706,12 @@ template <class Floating>
   // inf/nan starting characters are folded to ['i'] ['n']
   // These are ordered: ['.'] ['0', '9'] ['a', 'f'] < ['i'] ['n']
   // Note that invalid starting characters end up on both sides of this test.
-  const unsigned char Folded_start = static_cast<unsigned char>(static_cast<unsigned char>(*next) | 0x20);
+  const auto Folded_start = static_cast<unsigned char>(static_cast<unsigned char>(*next) | 0x20);
 
   if (Folded_start <= 'f') { // possibly an ordinary number
     return Ordinary_floating_from_chars(first, last, value, fmt, Minus_sign, next);
-  } else if (Folded_start == 'i') { // possibly inf
+  }
+  if (Folded_start == 'i') { // possibly inf
     return Infinity_from_chars(first, last, value, Minus_sign, next);
   } else if (Folded_start == 'n') { // possibly nan
     return Nan_from_chars(first, last, value, Minus_sign, next);
@@ -1752,7 +1751,7 @@ template <class Floating>
   // float explicitly stores 23 fraction bits. 23 / 4 == 5.75, which is 6 hexits.
   // double explicitly stores 52 fraction bits. 52 / 4 == 13, which is 13 hexits.
   constexpr int Full_precision = std::is_same_v<Floating, float> ? 6 : 13;
-  constexpr int _Adjusted_explicit_bits = Full_precision * 4;
+  constexpr int Adjusted_explicit_bits = Full_precision * 4;
 
   if (precision < 0) {
     // C11 7.21.6.1 "The fprintf function"/5: "A negative precision argument is taken as if the precision were
@@ -1765,9 +1764,9 @@ template <class Floating>
   using Traits = Floating_type_traits<Floating>;
   using Uint_type = typename Traits::Uint_type;
 
-  const Uint_type Uint_value = std::bit_cast<Uint_type>(value);
+  const auto Uint_value = std::bit_cast<Uint_type>(value);
   const Uint_type Ieee_mantissa = Uint_value & Traits::Denormal_mantissa_mask;
-  const int32_t Ieee_exponent = static_cast<int32_t>(Uint_value >> Traits::Exponent_shift);
+  const auto Ieee_exponent = static_cast<int32_t>(Uint_value >> Traits::Exponent_shift);
 
   // * Prepare the Adjusted_mantissa. This is aligned to hexit boundaries,
   // * with the implicit bit restored (0 for zero values and subnormal values, 1 for normal values).
@@ -1791,8 +1790,8 @@ template <class Floating>
     } else { // subnormal
       Unbiased_exponent = 1 - Traits::Exponent_bias;
     }
-  } else {                                                        // normal
-    Adjusted_mantissa |= Uint_type{1} << _Adjusted_explicit_bits; // implicit bit is 1
+  } else {                                                       // normal
+    Adjusted_mantissa |= Uint_type{1} << Adjusted_explicit_bits; // implicit bit is 1
     Unbiased_exponent = Ieee_exponent - Traits::Exponent_bias;
   }
 
@@ -1905,13 +1904,13 @@ template <class Floating>
 
   // * Print the leading hexit, then mask it away.
   {
-    const uint32_t Nibble = static_cast<uint32_t>(Adjusted_mantissa >> _Adjusted_explicit_bits);
+    const auto Nibble = static_cast<uint32_t>(Adjusted_mantissa >> Adjusted_explicit_bits);
     assert(Nibble < 3);
     const char Leading_hexit = static_cast<char>('0' + Nibble);
 
     *first++ = Leading_hexit;
 
-    constexpr Uint_type Mask = (Uint_type{1} << _Adjusted_explicit_bits) - 1;
+    constexpr Uint_type Mask = (Uint_type{1} << Adjusted_explicit_bits) - 1;
     Adjusted_mantissa &= Mask;
   }
 
@@ -1922,14 +1921,14 @@ template <class Floating>
   if (precision > 0) {
     *first++ = '.';
 
-    int32_t Number_of_bits_remaining = _Adjusted_explicit_bits; // 24 for float, 52 for double
+    int32_t Number_of_bits_remaining = Adjusted_explicit_bits; // 24 for float, 52 for double
 
     for (;;) {
       assert(Number_of_bits_remaining >= 4);
       assert(Number_of_bits_remaining % 4 == 0);
       Number_of_bits_remaining -= 4;
 
-      const uint32_t Nibble = static_cast<uint32_t>(Adjusted_mantissa >> Number_of_bits_remaining);
+      const auto Nibble = static_cast<uint32_t>(Adjusted_mantissa >> Number_of_bits_remaining);
       assert(Nibble < 16);
       const wchar_t Hexit = Charconv_digits[Nibble];
 
@@ -1983,7 +1982,7 @@ template <class Floating>
   using Traits = Floating_type_traits<Floating>;
   using Uint_type = typename Traits::Uint_type;
 
-  const Uint_type Uint_value = std::bit_cast<Uint_type>(value);
+  const auto Uint_value = std::bit_cast<Uint_type>(value);
 
   if (Uint_value == 0) { // zero detected; write "0p+0" and return
     // C11 7.21.6.1 "The fprintf function"/8: "If the value is zero, the exponent is zero."
@@ -2001,7 +2000,7 @@ template <class Floating>
   }
 
   const Uint_type Ieee_mantissa = Uint_value & Traits::Denormal_mantissa_mask;
-  const int32_t Ieee_exponent = static_cast<int32_t>(Uint_value >> Traits::Exponent_shift);
+  const auto Ieee_exponent = static_cast<int32_t>(Uint_value >> Traits::Exponent_shift);
 
   char Leading_hexit; // implicit bit
   int32_t Unbiased_exponent;
@@ -2055,7 +2054,7 @@ template <class Floating>
       assert(Number_of_bits_remaining % 4 == 0);
       Number_of_bits_remaining -= 4;
 
-      const uint32_t Nibble = static_cast<uint32_t>(Adjusted_mantissa >> Number_of_bits_remaining);
+      const auto Nibble = static_cast<uint32_t>(Adjusted_mantissa >> Number_of_bits_remaining);
       assert(Nibble < 16);
       const wchar_t Hexit = Charconv_digits[Nibble];
 
@@ -2156,136 +2155,136 @@ template <> struct General_precision_tables<float> {
   static constexpr int Max_special_P = 7;
 
   static constexpr uint32_t Special_X_table[63] = {
-      0x38C73ABCu, 0x3A79096Bu, 0x3C1BA5E3u, 0x3DC28F5Cu, 0x3F733333u, 0x4117FFFFu, 0x38D0AAA7u, 0x3A826AA8u,
-      0x3C230553u, 0x3DCBC6A7u, 0x3F7EB851u, 0x411F3333u, 0x42C6FFFFu, 0x38D19C3Fu, 0x3A8301A7u, 0x3C23C211u,
-      0x3DCCB295u, 0x3F7FDF3Bu, 0x411FEB85u, 0x42C7E666u, 0x4479DFFFu, 0x38D1B468u, 0x3A8310C1u, 0x3C23D4F1u,
-      0x3DCCCA2Du, 0x3F7FFCB9u, 0x411FFDF3u, 0x42C7FD70u, 0x4479FCCCu, 0x461C3DFFu, 0x38D1B6D2u, 0x3A831243u,
-      0x3C23D6D4u, 0x3DCCCC89u, 0x3F7FFFACu, 0x411FFFCBu, 0x42C7FFBEu, 0x4479FFAEu, 0x461C3FCCu, 0x47C34FBFu,
-      0x38D1B710u, 0x3A83126Au, 0x3C23D704u, 0x3DCCCCC6u, 0x3F7FFFF7u, 0x411FFFFAu, 0x42C7FFF9u, 0x4479FFF7u,
-      0x461C3FFAu, 0x47C34FF9u, 0x497423F7u, 0x38D1B716u, 0x3A83126Eu, 0x3C23D709u, 0x3DCCCCCCu, 0x3F7FFFFFu,
-      0x411FFFFFu, 0x42C7FFFFu, 0x4479FFFFu, 0x461C3FFFu, 0x47C34FFFu, 0x497423FFu, 0x4B18967Fu};
+      0x38C73ABCU, 0x3A79096BU, 0x3C1BA5E3U, 0x3DC28F5CU, 0x3F733333U, 0x4117FFFFU, 0x38D0AAA7U, 0x3A826AA8U,
+      0x3C230553U, 0x3DCBC6A7U, 0x3F7EB851U, 0x411F3333U, 0x42C6FFFFU, 0x38D19C3FU, 0x3A8301A7U, 0x3C23C211U,
+      0x3DCCB295U, 0x3F7FDF3BU, 0x411FEB85U, 0x42C7E666U, 0x4479DFFFU, 0x38D1B468U, 0x3A8310C1U, 0x3C23D4F1U,
+      0x3DCCCA2DU, 0x3F7FFCB9U, 0x411FFDF3U, 0x42C7FD70U, 0x4479FCCCU, 0x461C3DFFU, 0x38D1B6D2U, 0x3A831243U,
+      0x3C23D6D4U, 0x3DCCCC89U, 0x3F7FFFACU, 0x411FFFCBU, 0x42C7FFBEU, 0x4479FFAEU, 0x461C3FCCU, 0x47C34FBFU,
+      0x38D1B710U, 0x3A83126AU, 0x3C23D704U, 0x3DCCCCC6U, 0x3F7FFFF7U, 0x411FFFFAU, 0x42C7FFF9U, 0x4479FFF7U,
+      0x461C3FFAU, 0x47C34FF9U, 0x497423F7U, 0x38D1B716U, 0x3A83126EU, 0x3C23D709U, 0x3DCCCCCCU, 0x3F7FFFFFU,
+      0x411FFFFFU, 0x42C7FFFFU, 0x4479FFFFU, 0x461C3FFFU, 0x47C34FFFU, 0x497423FFU, 0x4B18967FU};
 
   static constexpr int Max_P = 39;
 
   static constexpr uint32_t Ordinary_X_table[44] = {
-      0x38D1B717u, 0x3A83126Eu, 0x3C23D70Au, 0x3DCCCCCCu, 0x3F7FFFFFu, 0x411FFFFFu, 0x42C7FFFFu, 0x4479FFFFu,
-      0x461C3FFFu, 0x47C34FFFu, 0x497423FFu, 0x4B18967Fu, 0x4CBEBC1Fu, 0x4E6E6B27u, 0x501502F8u, 0x51BA43B7u,
-      0x5368D4A5u, 0x551184E7u, 0x56B5E620u, 0x58635FA9u, 0x5A0E1BC9u, 0x5BB1A2BCu, 0x5D5E0B6Bu, 0x5F0AC723u,
-      0x60AD78EBu, 0x6258D726u, 0x64078678u, 0x65A96816u, 0x6753C21Bu, 0x69045951u, 0x6AA56FA5u, 0x6C4ECB8Fu,
-      0x6E013F39u, 0x6FA18F07u, 0x7149F2C9u, 0x72FC6F7Cu, 0x749DC5ADu, 0x76453719u, 0x77F684DFu, 0x799A130Bu,
-      0x7B4097CEu, 0x7CF0BDC2u, 0x7E967699u, 0x7F7FFFFFu};
+      0x38D1B717U, 0x3A83126EU, 0x3C23D70AU, 0x3DCCCCCCU, 0x3F7FFFFFU, 0x411FFFFFU, 0x42C7FFFFU, 0x4479FFFFU,
+      0x461C3FFFU, 0x47C34FFFU, 0x497423FFU, 0x4B18967FU, 0x4CBEBC1FU, 0x4E6E6B27U, 0x501502F8U, 0x51BA43B7U,
+      0x5368D4A5U, 0x551184E7U, 0x56B5E620U, 0x58635FA9U, 0x5A0E1BC9U, 0x5BB1A2BCU, 0x5D5E0B6BU, 0x5F0AC723U,
+      0x60AD78EBU, 0x6258D726U, 0x64078678U, 0x65A96816U, 0x6753C21BU, 0x69045951U, 0x6AA56FA5U, 0x6C4ECB8FU,
+      0x6E013F39U, 0x6FA18F07U, 0x7149F2C9U, 0x72FC6F7CU, 0x749DC5ADU, 0x76453719U, 0x77F684DFU, 0x799A130BU,
+      0x7B4097CEU, 0x7CF0BDC2U, 0x7E967699U, 0x7F7FFFFFU};
 };
 
 template <> struct General_precision_tables<double> {
   static constexpr int Max_special_P = 15;
 
   static constexpr uint64_t Special_X_table[195] = {
-      0x3F18E757928E0C9Du, 0x3F4F212D77318FC5u, 0x3F8374BC6A7EF9DBu, 0x3FB851EB851EB851u, 0x3FEE666666666666u,
-      0x4022FFFFFFFFFFFFu, 0x3F1A1554FBDAD751u, 0x3F504D551D68C692u, 0x3F8460AA64C2F837u, 0x3FB978D4FDF3B645u,
-      0x3FEFD70A3D70A3D7u, 0x4023E66666666666u, 0x4058DFFFFFFFFFFFu, 0x3F1A3387ECC8EB96u, 0x3F506034F3FD933Eu,
-      0x3F84784230FCF80Du, 0x3FB99652BD3C3611u, 0x3FEFFBE76C8B4395u, 0x4023FD70A3D70A3Du, 0x4058FCCCCCCCCCCCu,
-      0x408F3BFFFFFFFFFFu, 0x3F1A368D04E0BA6Au, 0x3F506218230C7482u, 0x3F847A9E2BCF91A3u, 0x3FB99945B6C3760Bu,
-      0x3FEFFF972474538Eu, 0x4023FFBE76C8B439u, 0x4058FFAE147AE147u, 0x408F3F9999999999u, 0x40C387BFFFFFFFFFu,
-      0x3F1A36DA54164F19u, 0x3F506248748DF16Fu, 0x3F847ADA91B16DCBu, 0x3FB99991361DC93Eu, 0x3FEFFFF583A53B8Eu,
-      0x4023FFF972474538u, 0x4058FFF7CED91687u, 0x408F3FF5C28F5C28u, 0x40C387F999999999u, 0x40F869F7FFFFFFFFu,
-      0x3F1A36E20F35445Du, 0x3F50624D49814ABAu, 0x3F847AE09BE19D69u, 0x3FB99998C2DA04C3u, 0x3FEFFFFEF39085F4u,
-      0x4023FFFF583A53B8u, 0x4058FFFF2E48E8A7u, 0x408F3FFEF9DB22D0u, 0x40C387FF5C28F5C2u, 0x40F869FF33333333u,
-      0x412E847EFFFFFFFFu, 0x3F1A36E2D51EC34Bu, 0x3F50624DC5333A0Eu, 0x3F847AE136800892u, 0x3FB9999984200AB7u,
-      0x3FEFFFFFE5280D65u, 0x4023FFFFEF39085Fu, 0x4058FFFFEB074A77u, 0x408F3FFFE5C91D14u, 0x40C387FFEF9DB22Du,
-      0x40F869FFEB851EB8u, 0x412E847FE6666666u, 0x416312CFEFFFFFFFu, 0x3F1A36E2E8E94FFCu, 0x3F50624DD191D1FDu,
-      0x3F847AE145F6467Du, 0x3FB999999773D81Cu, 0x3FEFFFFFFD50CE23u, 0x4023FFFFFE5280D6u, 0x4058FFFFFDE7210Bu,
-      0x408F3FFFFD60E94Eu, 0x40C387FFFE5C91D1u, 0x40F869FFFDF3B645u, 0x412E847FFD70A3D7u, 0x416312CFFE666666u,
-      0x4197D783FDFFFFFFu, 0x3F1A36E2EAE3F7A7u, 0x3F50624DD2CE7AC8u, 0x3F847AE14782197Bu, 0x3FB9999999629FD9u,
-      0x3FEFFFFFFFBB47D0u, 0x4023FFFFFFD50CE2u, 0x4058FFFFFFCA501Au, 0x408F3FFFFFBCE421u, 0x40C387FFFFD60E94u,
-      0x40F869FFFFCB923Au, 0x412E847FFFBE76C8u, 0x416312CFFFD70A3Du, 0x4197D783FFCCCCCCu, 0x41CDCD64FFBFFFFFu,
-      0x3F1A36E2EB16A205u, 0x3F50624DD2EE2543u, 0x3F847AE147A9AE94u, 0x3FB9999999941A39u, 0x3FEFFFFFFFF920C8u,
-      0x4023FFFFFFFBB47Du, 0x4058FFFFFFFAA19Cu, 0x408F3FFFFFF94A03u, 0x40C387FFFFFBCE42u, 0x40F869FFFFFAC1D2u,
-      0x412E847FFFF97247u, 0x416312CFFFFBE76Cu, 0x4197D783FFFAE147u, 0x41CDCD64FFF99999u, 0x4202A05F1FFBFFFFu,
-      0x3F1A36E2EB1BB30Fu, 0x3F50624DD2F14FE9u, 0x3F847AE147ADA3E3u, 0x3FB9999999990CDCu, 0x3FEFFFFFFFFF5014u,
-      0x4023FFFFFFFF920Cu, 0x4058FFFFFFFF768Fu, 0x408F3FFFFFFF5433u, 0x40C387FFFFFF94A0u, 0x40F869FFFFFF79C8u,
-      0x412E847FFFFF583Au, 0x416312CFFFFF9724u, 0x4197D783FFFF7CEDu, 0x41CDCD64FFFF5C28u, 0x4202A05F1FFF9999u,
-      0x42374876E7FF7FFFu, 0x3F1A36E2EB1C34C3u, 0x3F50624DD2F1A0FAu, 0x3F847AE147AE0938u, 0x3FB9999999998B86u,
-      0x3FEFFFFFFFFFEE68u, 0x4023FFFFFFFFF501u, 0x4058FFFFFFFFF241u, 0x408F3FFFFFFFEED1u, 0x40C387FFFFFFF543u,
-      0x40F869FFFFFFF294u, 0x412E847FFFFFEF39u, 0x416312CFFFFFF583u, 0x4197D783FFFFF2E4u, 0x41CDCD64FFFFEF9Du,
-      0x4202A05F1FFFF5C2u, 0x42374876E7FFF333u, 0x426D1A94A1FFEFFFu, 0x3F1A36E2EB1C41BBu, 0x3F50624DD2F1A915u,
-      0x3F847AE147AE135Au, 0x3FB9999999999831u, 0x3FEFFFFFFFFFFE3Du, 0x4023FFFFFFFFFEE6u, 0x4058FFFFFFFFFEA0u,
-      0x408F3FFFFFFFFE48u, 0x40C387FFFFFFFEEDu, 0x40F869FFFFFFFEA8u, 0x412E847FFFFFFE52u, 0x416312CFFFFFFEF3u,
-      0x4197D783FFFFFEB0u, 0x41CDCD64FFFFFE5Cu, 0x4202A05F1FFFFEF9u, 0x42374876E7FFFEB8u, 0x426D1A94A1FFFE66u,
-      0x42A2309CE53FFEFFu, 0x3F1A36E2EB1C4307u, 0x3F50624DD2F1A9E4u, 0x3F847AE147AE145Eu, 0x3FB9999999999975u,
-      0x3FEFFFFFFFFFFFD2u, 0x4023FFFFFFFFFFE3u, 0x4058FFFFFFFFFFDCu, 0x408F3FFFFFFFFFD4u, 0x40C387FFFFFFFFE4u,
-      0x40F869FFFFFFFFDDu, 0x412E847FFFFFFFD5u, 0x416312CFFFFFFFE5u, 0x4197D783FFFFFFDEu, 0x41CDCD64FFFFFFD6u,
-      0x4202A05F1FFFFFE5u, 0x42374876E7FFFFDFu, 0x426D1A94A1FFFFD7u, 0x42A2309CE53FFFE6u, 0x42D6BCC41E8FFFDFu,
-      0x3F1A36E2EB1C4328u, 0x3F50624DD2F1A9F9u, 0x3F847AE147AE1477u, 0x3FB9999999999995u, 0x3FEFFFFFFFFFFFFBu,
-      0x4023FFFFFFFFFFFDu, 0x4058FFFFFFFFFFFCu, 0x408F3FFFFFFFFFFBu, 0x40C387FFFFFFFFFDu, 0x40F869FFFFFFFFFCu,
-      0x412E847FFFFFFFFBu, 0x416312CFFFFFFFFDu, 0x4197D783FFFFFFFCu, 0x41CDCD64FFFFFFFBu, 0x4202A05F1FFFFFFDu,
-      0x42374876E7FFFFFCu, 0x426D1A94A1FFFFFBu, 0x42A2309CE53FFFFDu, 0x42D6BCC41E8FFFFCu, 0x430C6BF52633FFFBu};
+      0x3F18E757928E0C9DU, 0x3F4F212D77318FC5U, 0x3F8374BC6A7EF9DBU, 0x3FB851EB851EB851U, 0x3FEE666666666666U,
+      0x4022FFFFFFFFFFFFU, 0x3F1A1554FBDAD751U, 0x3F504D551D68C692U, 0x3F8460AA64C2F837U, 0x3FB978D4FDF3B645U,
+      0x3FEFD70A3D70A3D7U, 0x4023E66666666666U, 0x4058DFFFFFFFFFFFU, 0x3F1A3387ECC8EB96U, 0x3F506034F3FD933EU,
+      0x3F84784230FCF80DU, 0x3FB99652BD3C3611U, 0x3FEFFBE76C8B4395U, 0x4023FD70A3D70A3DU, 0x4058FCCCCCCCCCCCU,
+      0x408F3BFFFFFFFFFFU, 0x3F1A368D04E0BA6AU, 0x3F506218230C7482U, 0x3F847A9E2BCF91A3U, 0x3FB99945B6C3760BU,
+      0x3FEFFF972474538EU, 0x4023FFBE76C8B439U, 0x4058FFAE147AE147U, 0x408F3F9999999999U, 0x40C387BFFFFFFFFFU,
+      0x3F1A36DA54164F19U, 0x3F506248748DF16FU, 0x3F847ADA91B16DCBU, 0x3FB99991361DC93EU, 0x3FEFFFF583A53B8EU,
+      0x4023FFF972474538U, 0x4058FFF7CED91687U, 0x408F3FF5C28F5C28U, 0x40C387F999999999U, 0x40F869F7FFFFFFFFU,
+      0x3F1A36E20F35445DU, 0x3F50624D49814ABAU, 0x3F847AE09BE19D69U, 0x3FB99998C2DA04C3U, 0x3FEFFFFEF39085F4U,
+      0x4023FFFF583A53B8U, 0x4058FFFF2E48E8A7U, 0x408F3FFEF9DB22D0U, 0x40C387FF5C28F5C2U, 0x40F869FF33333333U,
+      0x412E847EFFFFFFFFU, 0x3F1A36E2D51EC34BU, 0x3F50624DC5333A0EU, 0x3F847AE136800892U, 0x3FB9999984200AB7U,
+      0x3FEFFFFFE5280D65U, 0x4023FFFFEF39085FU, 0x4058FFFFEB074A77U, 0x408F3FFFE5C91D14U, 0x40C387FFEF9DB22DU,
+      0x40F869FFEB851EB8U, 0x412E847FE6666666U, 0x416312CFEFFFFFFFU, 0x3F1A36E2E8E94FFCU, 0x3F50624DD191D1FDU,
+      0x3F847AE145F6467DU, 0x3FB999999773D81CU, 0x3FEFFFFFFD50CE23U, 0x4023FFFFFE5280D6U, 0x4058FFFFFDE7210BU,
+      0x408F3FFFFD60E94EU, 0x40C387FFFE5C91D1U, 0x40F869FFFDF3B645U, 0x412E847FFD70A3D7U, 0x416312CFFE666666U,
+      0x4197D783FDFFFFFFU, 0x3F1A36E2EAE3F7A7U, 0x3F50624DD2CE7AC8U, 0x3F847AE14782197BU, 0x3FB9999999629FD9U,
+      0x3FEFFFFFFFBB47D0U, 0x4023FFFFFFD50CE2U, 0x4058FFFFFFCA501AU, 0x408F3FFFFFBCE421U, 0x40C387FFFFD60E94U,
+      0x40F869FFFFCB923AU, 0x412E847FFFBE76C8U, 0x416312CFFFD70A3DU, 0x4197D783FFCCCCCCU, 0x41CDCD64FFBFFFFFU,
+      0x3F1A36E2EB16A205U, 0x3F50624DD2EE2543U, 0x3F847AE147A9AE94U, 0x3FB9999999941A39U, 0x3FEFFFFFFFF920C8U,
+      0x4023FFFFFFFBB47DU, 0x4058FFFFFFFAA19CU, 0x408F3FFFFFF94A03U, 0x40C387FFFFFBCE42U, 0x40F869FFFFFAC1D2U,
+      0x412E847FFFF97247U, 0x416312CFFFFBE76CU, 0x4197D783FFFAE147U, 0x41CDCD64FFF99999U, 0x4202A05F1FFBFFFFU,
+      0x3F1A36E2EB1BB30FU, 0x3F50624DD2F14FE9U, 0x3F847AE147ADA3E3U, 0x3FB9999999990CDCU, 0x3FEFFFFFFFFF5014U,
+      0x4023FFFFFFFF920CU, 0x4058FFFFFFFF768FU, 0x408F3FFFFFFF5433U, 0x40C387FFFFFF94A0U, 0x40F869FFFFFF79C8U,
+      0x412E847FFFFF583AU, 0x416312CFFFFF9724U, 0x4197D783FFFF7CEDU, 0x41CDCD64FFFF5C28U, 0x4202A05F1FFF9999U,
+      0x42374876E7FF7FFFU, 0x3F1A36E2EB1C34C3U, 0x3F50624DD2F1A0FAU, 0x3F847AE147AE0938U, 0x3FB9999999998B86U,
+      0x3FEFFFFFFFFFEE68U, 0x4023FFFFFFFFF501U, 0x4058FFFFFFFFF241U, 0x408F3FFFFFFFEED1U, 0x40C387FFFFFFF543U,
+      0x40F869FFFFFFF294U, 0x412E847FFFFFEF39U, 0x416312CFFFFFF583U, 0x4197D783FFFFF2E4U, 0x41CDCD64FFFFEF9DU,
+      0x4202A05F1FFFF5C2U, 0x42374876E7FFF333U, 0x426D1A94A1FFEFFFU, 0x3F1A36E2EB1C41BBU, 0x3F50624DD2F1A915U,
+      0x3F847AE147AE135AU, 0x3FB9999999999831U, 0x3FEFFFFFFFFFFE3DU, 0x4023FFFFFFFFFEE6U, 0x4058FFFFFFFFFEA0U,
+      0x408F3FFFFFFFFE48U, 0x40C387FFFFFFFEEDU, 0x40F869FFFFFFFEA8U, 0x412E847FFFFFFE52U, 0x416312CFFFFFFEF3U,
+      0x4197D783FFFFFEB0U, 0x41CDCD64FFFFFE5CU, 0x4202A05F1FFFFEF9U, 0x42374876E7FFFEB8U, 0x426D1A94A1FFFE66U,
+      0x42A2309CE53FFEFFU, 0x3F1A36E2EB1C4307U, 0x3F50624DD2F1A9E4U, 0x3F847AE147AE145EU, 0x3FB9999999999975U,
+      0x3FEFFFFFFFFFFFD2U, 0x4023FFFFFFFFFFE3U, 0x4058FFFFFFFFFFDCU, 0x408F3FFFFFFFFFD4U, 0x40C387FFFFFFFFE4U,
+      0x40F869FFFFFFFFDDU, 0x412E847FFFFFFFD5U, 0x416312CFFFFFFFE5U, 0x4197D783FFFFFFDEU, 0x41CDCD64FFFFFFD6U,
+      0x4202A05F1FFFFFE5U, 0x42374876E7FFFFDFU, 0x426D1A94A1FFFFD7U, 0x42A2309CE53FFFE6U, 0x42D6BCC41E8FFFDFU,
+      0x3F1A36E2EB1C4328U, 0x3F50624DD2F1A9F9U, 0x3F847AE147AE1477U, 0x3FB9999999999995U, 0x3FEFFFFFFFFFFFFBU,
+      0x4023FFFFFFFFFFFDU, 0x4058FFFFFFFFFFFCU, 0x408F3FFFFFFFFFFBU, 0x40C387FFFFFFFFFDU, 0x40F869FFFFFFFFFCU,
+      0x412E847FFFFFFFFBU, 0x416312CFFFFFFFFDU, 0x4197D783FFFFFFFCU, 0x41CDCD64FFFFFFFBU, 0x4202A05F1FFFFFFDU,
+      0x42374876E7FFFFFCU, 0x426D1A94A1FFFFFBU, 0x42A2309CE53FFFFDU, 0x42D6BCC41E8FFFFCU, 0x430C6BF52633FFFBU};
 
   static constexpr int Max_P = 309;
 
   static constexpr uint64_t Ordinary_X_table[314] = {
-      0x3F1A36E2EB1C432Cu, 0x3F50624DD2F1A9FBu, 0x3F847AE147AE147Au, 0x3FB9999999999999u, 0x3FEFFFFFFFFFFFFFu,
-      0x4023FFFFFFFFFFFFu, 0x4058FFFFFFFFFFFFu, 0x408F3FFFFFFFFFFFu, 0x40C387FFFFFFFFFFu, 0x40F869FFFFFFFFFFu,
-      0x412E847FFFFFFFFFu, 0x416312CFFFFFFFFFu, 0x4197D783FFFFFFFFu, 0x41CDCD64FFFFFFFFu, 0x4202A05F1FFFFFFFu,
-      0x42374876E7FFFFFFu, 0x426D1A94A1FFFFFFu, 0x42A2309CE53FFFFFu, 0x42D6BCC41E8FFFFFu, 0x430C6BF52633FFFFu,
-      0x4341C37937E07FFFu, 0x4376345785D89FFFu, 0x43ABC16D674EC7FFu, 0x43E158E460913CFFu, 0x4415AF1D78B58C3Fu,
-      0x444B1AE4D6E2EF4Fu, 0x4480F0CF064DD591u, 0x44B52D02C7E14AF6u, 0x44EA784379D99DB4u, 0x45208B2A2C280290u,
-      0x4554ADF4B7320334u, 0x4589D971E4FE8401u, 0x45C027E72F1F1281u, 0x45F431E0FAE6D721u, 0x46293E5939A08CE9u,
-      0x465F8DEF8808B024u, 0x4693B8B5B5056E16u, 0x46C8A6E32246C99Cu, 0x46FED09BEAD87C03u, 0x4733426172C74D82u,
-      0x476812F9CF7920E2u, 0x479E17B84357691Bu, 0x47D2CED32A16A1B1u, 0x48078287F49C4A1Du, 0x483D6329F1C35CA4u,
-      0x48725DFA371A19E6u, 0x48A6F578C4E0A060u, 0x48DCB2D6F618C878u, 0x4911EFC659CF7D4Bu, 0x49466BB7F0435C9Eu,
-      0x497C06A5EC5433C6u, 0x49B18427B3B4A05Bu, 0x49E5E531A0A1C872u, 0x4A1B5E7E08CA3A8Fu, 0x4A511B0EC57E6499u,
-      0x4A8561D276DDFDC0u, 0x4ABABA4714957D30u, 0x4AF0B46C6CDD6E3Eu, 0x4B24E1878814C9CDu, 0x4B5A19E96A19FC40u,
-      0x4B905031E2503DA8u, 0x4BC4643E5AE44D12u, 0x4BF97D4DF19D6057u, 0x4C2FDCA16E04B86Du, 0x4C63E9E4E4C2F344u,
-      0x4C98E45E1DF3B015u, 0x4CCF1D75A5709C1Au, 0x4D03726987666190u, 0x4D384F03E93FF9F4u, 0x4D6E62C4E38FF872u,
-      0x4DA2FDBB0E39FB47u, 0x4DD7BD29D1C87A19u, 0x4E0DAC74463A989Fu, 0x4E428BC8ABE49F63u, 0x4E772EBAD6DDC73Cu,
-      0x4EACFA698C95390Bu, 0x4EE21C81F7DD43A7u, 0x4F16A3A275D49491u, 0x4F4C4C8B1349B9B5u, 0x4F81AFD6EC0E1411u,
-      0x4FB61BCCA7119915u, 0x4FEBA2BFD0D5FF5Bu, 0x502145B7E285BF98u, 0x50559725DB272F7Fu, 0x508AFCEF51F0FB5Eu,
-      0x50C0DE1593369D1Bu, 0x50F5159AF8044462u, 0x512A5B01B605557Au, 0x516078E111C3556Cu, 0x5194971956342AC7u,
-      0x51C9BCDFABC13579u, 0x5200160BCB58C16Cu, 0x52341B8EBE2EF1C7u, 0x526922726DBAAE39u, 0x529F6B0F092959C7u,
-      0x52D3A2E965B9D81Cu, 0x53088BA3BF284E23u, 0x533EAE8CAEF261ACu, 0x53732D17ED577D0Bu, 0x53A7F85DE8AD5C4Eu,
-      0x53DDF67562D8B362u, 0x5412BA095DC7701Du, 0x5447688BB5394C25u, 0x547D42AEA2879F2Eu, 0x54B249AD2594C37Cu,
-      0x54E6DC186EF9F45Cu, 0x551C931E8AB87173u, 0x5551DBF316B346E7u, 0x558652EFDC6018A1u, 0x55BBE7ABD3781ECAu,
-      0x55F170CB642B133Eu, 0x5625CCFE3D35D80Eu, 0x565B403DCC834E11u, 0x569108269FD210CBu, 0x56C54A3047C694FDu,
-      0x56FA9CBC59B83A3Du, 0x5730A1F5B8132466u, 0x5764CA732617ED7Fu, 0x5799FD0FEF9DE8DFu, 0x57D03E29F5C2B18Bu,
-      0x58044DB473335DEEu, 0x583961219000356Au, 0x586FB969F40042C5u, 0x58A3D3E2388029BBu, 0x58D8C8DAC6A0342Au,
-      0x590EFB1178484134u, 0x59435CEAEB2D28C0u, 0x59783425A5F872F1u, 0x59AE412F0F768FADu, 0x59E2E8BD69AA19CCu,
-      0x5A17A2ECC414A03Fu, 0x5A4D8BA7F519C84Fu, 0x5A827748F9301D31u, 0x5AB7151B377C247Eu, 0x5AECDA62055B2D9Du,
-      0x5B22087D4358FC82u, 0x5B568A9C942F3BA3u, 0x5B8C2D43B93B0A8Bu, 0x5BC19C4A53C4E697u, 0x5BF6035CE8B6203Du,
-      0x5C2B843422E3A84Cu, 0x5C6132A095CE492Fu, 0x5C957F48BB41DB7Bu, 0x5CCADF1AEA12525Au, 0x5D00CB70D24B7378u,
-      0x5D34FE4D06DE5056u, 0x5D6A3DE04895E46Cu, 0x5DA066AC2D5DAEC3u, 0x5DD4805738B51A74u, 0x5E09A06D06E26112u,
-      0x5E400444244D7CABu, 0x5E7405552D60DBD6u, 0x5EA906AA78B912CBu, 0x5EDF485516E7577Eu, 0x5F138D352E5096AFu,
-      0x5F48708279E4BC5Au, 0x5F7E8CA3185DEB71u, 0x5FB317E5EF3AB327u, 0x5FE7DDDF6B095FF0u, 0x601DD55745CBB7ECu,
-      0x6052A5568B9F52F4u, 0x60874EAC2E8727B1u, 0x60BD22573A28F19Du, 0x60F2357684599702u, 0x6126C2D4256FFCC2u,
-      0x615C73892ECBFBF3u, 0x6191C835BD3F7D78u, 0x61C63A432C8F5CD6u, 0x61FBC8D3F7B3340Bu, 0x62315D847AD00087u,
-      0x6265B4E5998400A9u, 0x629B221EFFE500D3u, 0x62D0F5535FEF2084u, 0x630532A837EAE8A5u, 0x633A7F5245E5A2CEu,
-      0x63708F936BAF85C1u, 0x63A4B378469B6731u, 0x63D9E056584240FDu, 0x64102C35F729689Eu, 0x6444374374F3C2C6u,
-      0x647945145230B377u, 0x64AF965966BCE055u, 0x64E3BDF7E0360C35u, 0x6518AD75D8438F43u, 0x654ED8D34E547313u,
-      0x6583478410F4C7ECu, 0x65B819651531F9E7u, 0x65EE1FBE5A7E7861u, 0x6622D3D6F88F0B3Cu, 0x665788CCB6B2CE0Cu,
-      0x668D6AFFE45F818Fu, 0x66C262DFEEBBB0F9u, 0x66F6FB97EA6A9D37u, 0x672CBA7DE5054485u, 0x6761F48EAF234AD3u,
-      0x679671B25AEC1D88u, 0x67CC0E1EF1A724EAu, 0x680188D357087712u, 0x6835EB082CCA94D7u, 0x686B65CA37FD3A0Du,
-      0x68A11F9E62FE4448u, 0x68D56785FBBDD55Au, 0x690AC1677AAD4AB0u, 0x6940B8E0ACAC4EAEu, 0x6974E718D7D7625Au,
-      0x69AA20DF0DCD3AF0u, 0x69E0548B68A044D6u, 0x6A1469AE42C8560Cu, 0x6A498419D37A6B8Fu, 0x6A7FE52048590672u,
-      0x6AB3EF342D37A407u, 0x6AE8EB0138858D09u, 0x6B1F25C186A6F04Cu, 0x6B537798F428562Fu, 0x6B88557F31326BBBu,
-      0x6BBE6ADEFD7F06AAu, 0x6BF302CB5E6F642Au, 0x6C27C37E360B3D35u, 0x6C5DB45DC38E0C82u, 0x6C9290BA9A38C7D1u,
-      0x6CC734E940C6F9C5u, 0x6CFD022390F8B837u, 0x6D3221563A9B7322u, 0x6D66A9ABC9424FEBu, 0x6D9C5416BB92E3E6u,
-      0x6DD1B48E353BCE6Fu, 0x6E0621B1C28AC20Bu, 0x6E3BAA1E332D728Eu, 0x6E714A52DFFC6799u, 0x6EA59CE797FB817Fu,
-      0x6EDB04217DFA61DFu, 0x6F10E294EEBC7D2Bu, 0x6F451B3A2A6B9C76u, 0x6F7A6208B5068394u, 0x6FB07D457124123Cu,
-      0x6FE49C96CD6D16CBu, 0x7019C3BC80C85C7Eu, 0x70501A55D07D39CFu, 0x708420EB449C8842u, 0x70B9292615C3AA53u,
-      0x70EF736F9B3494E8u, 0x7123A825C100DD11u, 0x7158922F31411455u, 0x718EB6BAFD91596Bu, 0x71C33234DE7AD7E2u,
-      0x71F7FEC216198DDBu, 0x722DFE729B9FF152u, 0x7262BF07A143F6D3u, 0x72976EC98994F488u, 0x72CD4A7BEBFA31AAu,
-      0x73024E8D737C5F0Au, 0x7336E230D05B76CDu, 0x736C9ABD04725480u, 0x73A1E0B622C774D0u, 0x73D658E3AB795204u,
-      0x740BEF1C9657A685u, 0x74417571DDF6C813u, 0x7475D2CE55747A18u, 0x74AB4781EAD1989Eu, 0x74E10CB132C2FF63u,
-      0x75154FDD7F73BF3Bu, 0x754AA3D4DF50AF0Au, 0x7580A6650B926D66u, 0x75B4CFFE4E7708C0u, 0x75EA03FDE214CAF0u,
-      0x7620427EAD4CFED6u, 0x7654531E58A03E8Bu, 0x768967E5EEC84E2Eu, 0x76BFC1DF6A7A61BAu, 0x76F3D92BA28C7D14u,
-      0x7728CF768B2F9C59u, 0x775F03542DFB8370u, 0x779362149CBD3226u, 0x77C83A99C3EC7EAFu, 0x77FE494034E79E5Bu,
-      0x7832EDC82110C2F9u, 0x7867A93A2954F3B7u, 0x789D9388B3AA30A5u, 0x78D27C35704A5E67u, 0x79071B42CC5CF601u,
-      0x793CE2137F743381u, 0x79720D4C2FA8A030u, 0x79A6909F3B92C83Du, 0x79DC34C70A777A4Cu, 0x7A11A0FC668AAC6Fu,
-      0x7A46093B802D578Bu, 0x7A7B8B8A6038AD6Eu, 0x7AB137367C236C65u, 0x7AE585041B2C477Eu, 0x7B1AE64521F7595Eu,
-      0x7B50CFEB353A97DAu, 0x7B8503E602893DD1u, 0x7BBA44DF832B8D45u, 0x7BF06B0BB1FB384Bu, 0x7C2485CE9E7A065Eu,
-      0x7C59A742461887F6u, 0x7C9008896BCF54F9u, 0x7CC40AABC6C32A38u, 0x7CF90D56B873F4C6u, 0x7D2F50AC6690F1F8u,
-      0x7D63926BC01A973Bu, 0x7D987706B0213D09u, 0x7DCE94C85C298C4Cu, 0x7E031CFD3999F7AFu, 0x7E37E43C8800759Bu,
-      0x7E6DDD4BAA009302u, 0x7EA2AA4F4A405BE1u, 0x7ED754E31CD072D9u, 0x7F0D2A1BE4048F90u, 0x7F423A516E82D9BAu,
-      0x7F76C8E5CA239028u, 0x7FAC7B1F3CAC7433u, 0x7FE1CCF385EBC89Fu, 0x7FEFFFFFFFFFFFFFu};
+      0x3F1A36E2EB1C432CU, 0x3F50624DD2F1A9FBU, 0x3F847AE147AE147AU, 0x3FB9999999999999U, 0x3FEFFFFFFFFFFFFFU,
+      0x4023FFFFFFFFFFFFU, 0x4058FFFFFFFFFFFFU, 0x408F3FFFFFFFFFFFU, 0x40C387FFFFFFFFFFU, 0x40F869FFFFFFFFFFU,
+      0x412E847FFFFFFFFFU, 0x416312CFFFFFFFFFU, 0x4197D783FFFFFFFFU, 0x41CDCD64FFFFFFFFU, 0x4202A05F1FFFFFFFU,
+      0x42374876E7FFFFFFU, 0x426D1A94A1FFFFFFU, 0x42A2309CE53FFFFFU, 0x42D6BCC41E8FFFFFU, 0x430C6BF52633FFFFU,
+      0x4341C37937E07FFFU, 0x4376345785D89FFFU, 0x43ABC16D674EC7FFU, 0x43E158E460913CFFU, 0x4415AF1D78B58C3FU,
+      0x444B1AE4D6E2EF4FU, 0x4480F0CF064DD591U, 0x44B52D02C7E14AF6U, 0x44EA784379D99DB4U, 0x45208B2A2C280290U,
+      0x4554ADF4B7320334U, 0x4589D971E4FE8401U, 0x45C027E72F1F1281U, 0x45F431E0FAE6D721U, 0x46293E5939A08CE9U,
+      0x465F8DEF8808B024U, 0x4693B8B5B5056E16U, 0x46C8A6E32246C99CU, 0x46FED09BEAD87C03U, 0x4733426172C74D82U,
+      0x476812F9CF7920E2U, 0x479E17B84357691BU, 0x47D2CED32A16A1B1U, 0x48078287F49C4A1DU, 0x483D6329F1C35CA4U,
+      0x48725DFA371A19E6U, 0x48A6F578C4E0A060U, 0x48DCB2D6F618C878U, 0x4911EFC659CF7D4BU, 0x49466BB7F0435C9EU,
+      0x497C06A5EC5433C6U, 0x49B18427B3B4A05BU, 0x49E5E531A0A1C872U, 0x4A1B5E7E08CA3A8FU, 0x4A511B0EC57E6499U,
+      0x4A8561D276DDFDC0U, 0x4ABABA4714957D30U, 0x4AF0B46C6CDD6E3EU, 0x4B24E1878814C9CDU, 0x4B5A19E96A19FC40U,
+      0x4B905031E2503DA8U, 0x4BC4643E5AE44D12U, 0x4BF97D4DF19D6057U, 0x4C2FDCA16E04B86DU, 0x4C63E9E4E4C2F344U,
+      0x4C98E45E1DF3B015U, 0x4CCF1D75A5709C1AU, 0x4D03726987666190U, 0x4D384F03E93FF9F4U, 0x4D6E62C4E38FF872U,
+      0x4DA2FDBB0E39FB47U, 0x4DD7BD29D1C87A19U, 0x4E0DAC74463A989FU, 0x4E428BC8ABE49F63U, 0x4E772EBAD6DDC73CU,
+      0x4EACFA698C95390BU, 0x4EE21C81F7DD43A7U, 0x4F16A3A275D49491U, 0x4F4C4C8B1349B9B5U, 0x4F81AFD6EC0E1411U,
+      0x4FB61BCCA7119915U, 0x4FEBA2BFD0D5FF5BU, 0x502145B7E285BF98U, 0x50559725DB272F7FU, 0x508AFCEF51F0FB5EU,
+      0x50C0DE1593369D1BU, 0x50F5159AF8044462U, 0x512A5B01B605557AU, 0x516078E111C3556CU, 0x5194971956342AC7U,
+      0x51C9BCDFABC13579U, 0x5200160BCB58C16CU, 0x52341B8EBE2EF1C7U, 0x526922726DBAAE39U, 0x529F6B0F092959C7U,
+      0x52D3A2E965B9D81CU, 0x53088BA3BF284E23U, 0x533EAE8CAEF261ACU, 0x53732D17ED577D0BU, 0x53A7F85DE8AD5C4EU,
+      0x53DDF67562D8B362U, 0x5412BA095DC7701DU, 0x5447688BB5394C25U, 0x547D42AEA2879F2EU, 0x54B249AD2594C37CU,
+      0x54E6DC186EF9F45CU, 0x551C931E8AB87173U, 0x5551DBF316B346E7U, 0x558652EFDC6018A1U, 0x55BBE7ABD3781ECAU,
+      0x55F170CB642B133EU, 0x5625CCFE3D35D80EU, 0x565B403DCC834E11U, 0x569108269FD210CBU, 0x56C54A3047C694FDU,
+      0x56FA9CBC59B83A3DU, 0x5730A1F5B8132466U, 0x5764CA732617ED7FU, 0x5799FD0FEF9DE8DFU, 0x57D03E29F5C2B18BU,
+      0x58044DB473335DEEU, 0x583961219000356AU, 0x586FB969F40042C5U, 0x58A3D3E2388029BBU, 0x58D8C8DAC6A0342AU,
+      0x590EFB1178484134U, 0x59435CEAEB2D28C0U, 0x59783425A5F872F1U, 0x59AE412F0F768FADU, 0x59E2E8BD69AA19CCU,
+      0x5A17A2ECC414A03FU, 0x5A4D8BA7F519C84FU, 0x5A827748F9301D31U, 0x5AB7151B377C247EU, 0x5AECDA62055B2D9DU,
+      0x5B22087D4358FC82U, 0x5B568A9C942F3BA3U, 0x5B8C2D43B93B0A8BU, 0x5BC19C4A53C4E697U, 0x5BF6035CE8B6203DU,
+      0x5C2B843422E3A84CU, 0x5C6132A095CE492FU, 0x5C957F48BB41DB7BU, 0x5CCADF1AEA12525AU, 0x5D00CB70D24B7378U,
+      0x5D34FE4D06DE5056U, 0x5D6A3DE04895E46CU, 0x5DA066AC2D5DAEC3U, 0x5DD4805738B51A74U, 0x5E09A06D06E26112U,
+      0x5E400444244D7CABU, 0x5E7405552D60DBD6U, 0x5EA906AA78B912CBU, 0x5EDF485516E7577EU, 0x5F138D352E5096AFU,
+      0x5F48708279E4BC5AU, 0x5F7E8CA3185DEB71U, 0x5FB317E5EF3AB327U, 0x5FE7DDDF6B095FF0U, 0x601DD55745CBB7ECU,
+      0x6052A5568B9F52F4U, 0x60874EAC2E8727B1U, 0x60BD22573A28F19DU, 0x60F2357684599702U, 0x6126C2D4256FFCC2U,
+      0x615C73892ECBFBF3U, 0x6191C835BD3F7D78U, 0x61C63A432C8F5CD6U, 0x61FBC8D3F7B3340BU, 0x62315D847AD00087U,
+      0x6265B4E5998400A9U, 0x629B221EFFE500D3U, 0x62D0F5535FEF2084U, 0x630532A837EAE8A5U, 0x633A7F5245E5A2CEU,
+      0x63708F936BAF85C1U, 0x63A4B378469B6731U, 0x63D9E056584240FDU, 0x64102C35F729689EU, 0x6444374374F3C2C6U,
+      0x647945145230B377U, 0x64AF965966BCE055U, 0x64E3BDF7E0360C35U, 0x6518AD75D8438F43U, 0x654ED8D34E547313U,
+      0x6583478410F4C7ECU, 0x65B819651531F9E7U, 0x65EE1FBE5A7E7861U, 0x6622D3D6F88F0B3CU, 0x665788CCB6B2CE0CU,
+      0x668D6AFFE45F818FU, 0x66C262DFEEBBB0F9U, 0x66F6FB97EA6A9D37U, 0x672CBA7DE5054485U, 0x6761F48EAF234AD3U,
+      0x679671B25AEC1D88U, 0x67CC0E1EF1A724EAU, 0x680188D357087712U, 0x6835EB082CCA94D7U, 0x686B65CA37FD3A0DU,
+      0x68A11F9E62FE4448U, 0x68D56785FBBDD55AU, 0x690AC1677AAD4AB0U, 0x6940B8E0ACAC4EAEU, 0x6974E718D7D7625AU,
+      0x69AA20DF0DCD3AF0U, 0x69E0548B68A044D6U, 0x6A1469AE42C8560CU, 0x6A498419D37A6B8FU, 0x6A7FE52048590672U,
+      0x6AB3EF342D37A407U, 0x6AE8EB0138858D09U, 0x6B1F25C186A6F04CU, 0x6B537798F428562FU, 0x6B88557F31326BBBU,
+      0x6BBE6ADEFD7F06AAU, 0x6BF302CB5E6F642AU, 0x6C27C37E360B3D35U, 0x6C5DB45DC38E0C82U, 0x6C9290BA9A38C7D1U,
+      0x6CC734E940C6F9C5U, 0x6CFD022390F8B837U, 0x6D3221563A9B7322U, 0x6D66A9ABC9424FEBU, 0x6D9C5416BB92E3E6U,
+      0x6DD1B48E353BCE6FU, 0x6E0621B1C28AC20BU, 0x6E3BAA1E332D728EU, 0x6E714A52DFFC6799U, 0x6EA59CE797FB817FU,
+      0x6EDB04217DFA61DFU, 0x6F10E294EEBC7D2BU, 0x6F451B3A2A6B9C76U, 0x6F7A6208B5068394U, 0x6FB07D457124123CU,
+      0x6FE49C96CD6D16CBU, 0x7019C3BC80C85C7EU, 0x70501A55D07D39CFU, 0x708420EB449C8842U, 0x70B9292615C3AA53U,
+      0x70EF736F9B3494E8U, 0x7123A825C100DD11U, 0x7158922F31411455U, 0x718EB6BAFD91596BU, 0x71C33234DE7AD7E2U,
+      0x71F7FEC216198DDBU, 0x722DFE729B9FF152U, 0x7262BF07A143F6D3U, 0x72976EC98994F488U, 0x72CD4A7BEBFA31AAU,
+      0x73024E8D737C5F0AU, 0x7336E230D05B76CDU, 0x736C9ABD04725480U, 0x73A1E0B622C774D0U, 0x73D658E3AB795204U,
+      0x740BEF1C9657A685U, 0x74417571DDF6C813U, 0x7475D2CE55747A18U, 0x74AB4781EAD1989EU, 0x74E10CB132C2FF63U,
+      0x75154FDD7F73BF3BU, 0x754AA3D4DF50AF0AU, 0x7580A6650B926D66U, 0x75B4CFFE4E7708C0U, 0x75EA03FDE214CAF0U,
+      0x7620427EAD4CFED6U, 0x7654531E58A03E8BU, 0x768967E5EEC84E2EU, 0x76BFC1DF6A7A61BAU, 0x76F3D92BA28C7D14U,
+      0x7728CF768B2F9C59U, 0x775F03542DFB8370U, 0x779362149CBD3226U, 0x77C83A99C3EC7EAFU, 0x77FE494034E79E5BU,
+      0x7832EDC82110C2F9U, 0x7867A93A2954F3B7U, 0x789D9388B3AA30A5U, 0x78D27C35704A5E67U, 0x79071B42CC5CF601U,
+      0x793CE2137F743381U, 0x79720D4C2FA8A030U, 0x79A6909F3B92C83DU, 0x79DC34C70A777A4CU, 0x7A11A0FC668AAC6FU,
+      0x7A46093B802D578BU, 0x7A7B8B8A6038AD6EU, 0x7AB137367C236C65U, 0x7AE585041B2C477EU, 0x7B1AE64521F7595EU,
+      0x7B50CFEB353A97DAU, 0x7B8503E602893DD1U, 0x7BBA44DF832B8D45U, 0x7BF06B0BB1FB384BU, 0x7C2485CE9E7A065EU,
+      0x7C59A742461887F6U, 0x7C9008896BCF54F9U, 0x7CC40AABC6C32A38U, 0x7CF90D56B873F4C6U, 0x7D2F50AC6690F1F8U,
+      0x7D63926BC01A973BU, 0x7D987706B0213D09U, 0x7DCE94C85C298C4CU, 0x7E031CFD3999F7AFU, 0x7E37E43C8800759BU,
+      0x7E6DDD4BAA009302U, 0x7EA2AA4F4A405BE1U, 0x7ED754E31CD072D9U, 0x7F0D2A1BE4048F90U, 0x7F423A516E82D9BAU,
+      0x7F76C8E5CA239028U, 0x7FAC7B1F3CAC7433U, 0x7FE1CCF385EBC89FU, 0x7FEFFFFFFFFFFFFFU};
 };
 
 template <class Floating>
@@ -2295,7 +2294,7 @@ template <class Floating>
   using Traits = Floating_type_traits<Floating>;
   using Uint_type = typename Traits::Uint_type;
 
-  const Uint_type Uint_value = std::bit_cast<Uint_type>(value);
+  const auto Uint_value = std::bit_cast<Uint_type>(value);
 
   if (Uint_value == 0) { // zero detected; write "0" and return; precision is irrelevant due to zero-trimming
     if (first == last) {
@@ -2358,7 +2357,7 @@ template <class Floating>
       }
     }
 
-    return std::find_if(Table_begin, Table_end, [=](const Uint_type _Elem) { return Uint_value <= _Elem; });
+    return std::find_if(Table_begin, Table_end, [=](const Uint_type Elem) { return Uint_value <= Elem; });
   }();
 
   const ptrdiff_t Table_index = Table_lower_bound - Table_begin;
@@ -2384,7 +2383,7 @@ template <class Floating>
   // 0x1.fffffffffffffp+1023 is 309 digits, plus 1 for '.', plus Max_fixed_precision for '0' digits, equals 376.
 
   wchar_t Buffer[Max_output_length];
-  const wchar_t *const _Significand_first = Buffer; // e.g. "1.234"
+  const wchar_t *const Significand_first = Buffer; // e.g. "1.234"
   const wchar_t *Significand_last = nullptr;
   const wchar_t *Exponent_first = nullptr; // e.g. "e-05"
   const wchar_t *Exponent_last = nullptr;
@@ -2420,11 +2419,11 @@ template <class Floating>
   }
 
   // Copy the significand to the output range.
-  const ptrdiff_t Significand_distance = Significand_last - _Significand_first;
+  const ptrdiff_t Significand_distance = Significand_last - Significand_first;
   if (last - first < Significand_distance) {
     return {last, errc::value_too_large};
   }
-  memcpy(first, _Significand_first, static_cast<size_t>(Significand_distance) * sizeof(wchar_t));
+  memcpy(first, Significand_first, static_cast<size_t>(Significand_distance) * sizeof(wchar_t));
   first += Significand_distance;
 
   // Copy the exponent to the output range.
@@ -2457,7 +2456,7 @@ template <Floating_to_chars_overload Overload, class Floating>
   using Traits = Floating_type_traits<Floating>;
   using Uint_type = typename Traits::Uint_type;
 
-  Uint_type Uint_value = std::bit_cast<Uint_type>(value);
+  auto Uint_value = std::bit_cast<Uint_type>(value);
 
   const bool Was_negative = (Uint_value & Traits::Shifted_sign_mask) != 0;
 

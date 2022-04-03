@@ -76,23 +76,23 @@ wchar_t *__u32toa(uint32_t value, wchar_t *buffer) noexcept {
 
 wchar_t *__u64toa(uint64_t value, wchar_t *buffer) noexcept {
   if (value < 100000000) {
-    uint32_t v = static_cast<uint32_t>(value);
+    auto v = static_cast<uint32_t>(value);
     buffer = append8_no_zeros(buffer, v);
   } else if (value < 10000000000000000) {
-    const uint32_t v0 = static_cast<uint32_t>(value / 100000000);
-    const uint32_t v1 = static_cast<uint32_t>(value % 100000000);
+    const auto v0 = static_cast<uint32_t>(value / 100000000);
+    const auto v1 = static_cast<uint32_t>(value % 100000000);
 
     buffer = append8_no_zeros(buffer, v0);
     buffer = append4(buffer, v1 / 10000);
     buffer = append4(buffer, v1 % 10000);
   } else {
-    const uint32_t a = static_cast<uint32_t>(value / 10000000000000000); // 1 to 1844
+    const auto a = static_cast<uint32_t>(value / 10000000000000000); // 1 to 1844
     value %= 10000000000000000;
 
     buffer = append4_no_zeros(buffer, a);
 
-    const uint32_t v0 = static_cast<uint32_t>(value / 100000000);
-    const uint32_t v1 = static_cast<uint32_t>(value % 100000000);
+    const auto v0 = static_cast<uint32_t>(value / 100000000);
+    const auto v1 = static_cast<uint32_t>(value % 100000000);
     buffer = append4(buffer, v0 / 10000);
     buffer = append4(buffer, v0 % 10000);
     buffer = append4(buffer, v1 / 10000);

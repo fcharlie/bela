@@ -62,7 +62,7 @@ $checksText = [string]::Join(",", $checks)
 
 $inputArgs = $(
     "-checks=$checksText",
-    #"--fix",
+    "--fix",
     "--",
     "-m64",
     "-x", 

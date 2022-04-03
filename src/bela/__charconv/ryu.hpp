@@ -2343,8 +2343,8 @@ template <class _CharT>
 // clang-format on
 // __f2s_buffered_n namespace escape ?
 template <class Floating>
-[[nodiscard]] to_chars_result Floating_to_chars_ryu(wchar_t *const first, wchar_t *const last,
-                                                     const Floating value, const chars_format fmt) noexcept {
+[[nodiscard]] to_chars_result Floating_to_chars_ryu(wchar_t *const first, wchar_t *const last, const Floating value,
+                                                    const chars_format fmt) noexcept {
   if constexpr (std::is_same_v<Floating, float>) {
     return _Convert_to_chars_result(bela::__f2s_buffered_n(first, last, value, fmt));
   } else {
@@ -2354,7 +2354,7 @@ template <class Floating>
 
 template <class Floating>
 [[nodiscard]] to_chars_result Floating_to_chars_scientific_precision(wchar_t *const first, wchar_t *const last,
-                                                                      const Floating value, int precision) noexcept {
+                                                                     const Floating value, int precision) noexcept {
 
   // C11 7.21.6.1 "The fprintf function"/5:
   // "A negative precision argument is taken as if the precision were omitted."
@@ -2375,7 +2375,7 @@ template <class Floating>
 
 template <class Floating>
 [[nodiscard]] to_chars_result Floating_to_chars_fixed_precision(wchar_t *const first, wchar_t *const last,
-                                                                 const Floating value, int precision) noexcept {
+                                                                const Floating value, int precision) noexcept {
 
   // C11 7.21.6.1 "The fprintf function"/5:
   // "A negative precision argument is taken as if the precision were omitted."

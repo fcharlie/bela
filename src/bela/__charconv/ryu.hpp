@@ -1212,12 +1212,12 @@ template <class _CharT>
   uint32_t _Maxidx = ((24 + static_cast<uint32_t>(Exponent2) + 31) / 32) - 1;
   assert(_Maxidx < data_size);
 
-  const uint32_t _Bit_shift = static_cast<uint32_t>(Exponent2) % 32;
-  if (_Bit_shift <= 8) { // Mantissa2's 24 bits don't cross an element boundary
-    data[_Maxidx] = Mantissa2 << _Bit_shift;
+  const uint32_t Bit_shift = static_cast<uint32_t>(Exponent2) % 32;
+  if (Bit_shift <= 8) { // Mantissa2's 24 bits don't cross an element boundary
+    data[_Maxidx] = Mantissa2 << Bit_shift;
   } else { // Mantissa2's 24 bits cross an element boundary
-    data[_Maxidx - 1] = Mantissa2 << _Bit_shift;
-    data[_Maxidx] = Mantissa2 >> (32 - _Bit_shift);
+    data[_Maxidx - 1] = Mantissa2 << Bit_shift;
+    data[_Maxidx] = Mantissa2 >> (32 - Bit_shift);
   }
 
   // If Ryu hasn't determined the total output length, we need to buffer the digits generated from right to left
@@ -1248,14 +1248,14 @@ template <class _CharT>
         // Now, _Remainder is at most (10^9 - 1) * 2^32 + 2^32 - 1, simplified to 10^9 * 2^32 - 1.
         _Remainder = (_Remainder << 32) | data[_Idx];
 
-        // floor((10^9 * 2^32 - 1) / 10^9) == 2^32 - 1, so uint32_t _Quotient is lossless.
-        const uint32_t _Quotient = static_cast<uint32_t>(__div1e9(_Remainder));
+        // floor((10^9 * 2^32 - 1) / 10^9) == 2^32 - 1, so uint32_t Quotient is lossless.
+        const uint32_t Quotient = static_cast<uint32_t>(__div1e9(_Remainder));
 
         // _Remainder is at most 10^9 - 1 again.
         // For uint32_t truncation, see the __mod1e9() comment in d2s_intrinsics.h.
-        _Remainder = static_cast<uint32_t>(_Remainder) - 1000000000u * _Quotient;
+        _Remainder = static_cast<uint32_t>(_Remainder) - 1000000000u * Quotient;
 
-        data[_Idx] = _Quotient;
+        data[_Idx] = Quotient;
       } while (_Idx != 0);
 
       // Store a 0-filled 9-digit block.

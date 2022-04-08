@@ -143,6 +143,20 @@ void print() {
   printf("printf long hex: %08X - %08X\n", (std::numeric_limits<long>::min)(), (std::numeric_limits<long>::max)());
 }
 
+constexpr bool BytesEqual(const void *b1, const void *b2, size_t size) {
+  // if (std::is_constant_evaluated()) {
+  //   auto a = reinterpret_cast<const uint8_t *>(b1);
+  //   auto b = reinterpret_cast<const uint8_t *>(b2);
+  //   for (size_t i = 0; i < size; i++) {
+  //     if (a[i] != b[i]) {
+  //       return false;
+  //     }
+  //   }
+  //   return true;
+  // }
+  return __builtin_memcmp(b1, b2, size) == 0;
+}
+
 int wmain(int argc, wchar_t **argv) {
   string_print();
   string_view_print();
@@ -178,5 +192,8 @@ int wmain(int argc, wchar_t **argv) {
   auto version = bela::windows::version();
   bela::FPrintF(stderr, L"%d.%d.%d %d.%d\n", version.major, version.minor, version.build, version.service_pack_major,
                 version.service_pack_minor);
+  constexpr auto a = u8"abc";
+  constexpr auto b = "abc";
+  constexpr auto e = BytesEqual(a, b, 3);
   return 0;
 }

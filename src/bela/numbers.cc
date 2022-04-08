@@ -43,7 +43,7 @@
 #include <bit> //C++20
 #include <bela/ascii.hpp>
 #include <bela/numbers.hpp>
-#include <bela/memutil.hpp>
+#include <bela/strings.hpp>
 #include <bela/match.hpp>
 
 namespace bela {
@@ -62,7 +62,7 @@ inline void PutTwoDigits(size_t i, wchar_t *buf) {
       {'8', '1'}, {'8', '2'}, {'8', '3'}, {'8', '4'}, {'8', '5'}, {'8', '6'}, {'8', '7'}, {'8', '8'}, {'8', '9'},
       {'9', '0'}, {'9', '1'}, {'9', '2'}, {'9', '3'}, {'9', '4'}, {'9', '5'}, {'9', '6'}, {'9', '7'}, {'9', '8'},
       {'9', '9'}};
-  strings_internal::memcopy(buf, two_ASCII_digits[i], 2);
+  StandardCopy(buf, two_ASCII_digits[i], 2);
 }
 
 inline void PutTwoDigits(size_t i, char *buf) {
@@ -161,7 +161,7 @@ wchar_t *FastIntToBuffer(uint32_t i, wchar_t *buffer) {
     if (i >= 10) {
       goto lt100;
     }
-    strings_internal::memcopy(buffer, one_ASCII_final_digits[i], 2);
+    StandardCopy(buffer, one_ASCII_final_digits[i], 2);
     return buffer + 1;
   }
   if (i < 10000) { //    10,000
@@ -249,7 +249,7 @@ wchar_t *FastIntToBuffer(uint64_t i, wchar_t *buffer) {
   u32 -= digits * 10;
   PutTwoDigits(digits, buffer);
   buffer += 2;
-  strings_internal::memcopy(buffer, one_ASCII_final_digits[u32], 2);
+  StandardCopy(buffer, one_ASCII_final_digits[u32], 2);
   return buffer + 1;
 }
 
@@ -857,7 +857,7 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
                          // buffer passed in.
 
   if (std::isnan(d)) {
-    strings_internal::memcopy(out, L"nan\0", 4); // NOLINT(runtime/printf)
+    StandardCopy(out, L"nan\0", 4); // NOLINT(runtime/printf)
     return 3;
   }
   if (d == 0) { // +0 and -0 are handled here
@@ -873,7 +873,7 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
     d = -d;
   }
   if (d > (std::numeric_limits<double>::max)()) {
-    strings_internal::memcopy(out, L"inf\0", 4); // NOLINT(runtime/printf)
+    StandardCopy(out, L"inf\0", 4); // NOLINT(runtime/printf)
     return out + 3 - buffer;
   }
 
@@ -884,11 +884,11 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
   out[1] = L'.';
   switch (exp) {
   case 5:
-    strings_internal::memcopy(out, &digits[0], 6), out += 6;
+    StandardCopy(out, &digits[0], 6), out += 6;
     *out = 0;
     return out - buffer;
   case 4:
-    strings_internal::memcopy(out, &digits[0], 5), out += 5;
+    StandardCopy(out, &digits[0], 5), out += 5;
     if (digits[5] != '0') {
       *out++ = '.';
       *out++ = digits[5];
@@ -896,7 +896,7 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
     *out = 0;
     return out - buffer;
   case 3:
-    strings_internal::memcopy(out, &digits[0], 4), out += 4;
+    StandardCopy(out, &digits[0], 4), out += 4;
     if ((digits[5] | digits[4]) != '0') {
       *out++ = '.';
       *out++ = digits[4];
@@ -907,9 +907,9 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
     *out = 0;
     return out - buffer;
   case 2:
-    strings_internal::memcopy(out, &digits[0], 3), out += 3;
+    StandardCopy(out, &digits[0], 3), out += 3;
     *out++ = '.';
-    strings_internal::memcopy(out, &digits[3], 3);
+    StandardCopy(out, &digits[3], 3);
     out += 3;
     while (out[-1] == '0') {
       --out;
@@ -920,9 +920,9 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
     *out = 0;
     return out - buffer;
   case 1:
-    strings_internal::memcopy(out, &digits[0], 2), out += 2;
+    StandardCopy(out, &digits[0], 2), out += 2;
     *out++ = '.';
-    strings_internal::memcopy(out, &digits[2], 4);
+    StandardCopy(out, &digits[2], 4);
     out += 4;
     while (out[-1] == '0') {
       --out;
@@ -933,9 +933,9 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
     *out = 0;
     return out - buffer;
   case 0:
-    strings_internal::memcopy(out, &digits[0], 1), out += 1;
+    StandardCopy(out, &digits[0], 1), out += 1;
     *out++ = '.';
-    strings_internal::memcopy(out, &digits[1], 5);
+    StandardCopy(out, &digits[1], 5);
     out += 5;
     while (out[-1] == '0') {
       --out;
@@ -959,7 +959,7 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
     [[fallthrough]];
   case -1:
     out += 2;
-    strings_internal::memcopy(out, &digits[0], 6);
+    StandardCopy(out, &digits[0], 6);
     out += 6;
     while (out[-1] == '0') {
       --out;
@@ -969,7 +969,7 @@ size_t SixDigitsToBuffer(double d, wchar_t *const buffer) {
   }
   out[0] = digits[0];
   out += 2;
-  strings_internal::memcopy(out, &digits[1], 5), out += 5;
+  StandardCopy(out, &digits[1], 5), out += 5;
   while (out[-1] == '0') {
     --out;
   }

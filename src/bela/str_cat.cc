@@ -31,7 +31,7 @@
 // limitations under the License.
 // ---------------------------------------------------------------------------
 #include <cassert>
-#include <bela/memutil.hpp>
+#include <bela/strings.hpp>
 #include <bela/str_cat.hpp>
 
 namespace bela {
@@ -104,7 +104,7 @@ static wchar_t *Append(wchar_t *out, const AlphaNum &x) {
   // memcpy is allowed to overwrite arbitrary memory, so doing this after the
   // call would force an extra fetch of x.size().
   wchar_t *after = out + x.size();
-  strings_internal::memcopy(out, x.data(), x.size());
+  StandardCopy(out, x.data(), x.size());
   return after;
 }
 
@@ -159,7 +159,7 @@ std::wstring CatPieces(std::initializer_list<std::wstring_view> pieces) {
   wchar_t *out = begin;
   for (const std::wstring_view piece : pieces) {
     const size_t this_size = piece.size();
-    strings_internal::memcopy(out, piece.data(), this_size);
+    StandardCopy(out, piece.data(), this_size);
     out += this_size;
   }
   assert(out == begin + result.size());
@@ -186,7 +186,7 @@ void AppendPieces(std::wstring *dest, std::initializer_list<std::wstring_view> p
   wchar_t *out = begin + old_size;
   for (const std::wstring_view piece : pieces) {
     const size_t this_size = piece.size();
-    strings_internal::memcopy(out, piece.data(), this_size);
+    StandardCopy(out, piece.data(), this_size);
     out += this_size;
   }
   assert(out == begin + dest->size());

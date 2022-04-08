@@ -10,7 +10,6 @@ add_library(
   fnmatch.cc
   int128.cc
   match.cc
-  memutil.cc
   numbers.cc
   str_split.cc
   str_split_narrow.cc

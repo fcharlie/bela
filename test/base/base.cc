@@ -2,8 +2,10 @@
 #include <bela/terminal.hpp>
 #include <bela/str_cat_narrow.hpp>
 #include <bela/win32.hpp>
+#include <bela/strings.hpp>
 #include <filesystem>
 #include <numeric>
+#include <source_location>
 
 void string_no_const_print_v0() {
   char *s1 = nullptr;
@@ -21,6 +23,9 @@ void string_no_const_print() {
   char16_t s4[32] = u"中国";
   char32_t s5[32] = U"🎉💖✔️💜😁😂😊🤣❤️😍😒👌";
   bela::FPrintF(stderr, L"string_no_const_print: %s %s %s %s %s\n", s1, s2, s3, s4, s5);
+  auto current = std::source_location::current();
+  bela::FPrintF(stderr, L"%v: %v +%v (%v)\n", current.file_name(), current.function_name(), current.line(),
+                current.column());
 }
 
 void string_const_print() {
@@ -143,20 +148,6 @@ void print() {
   printf("printf long hex: %08X - %08X\n", (std::numeric_limits<long>::min)(), (std::numeric_limits<long>::max)());
 }
 
-constexpr bool BytesEqual(const void *b1, const void *b2, size_t size) {
-  // if (std::is_constant_evaluated()) {
-  //   auto a = reinterpret_cast<const uint8_t *>(b1);
-  //   auto b = reinterpret_cast<const uint8_t *>(b2);
-  //   for (size_t i = 0; i < size; i++) {
-  //     if (a[i] != b[i]) {
-  //       return false;
-  //     }
-  //   }
-  //   return true;
-  // }
-  return __builtin_memcmp(b1, b2, size) == 0;
-}
-
 int wmain(int argc, wchar_t **argv) {
   string_print();
   string_view_print();
@@ -194,6 +185,6 @@ int wmain(int argc, wchar_t **argv) {
                 version.service_pack_minor);
   constexpr auto a = u8"abc";
   constexpr auto b = "abc";
-  constexpr auto e = BytesEqual(a, b, 3);
+  constexpr auto e = bela::BytesEqual(a, b, 3);
   return 0;
 }

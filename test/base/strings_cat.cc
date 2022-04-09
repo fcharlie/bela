@@ -105,7 +105,7 @@ int wmain(int argc, wchar_t **argv) {
                                       (std::numeric_limits<int16_t>::max)(),
                                       (std::numeric_limits<int16_t>::min)(),
                                       1,
-                                      1.2f,
+                                      1.97821741f,
                                       u8"hello world",
                                       "hello world",
                                       u8'U',

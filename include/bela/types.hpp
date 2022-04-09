@@ -45,6 +45,9 @@ concept strict_integral = is_strict_integral_v<T>;
 template <class T>
 concept character = is_character_v<T>;
 
+template <class From, class To>
+concept compatible_character = bela::is_character_v<From> && sizeof(From) == sizeof(To);
+
 template <class T>
 concept not_character = !is_character_v<T>;
 

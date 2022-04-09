@@ -1,5 +1,5 @@
 ///
-#include <bela/__strings/strings_cat_internal.hpp>
+#include <bela/__strings/string_cat_internal.hpp>
 //#include <bela/terminal.hpp>
 
 int wmain() {

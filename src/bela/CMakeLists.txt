@@ -16,9 +16,7 @@ add_library(
   str_replace.cc
   str_replace_narrow.cc
   str_cat.cc
-  str_cat_narrow.cc
   subsitute.cc
-  subsitute_narrow.cc
   terminal.cc
   __charconv/charconv.cc
   __charconv/charconv_float.cc

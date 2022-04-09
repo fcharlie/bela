@@ -39,9 +39,7 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
-#include "__strings/strings_cat_internal.hpp"
-
-namespace bela {
+#include "__strings/string_cat_internal.hpp"
 
 // -----------------------------------------------------------------------------
 // StringCat()
@@ -70,28 +68,79 @@ namespace bela {
 //
 // See `StrAppend()` below for more information.
 
-namespace strings_internal {
+namespace bela {
+template <typename CharT>
+requires bela::character<CharT> size_t buffer_unchecked_concat(CharT *out, const basic_alphanum<CharT> &a) {
+  if (a.size() != 0) {
+    memcpy(out, a.data(), a.size() * sizeof(CharT));
+  }
+  return a.size();
+}
 
-// Do not call directly - this is not part of the public API.
-std::wstring CatPieces(std::initializer_list<std::wstring_view> pieces);
-void AppendPieces(std::wstring *dest, std::initializer_list<std::wstring_view> pieces);
+namespace strings_internal {
+  // Do not call directly - this is not part of the public API.
+  std::wstring CatPieces(std::initializer_list<std::wstring_view> pieces);
+  void AppendPieces(std::wstring * dest, std::initializer_list<std::wstring_view> pieces);
+  std::string CatPieces(std::initializer_list<std::string_view> pieces);
+  void AppendPieces(std::string * dest, std::initializer_list<std::string_view> pieces);
 
 } // namespace strings_internal
 
 [[nodiscard]] inline std::wstring StringCat() { return std::wstring(); }
-
 [[nodiscard]] inline std::wstring StringCat(const AlphaNum &a) { return std::wstring(a.data(), a.size()); }
-
 [[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b);
 [[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c);
 [[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c, const AlphaNum &d);
-
 // Support 5 or more arguments
 template <typename... AV>
 [[nodiscard]] inline std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c, const AlphaNum &d,
                                             const AlphaNum &e, const AV &...args) {
   return strings_internal::CatPieces(
       {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNum &>(args).Piece()...});
+}
+
+//
+[[nodiscard]] inline std::string StringCatA() { return std::string(); }
+[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a) {
+  //
+  return std::string(a.data(), a.size());
+}
+
+[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a, const AlphaNumA &b) {
+  std::string result;
+  result.resize(a.size() + b.size());
+  auto out = result.data();
+  out += buffer_unchecked_concat(out, a);
+  out += buffer_unchecked_concat(out, b);
+  return result;
+}
+[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c) {
+  std::string result;
+  result.resize(a.size() + b.size() + c.size());
+  auto out = result.data();
+  out += buffer_unchecked_concat(out, a);
+  out += buffer_unchecked_concat(out, b);
+  out += buffer_unchecked_concat(out, c);
+  return result;
+}
+[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c,
+                                            const AlphaNumA &d) {
+  std::string result;
+  result.resize(a.size() + b.size() + c.size() + d.size());
+  auto out = result.data();
+  out += buffer_unchecked_concat(out, a);
+  out += buffer_unchecked_concat(out, b);
+  out += buffer_unchecked_concat(out, c);
+  out += buffer_unchecked_concat(out, d);
+  return result;
+}
+
+// Support 5 or more arguments
+template <typename... AV>
+[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c,
+                                            const AlphaNumA &d, const AlphaNumA &e, const AV &...args) {
+  return strings_internal::CatPieces(
+      {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNumA &>(args).Piece()...});
 }
 
 // -----------------------------------------------------------------------------
@@ -135,12 +184,45 @@ inline void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b, 
       dest, {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNum &>(args).Piece()...});
 }
 
-// Helper function for the future StringCat default floating-point format, %.6g
-// This is fast.
-inline strings_internal::AlphaNumBuffer<numbers_internal::kSixDigitsToBufferSize> SixDigits(double d) {
-  strings_internal::AlphaNumBuffer<numbers_internal::kSixDigitsToBufferSize> result{0};
-  result.size = numbers_internal::SixDigitsToBuffer(d, &result.data[0]);
-  return result;
+// --------------
+inline void StrAppend(std::string *) {}
+inline void StrAppend(std::string *dest, const AlphaNumA &a) {
+  dest->append(a.Piece()); //
+}
+inline void StrAppend(std::string *dest, const AlphaNumA &a, const AlphaNumA &b) {
+  auto oldsize = dest->size();
+  dest->resize(oldsize + a.size() + b.size());
+  auto out = dest->data() + oldsize;
+  out += buffer_unchecked_concat(out, a);
+  out += buffer_unchecked_concat(out, b);
+}
+
+inline void StrAppend(std::string *dest, const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c) {
+  auto oldsize = dest->size();
+  dest->resize(oldsize + a.size() + b.size() + c.size());
+  auto out = dest->data() + oldsize;
+  out += buffer_unchecked_concat(out, a);
+  out += buffer_unchecked_concat(out, b);
+  out += buffer_unchecked_concat(out, c);
+}
+
+inline void StrAppend(std::string *dest, const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c,
+                      const AlphaNumA &d) {
+  auto oldsize = dest->size();
+  dest->resize(oldsize + a.size() + b.size() + c.size() + d.size());
+  auto out = dest->data() + oldsize;
+  out += buffer_unchecked_concat(out, a);
+  out += buffer_unchecked_concat(out, b);
+  out += buffer_unchecked_concat(out, c);
+  out += buffer_unchecked_concat(out, d);
+}
+
+// Support 5 or more arguments
+template <typename... AV>
+inline void StrAppend(std::string *dest, const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c, const AlphaNumA &d,
+                      const AlphaNumA &e, const AV &...args) {
+  strings_internal::AppendPieces(
+      dest, {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNumA &>(args).Piece()...});
 }
 
 } // namespace bela

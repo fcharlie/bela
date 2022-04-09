@@ -43,6 +43,14 @@
 namespace bela {
 
 // https://docs.microsoft.com/en-us/cpp/intrinsics/intrinsics-available-on-all-architectures?view=msvc-170
+// __builtin_memcpy
+// __builtin_wmemcmp
+// __builtin_wcslen
+// __builtin_wmemchr
+// __builtin_u8strlen
+// __builtin_u8memchr
+// __builtin_char_memchr
+//
 
 #if BELA_HAVE_BUILTIN(__builtin_memcmp) || (defined(__GNUC__) && !defined(__clang__)) ||                               \
     (defined(_MSC_VER) && _MSC_VER >= 1928)
@@ -54,7 +62,7 @@ inline bool BytesEqual(const void *b1, const void *b2, size_t size) { return mem
 #if BELA_HAVE_BUILTIN(__builtin_memcpy) || (defined(__GNUC__) && !defined(__clang__))
 template <typename T>
 requires bela::standard_layout<T>
-constexpr auto StandardCopy(T *dest, const T *src, size_t n) noexcept {
+constexpr auto MemCopy(T *dest, const T *src, size_t n) noexcept {
   if (n != 0) {
     __builtin_memcpy(dest, src, sizeof(T) * n);
   }
@@ -63,7 +71,7 @@ constexpr auto StandardCopy(T *dest, const T *src, size_t n) noexcept {
 // MSVC no __builtin_memcpy
 template <typename T>
 requires bela::standard_layout<T>
-inline void StandardCopy(T *dest, const T *src, size_t n) noexcept {
+inline void MemCopy(T *dest, const T *src, size_t n) noexcept {
   if (n != 0) {
     memcpy(dest, src, sizeof(T) * n);
   }
@@ -80,7 +88,6 @@ constexpr size_t CharFind(const wchar_t *begin, const wchar_t *end, wchar_t ch) 
   return MaximumPos;
 }
 #else
-
 inline size_t CharFind(const wchar_t *begin, const wchar_t *end, wchar_t ch) {
   if (auto p = wmemchr(begin, ch, end - begin); p != nullptr) {
     return p - begin;
@@ -89,14 +96,48 @@ inline size_t CharFind(const wchar_t *begin, const wchar_t *end, wchar_t ch) {
 }
 #endif
 
-// __builtin_memcpy
-// __builtin_wmemcmp
-// __builtin_wcslen
-// __builtin_wmemchr
-// __builtin_u8strlen
-// __builtin_u8memchr
-// __builtin_char_memchr
-//
+constexpr size_t CharFind(const char16_t *begin, const char16_t *end, char16_t ch) {
+  for (auto p = begin; p != end; p++) {
+    if (*p == ch) {
+      return p - begin;
+    }
+  }
+  return MaximumPos;
+}
+
+#if BELA_HAVE_BUILTIN(__builtin_char_memchr) || (defined(__GNUC__) && !defined(__clang__)) ||                          \
+    (defined(_MSC_VER) && _MSC_VER >= 1928)
+constexpr size_t CharFind(const char *begin, const char *end, char ch) {
+  if (auto p = __builtin_char_memchr(begin, ch, end - begin); p != nullptr) {
+    return p - begin;
+  }
+  return MaximumPos;
+}
+#else
+inline size_t CharFind(const char *begin, const char *end, char ch) {
+  if (auto p = memchr(begin, ch, end - begin); p != nullptr) {
+    return reinterpret_cast<const char8_t *>(p) - begin;
+  }
+  return MaximumPos;
+}
+#endif
+
+#if BELA_HAVE_BUILTIN(__builtin_u8memchr) || (defined(__GNUC__) && !defined(__clang__)) ||                             \
+    (defined(_MSC_VER) && _MSC_VER >= 1928)
+constexpr size_t CharFind(const char8_t *begin, const char8_t *end, char8_t ch) {
+  if (auto p = __builtin_u8memchr(begin, ch, end - begin); p != nullptr) {
+    return p - begin;
+  }
+  return MaximumPos;
+}
+#else
+inline size_t CharFind(const char8_t *begin, const char8_t *end, char8_t ch) {
+  if (auto p = memchr(begin, ch, end - begin); p != nullptr) {
+    return reinterpret_cast<const char8_t *>(p) - begin;
+  }
+  return MaximumPos;
+}
+#endif
 
 constexpr char16_t ascii_tolower(char16_t c) { return (c > 0xFF ? c : ascii_internal::kToLower[c]); }
 constexpr char16_t ascii_toupper(char16_t c) { return (c > 0xFF ? c : ascii_internal::kToUpper[c]); }

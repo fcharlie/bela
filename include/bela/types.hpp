@@ -66,6 +66,9 @@ concept trivial = std::is_trivial_v<T>;
 template <class T>
 concept integral_superset = std::integral<T> || std::is_enum_v<T>;
 
+template <class T>
+concept strict_enum = std::is_enum_v<T> && !std::is_convertible_v<T, int>;
+
 template <typename E>
 requires std::is_enum_v<E>
 constexpr auto integral_cast(E e) { return static_cast<std::underlying_type_t<E>>(e); }

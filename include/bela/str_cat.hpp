@@ -39,126 +39,11 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
+#include "__strings/strings_cat_internal.hpp"
 #include "numbers.hpp"
 #include "codecvt.hpp"
 
 namespace bela {
-namespace strings_internal {
-template <size_t max_size> struct AlphaNumBuffer {
-  std::array<wchar_t, max_size> data;
-  size_t size;
-};
-
-} // namespace strings_internal
-inline std::wstring_view NullSafeStringView(const wchar_t *str) {
-  return (str == nullptr) ? std::wstring_view() : std::wstring_view(str);
-}
-// Enum that specifies the number of significant digits to return in a `Hex` or
-// `Dec` conversion and fill character to use. A `kZeroPad2` value, for example,
-// would produce hexadecimal strings such as "0a","0f" and a 'kSpacePad5' value
-// would produce hexadecimal strings such as "    a","    f".
-enum PadSpec : uint8_t {
-  kNoPad = 1,
-  kZeroPad2,
-  kZeroPad3,
-  kZeroPad4,
-  kZeroPad5,
-  kZeroPad6,
-  kZeroPad7,
-  kZeroPad8,
-  kZeroPad9,
-  kZeroPad10,
-  kZeroPad11,
-  kZeroPad12,
-  kZeroPad13,
-  kZeroPad14,
-  kZeroPad15,
-  kZeroPad16,
-  kZeroPad17,
-  kZeroPad18,
-  kZeroPad19,
-  kZeroPad20,
-
-  kSpacePad2 = kZeroPad2 + 64,
-  kSpacePad3,
-  kSpacePad4,
-  kSpacePad5,
-  kSpacePad6,
-  kSpacePad7,
-  kSpacePad8,
-  kSpacePad9,
-  kSpacePad10,
-  kSpacePad11,
-  kSpacePad12,
-  kSpacePad13,
-  kSpacePad14,
-  kSpacePad15,
-  kSpacePad16,
-  kSpacePad17,
-  kSpacePad18,
-  kSpacePad19,
-  kSpacePad20,
-};
-
-// -----------------------------------------------------------------------------
-// Hex
-// -----------------------------------------------------------------------------
-//
-// `Hex` stores a set of hexadecimal string conversion parameters for use
-// within `AlphaNum` string conversions.
-struct Hex {
-  uint64_t value;
-  uint8_t width;
-  wchar_t fill;
-
-  template <typename Int>
-  explicit Hex(Int v, PadSpec spec = bela::kNoPad,
-               typename std::enable_if<sizeof(Int) == 1 && !std::is_pointer<Int>::value>::type * = nullptr)
-      : Hex(spec, static_cast<uint8_t>(v)) {}
-  template <typename Int>
-  explicit Hex(Int v, PadSpec spec = bela::kNoPad,
-               typename std::enable_if<sizeof(Int) == 2 && !std::is_pointer<Int>::value>::type * = nullptr)
-      : Hex(spec, static_cast<uint16_t>(v)) {}
-  template <typename Int>
-  explicit Hex(Int v, PadSpec spec = bela::kNoPad,
-               typename std::enable_if<sizeof(Int) == 4 && !std::is_pointer<Int>::value>::type * = nullptr)
-      : Hex(spec, static_cast<uint32_t>(v)) {}
-  template <typename Int>
-  explicit Hex(Int v, PadSpec spec = bela::kNoPad,
-               typename std::enable_if<sizeof(Int) == 8 && !std::is_pointer<Int>::value>::type * = nullptr)
-      : Hex(spec, static_cast<uint64_t>(v)) {}
-  template <typename Pointee>
-  explicit Hex(Pointee *v, PadSpec spec = bela::kNoPad) : Hex(spec, reinterpret_cast<uintptr_t>(v)) {}
-
-private:
-  Hex(PadSpec spec, uint64_t v)
-      : value(v), width(spec == bela::kNoPad       ? 1
-                        : spec >= bela::kSpacePad2 ? spec - bela::kSpacePad2 + 2
-                                                   : spec - bela::kZeroPad2 + 2),
-        fill(spec >= bela::kSpacePad2 ? L' ' : L'0') {}
-};
-
-// -----------------------------------------------------------------------------
-// Dec
-// -----------------------------------------------------------------------------
-//
-// `Dec` stores a set of decimal string conversion parameters for use
-// within `AlphaNum` string conversions.  Dec is slower than the default
-// integer conversion, so use it only if you need padding.
-struct Dec {
-  uint64_t value;
-  uint8_t width;
-  wchar_t fill;
-  bool neg;
-
-  template <typename Int>
-  explicit Dec(Int v, PadSpec spec = bela::kNoPad, typename std::enable_if<(sizeof(Int) <= 8)>::type * = nullptr)
-      : value(v >= 0 ? static_cast<uint64_t>(v) : uint64_t{0} - static_cast<uint64_t>(v)),
-        width(spec == bela::kNoPad       ? 1
-              : spec >= bela::kSpacePad2 ? spec - bela::kSpacePad2 + 2
-                                         : spec - bela::kZeroPad2 + 2),
-        fill(spec >= bela::kSpacePad2 ? L' ' : L'0'), neg(v < 0) {}
-};
 
 // has_native support
 //  bela::error_code
@@ -234,17 +119,16 @@ public:
 
   // Normal enums are already handled by the integer formatters.
   // This overload matches only scoped enums.
-  template <typename T, typename = typename std::enable_if<std::is_enum<T>{} && !std::is_convertible<T, int>{}>::type>
-  AlphaNum(T e) // NOLINT(runtime/explicit)
-      : AlphaNum(static_cast<typename std::underlying_type<T>::type>(e)) {}
+  template <typename T>
+  requires bela::strict_enum<T> AlphaNum(T e) // NOLINT(runtime/explicit)
+      : AlphaNum(bela::integral_cast(e)) {}
 
   // vector<bool>::reference and const_reference require special help to
   // convert to `AlphaNum` because it requires two user defined conversions.
-  template <typename T,
-            typename std::enable_if<std::is_class<T>::value &&
-                                    (std::is_same<T, std::vector<bool>::reference>::value ||
-                                     std::is_same<T, std::vector<bool>::const_reference>::value)>::type * = nullptr>
-  AlphaNum(T e) : AlphaNum(static_cast<bool>(e)) {} // NOLINT(runtime/explicit)
+  template <typename T>
+  requires(std::is_class_v<T> && (std::is_same_v<T, std::vector<bool>::reference> ||
+                                  std::is_same_v<T, std::vector<bool>::const_reference>)) AlphaNum(T e)
+      : AlphaNum(static_cast<bool>(e)) {} // NOLINT(runtime/explicit)
 
 private:
   std::wstring_view piece_;

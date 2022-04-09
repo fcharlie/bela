@@ -17,8 +17,9 @@
 #include <bit>
 #include <bela/str_cat_narrow.hpp>
 #include <bela/endian.hpp>
-#ifdef __SSE4_2__
-#include <x86intrin.h>
+#include <bela/macros.hpp>
+#ifdef BELA_INTERNAL_HAVE_SSSE3
+#include <intrin.h>
 #endif
 
 namespace bela::narrow {
@@ -51,7 +52,7 @@ constexpr const char kHexTable[513] =
 // Returns the number of non-pad digits of the output (it can never be zero
 // since 0 has one digit).
 inline size_t FastHexToBufferZeroPad16(uint64_t val, char *out) {
-#ifdef __SSE4_2__
+#ifdef BELA_INTERNAL_HAVE_SSSE3
   uint64_t be = bela::htons(val);
   const auto kNibbleMask = _mm_set1_epi8(0xf);
   const auto kHexDigits = _mm_setr_epi8('0', '1', '2', '3', '4', '5', '6', '7',
@@ -133,13 +134,16 @@ AlphaNum::AlphaNum(Dec dec) {
 
 // Append is merely a version of memcpy that returns the address of the byte
 // after the area just overwritten.
-static char *Append(char *out, const AlphaNum &x) {
+static char* Append(char* out, const AlphaNum& x) {
   // memcpy is allowed to overwrite arbitrary memory, so doing this after the
   // call would force an extra fetch of x.size().
-  char *after = out + x.size();
-  memcpy(out, x.data(), x.size());
+  char* after = out + x.size();
+  if (x.size() != 0) {
+    memcpy(out, x.data(), x.size());
+  }
   return after;
 }
+
 
 std::string StringCat(const AlphaNum &a, const AlphaNum &b) {
   std::string result;

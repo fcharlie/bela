@@ -177,12 +177,14 @@ int wmain(int argc, wchar_t **argv) {
   auto ec2 = bela::make_error_code(bela::ErrCanceled, L"cancelede ccc");
   bela::FPrintF(stderr, L"Equal: %v\n", ec == bela::ErrCanceled);
   bela::FPrintF(stderr, L"Equal: %v\n", ec == ec2);
-  bela::FPrintF(stderr, L"%s\n", bela::narrow::StringCat("H: ", bela::narrow::AlphaNum(bela::narrow::Hex(123456))));
+  bela::FPrintF(
+      stderr, L"%s\n",
+      bela::narrow::StringCat("H: ", bela::narrow::AlphaNum(bela::narrow::Hex(123456, bela::narrow::kZeroPad8))));
   bela::FPrintF(stderr, L"EADDRINUSE: %s\nEWOULDBLOCK: %s\n", bela::make_error_code_from_errno(EADDRINUSE),
                 bela::make_error_code_from_errno(EWOULDBLOCK));
   auto version = bela::windows::version();
-  bela::FPrintF(stderr, L"%d.%d.%d %d.%d\n", version.major, version.minor, version.build, version.service_pack_major,
-                version.service_pack_minor);
+  bela::FPrintF(stderr, L"%d.%d.%d %d.%d %v\n", version.major, version.minor, version.build, version.service_pack_major,
+                version.service_pack_minor, bela::AlphaNum(true).Piece());
   constexpr auto a = u8"abc";
   constexpr auto b = "abc";
   constexpr auto e = bela::BytesEqual(a, b, 3);

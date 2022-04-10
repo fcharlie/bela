@@ -54,7 +54,7 @@ $checks = $(
     "cert-*",
     "portability-*",
     "bugprone-*",
-    #"-bugprone-easily-swappable-parameters",
+    "-bugprone-easily-swappable-parameters",
     "readability-*",
     "-readability-magic-numbers",
     "-readability-qualified-auto",
@@ -70,7 +70,7 @@ $checksText = [string]::Join(",", $checks)
 
 $inputArgs = $(
     "-checks=$checksText",
-    #"--fix",
+    "--fix",
     "--",
     "-m64",
     "-x", 

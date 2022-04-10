@@ -48,9 +48,12 @@ $checks = $(
     "clang-analyzer-*",
     "-clang-analyzer-cplusplus*",
     "performance-*",
+    ## performance-no-int-to-ptr This rule is not reasonable. Calls like _get_osfhandle are warned, which is incredible. There is no operation for intptr to pointer, only conversion.
+    ## disable it
+    "-performance-no-int-to-ptr",
     "cert-*",
     "portability-*",
-    #"bugprone-*",
+    "bugprone-*",
     #"-bugprone-easily-swappable-parameters",
     "readability-*",
     "-readability-magic-numbers",
@@ -67,7 +70,7 @@ $checksText = [string]::Join(",", $checks)
 
 $inputArgs = $(
     "-checks=$checksText",
-    "--fix",
+    #"--fix",
     "--",
     "-m64",
     "-x", 

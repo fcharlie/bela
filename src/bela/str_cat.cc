@@ -40,7 +40,7 @@ namespace bela {
 
 namespace strings_internal {
 // clang-format off
-template <class _CharT> inline constexpr _CharT kHexTable[] = {_CharT{}};
+template <class CharT> inline constexpr CharT kHexTable[] = {CharT{}};
 template <>
 inline constexpr char kHexTable<char>[513] = 
     "000102030405060708090a0b0c0d0e0f"

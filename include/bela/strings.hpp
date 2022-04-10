@@ -122,8 +122,8 @@ inline size_t CharFind(const char *begin, const char *end, char ch) {
 }
 #endif
 
-#if BELA_HAVE_BUILTIN(__builtin_u8memchr) || (defined(__GNUC__) && !defined(__clang__)) ||                             \
-    (defined(_MSC_VER) && _MSC_VER >= 1928)
+// clang no __builtin_u8memchr
+#if BELA_HAVE_BUILTIN(__builtin_u8memchr) || (defined(_MSC_VER) && _MSC_VER >= 1928 && !defined(__clang__))
 constexpr size_t CharFind(const char8_t *begin, const char8_t *end, char8_t ch) {
   if (auto p = __builtin_u8memchr(begin, ch, end - begin); p != nullptr) {
     return p - begin;

@@ -27,7 +27,7 @@ std::string String(FileMode m) {
     }
     w++;
   }
-  return std::string(buf, w);
+  return std::string{buf, w};
 }
 
 FileMode unixModeToFileMode(uint32_t m) {

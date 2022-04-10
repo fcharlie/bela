@@ -211,8 +211,8 @@ public:
   // Normal enums are already handled by the integer formatters.
   // This overload matches only scoped enums.
   template <typename T>
-  requires bela::strict_enum<T> basic_alphanum(T e) // NOLINT(runtime/explicit)
-      : basic_alphanum(bela::integral_cast(e)) {}
+  requires(std::is_enum_v<T> &&std::integral<std::underlying_type_t<T>>) basic_alphanum(T e)
+      : piece_(bela::to_chars_view(digits_, bela::integral_cast(e))) {}
 
   // vector<bool>::reference and const_reference require special help to
   // convert to `AlphaNum` because it requires two user defined conversions.

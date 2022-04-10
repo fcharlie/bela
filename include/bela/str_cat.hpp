@@ -69,160 +69,96 @@
 // See `StrAppend()` below for more information.
 
 namespace bela {
-template <typename CharT>
-requires bela::character<CharT> size_t buffer_unchecked_concat(CharT *out, const basic_alphanum<CharT> &a) {
-  if (a.size() != 0) {
-    memcpy(out, a.data(), a.size() * sizeof(CharT));
-  }
-  return a.size();
-}
 
 namespace strings_internal {
-  // Do not call directly - this is not part of the public API.
-  std::wstring CatPieces(std::initializer_list<std::wstring_view> pieces);
-  void AppendPieces(std::wstring * dest, std::initializer_list<std::wstring_view> pieces);
-  std::string CatPieces(std::initializer_list<std::string_view> pieces);
-  void AppendPieces(std::string * dest, std::initializer_list<std::string_view> pieces);
+void AppendPieces(std::wstring *dest, std::initializer_list<std::wstring_view> pieces);
 
 } // namespace strings_internal
 
 [[nodiscard]] inline std::wstring StringCat() { return std::wstring(); }
-[[nodiscard]] inline std::wstring StringCat(const AlphaNum &a) { return std::wstring(a.data(), a.size()); }
-[[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b);
-[[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c);
-[[nodiscard]] std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c, const AlphaNum &d);
+[[nodiscard]] inline std::wstring StringCat(const AlphaNum &a) { return std::wstring(a.Piece()); }
+[[nodiscard]] inline std::wstring StringCat(const AlphaNum &a, const AlphaNum &b) { return string_cat<wchar_t>(a, b); }
+[[nodiscard]] inline std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c) {
+  return string_cat<wchar_t>(a, b, c);
+}
+[[nodiscard]] inline std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
+                                            const AlphaNum &d) {
+  return string_cat<wchar_t>(a, b, c, d);
+}
 // Support 5 or more arguments
 template <typename... AV>
 [[nodiscard]] inline std::wstring StringCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c, const AlphaNum &d,
                                             const AlphaNum &e, const AV &...args) {
-  return strings_internal::CatPieces(
+  return strings_internal::string_cat_pieces<wchar_t>(
       {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNum &>(args).Piece()...});
 }
 
-//
-[[nodiscard]] inline std::string StringCatA() { return std::string(); }
-[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a) {
-  //
-  return std::string(a.data(), a.size());
-}
-
-[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a, const AlphaNumA &b) {
-  std::string result;
-  result.resize(a.size() + b.size());
-  auto out = result.data();
-  out += buffer_unchecked_concat(out, a);
-  out += buffer_unchecked_concat(out, b);
-  return result;
-}
-[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c) {
-  std::string result;
-  result.resize(a.size() + b.size() + c.size());
-  auto out = result.data();
-  out += buffer_unchecked_concat(out, a);
-  out += buffer_unchecked_concat(out, b);
-  out += buffer_unchecked_concat(out, c);
-  return result;
-}
-[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c,
-                                            const AlphaNumA &d) {
-  std::string result;
-  result.resize(a.size() + b.size() + c.size() + d.size());
-  auto out = result.data();
-  out += buffer_unchecked_concat(out, a);
-  out += buffer_unchecked_concat(out, b);
-  out += buffer_unchecked_concat(out, c);
-  out += buffer_unchecked_concat(out, d);
-  return result;
-}
-
-// Support 5 or more arguments
-template <typename... AV>
-[[nodiscard]] inline std::string StringCatA(const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c,
-                                            const AlphaNumA &d, const AlphaNumA &e, const AV &...args) {
-  return strings_internal::CatPieces(
-      {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNumA &>(args).Piece()...});
-}
-
-// -----------------------------------------------------------------------------
-// StrAppend()
-// -----------------------------------------------------------------------------
-//
-// Appends a string or set of strings to an existing string, in a similar
-// fashion to `StringCat()`.
-//
-// WARNING: `StrAppend(&str, a, b, c, ...)` requires that none of the
-// a, b, c, parameters be a reference into str. For speed, `StrAppend()` does
-// not try to check each of its input arguments to be sure that they are not
-// a subset of the string being appended to. That is, while this will work:
-//
-//   std::string s = "foo";
-//   s += s;
-//
-// This output is undefined:
-//
-//   std::string s = "foo";
-//   StrAppend(&s, s);
-//
-// This output is undefined as well, since `absl::string_view` does not own its
-// data:
-//
-//   std::string s = "foobar";
-//   absl::string_view p = s;
-//   StrAppend(&s, p);
-
 inline void StrAppend(std::wstring *) {}
-void StrAppend(std::wstring *dest, const AlphaNum &a);
-void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b);
-void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b, const AlphaNum &c);
-void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b, const AlphaNum &c, const AlphaNum &d);
+inline void StrAppend(std::wstring *dest, const AlphaNum &a) { dest->append(a.Piece()); }
+inline void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b) { string_append(dest, a, b); }
+inline void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b, const AlphaNum &c) {
+  string_append(dest, a, b, c);
+}
+inline void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b, const AlphaNum &c, const AlphaNum &d) {
+  string_append(dest, a, b, d);
+}
 
 // Support 5 or more arguments
 template <typename... AV>
 inline void StrAppend(std::wstring *dest, const AlphaNum &a, const AlphaNum &b, const AlphaNum &c, const AlphaNum &d,
                       const AlphaNum &e, const AV &...args) {
-  strings_internal::AppendPieces(
+  strings_internal::string_append_pieces<wchar_t>(
       dest, {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNum &>(args).Piece()...});
 }
 
-// --------------
-inline void StrAppend(std::string *) {}
-inline void StrAppend(std::string *dest, const AlphaNumA &a) {
-  dest->append(a.Piece()); //
+// Narrow char StringCat and StringAppend
+//
+[[nodiscard]] inline std::string StringNarrowCat() { return std::string(); }
+[[nodiscard]] inline std::string StringNarrowCat(const AlphaNumNarrow &a) { return std::string(a.Piece()); }
+[[nodiscard]] inline std::string StringNarrowCat(const AlphaNumNarrow &a, const AlphaNumNarrow &b) {
+  return string_cat<char>(a, b);
 }
-inline void StrAppend(std::string *dest, const AlphaNumA &a, const AlphaNumA &b) {
-  auto oldsize = dest->size();
-  dest->resize(oldsize + a.size() + b.size());
-  auto out = dest->data() + oldsize;
-  out += buffer_unchecked_concat(out, a);
-  out += buffer_unchecked_concat(out, b);
+[[nodiscard]] inline std::string StringNarrowCat(const AlphaNumNarrow &a, const AlphaNumNarrow &b,
+                                                 const AlphaNumNarrow &c) {
+  return string_cat<char>(a, b, c);
 }
-
-inline void StrAppend(std::string *dest, const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c) {
-  auto oldsize = dest->size();
-  dest->resize(oldsize + a.size() + b.size() + c.size());
-  auto out = dest->data() + oldsize;
-  out += buffer_unchecked_concat(out, a);
-  out += buffer_unchecked_concat(out, b);
-  out += buffer_unchecked_concat(out, c);
-}
-
-inline void StrAppend(std::string *dest, const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c,
-                      const AlphaNumA &d) {
-  auto oldsize = dest->size();
-  dest->resize(oldsize + a.size() + b.size() + c.size() + d.size());
-  auto out = dest->data() + oldsize;
-  out += buffer_unchecked_concat(out, a);
-  out += buffer_unchecked_concat(out, b);
-  out += buffer_unchecked_concat(out, c);
-  out += buffer_unchecked_concat(out, d);
+[[nodiscard]] inline std::string StringNarrowCat(const AlphaNumNarrow &a, const AlphaNumNarrow &b,
+                                                 const AlphaNumNarrow &c, const AlphaNumNarrow &d) {
+  return string_cat<char>(a, b, c, d);
 }
 
 // Support 5 or more arguments
 template <typename... AV>
-inline void StrAppend(std::string *dest, const AlphaNumA &a, const AlphaNumA &b, const AlphaNumA &c, const AlphaNumA &d,
-                      const AlphaNumA &e, const AV &...args) {
-  strings_internal::AppendPieces(
-      dest, {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNumA &>(args).Piece()...});
+[[nodiscard]] inline std::string StringNarrowCat(const AlphaNumNarrow &a, const AlphaNumNarrow &b,
+                                                 const AlphaNumNarrow &c, const AlphaNumNarrow &d,
+                                                 const AlphaNumNarrow &e, const AV &...args) {
+  return strings_internal::string_cat_pieces<char>(
+      {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(), static_cast<const AlphaNumNarrow &>(args).Piece()...});
+}
+
+// --------------
+inline void StrAppend(std::string *) {}
+inline void StrAppend(std::string *dest, const AlphaNumNarrow &a) {
+  dest->append(a.Piece()); //
+}
+inline void StrAppend(std::string *dest, const AlphaNumNarrow &a, const AlphaNumNarrow &b) {
+  string_append(dest, a, b);
+}
+
+inline void StrAppend(std::string *dest, const AlphaNumNarrow &a, const AlphaNumNarrow &b, const AlphaNumNarrow &c) {
+  string_append(dest, a, b, c);
+}
+
+inline void StrAppend(std::string *dest, const AlphaNumNarrow &a, const AlphaNumNarrow &b, const AlphaNumNarrow &c,
+                      const AlphaNumNarrow &d) {
+  string_append(dest, a, b, d);
+}
+
+template <typename... AV>
+inline void StrAppend(std::string *dest, const AlphaNumNarrow &a, const AlphaNumNarrow &b, const AlphaNumNarrow &c,
+                      const AlphaNumNarrow &d, const AlphaNumNarrow &e, const AV &...args) {
+  strings_internal::string_append_pieces<wchar_t>(dest, {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(),
+                                                         static_cast<const AlphaNumNarrow &>(args).Piece()...});
 }
 
 } // namespace bela

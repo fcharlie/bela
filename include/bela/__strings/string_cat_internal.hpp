@@ -234,7 +234,182 @@ private:
 };
 
 using AlphaNum = basic_alphanum<wchar_t>;
-using AlphaNumA = basic_alphanum<char>;
+using AlphaNumNarrow = basic_alphanum<char>;
+
+namespace strings_internal {
+template <typename CharT, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+auto string_cat_pieces(std::initializer_list<std::basic_string_view<CharT, std::char_traits<CharT>>> pieces) {
+  std::basic_string<CharT, std::char_traits<CharT>, Allocator> result;
+  size_t total_size = 0;
+  for (const auto piece : pieces) {
+    total_size += piece.size();
+  }
+  result.resize(total_size);
+
+  auto *const begin = &result[0];
+  auto *out = begin;
+  for (const auto piece : pieces) {
+    const size_t this_size = piece.size();
+    memcpy(out, piece.data(), this_size * sizeof(CharT));
+    out += this_size;
+  }
+  assert(out == begin + result.size());
+  return result;
+}
+
+template <typename CharT, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+void string_append_pieces(std::basic_string<CharT, std::char_traits<CharT>, Allocator> *dest,
+                          std::initializer_list<std::basic_string_view<CharT, std::char_traits<CharT>>> pieces) {
+  size_t old_size = dest->size();
+  size_t total_size = old_size;
+  for (const auto piece : pieces) {
+    total_size += piece.size();
+  }
+  dest->resize(total_size);
+
+  auto *const begin = &(*dest)[0];
+  auto *out = begin + old_size;
+  for (const auto piece : pieces) {
+    const size_t this_size = piece.size();
+    memcpy(out, piece.data(), this_size * sizeof(CharT));
+    out += this_size;
+  }
+  assert(out == begin + dest->size());
+}
+
+template <typename CharT>
+requires bela::character<CharT> size_t buffer_unchecked_concat(CharT *out, const basic_alphanum<CharT> &a) {
+  if (a.size() != 0) {
+    memcpy(out, a.data(), a.size() * sizeof(CharT));
+  }
+  return a.size();
+}
+} // namespace strings_internal
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+[[nodiscard]] inline std::basic_string<CharT, std::char_traits<CharT>, Allocator> string_cat() {
+  return std::basic_string<CharT, std::char_traits<CharT>, Allocator>();
+}
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+[[nodiscard]] inline std::basic_string<CharT, std::char_traits<CharT>, Allocator>
+string_cat(const basic_alphanum<CharT> &a) {
+  return std::basic_string<CharT, std::char_traits<CharT>, Allocator>(a.Piece());
+}
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+[[nodiscard]] inline std::basic_string<CharT, std::char_traits<CharT>, Allocator>
+string_cat(const basic_alphanum<CharT> &a, const basic_alphanum<CharT> &b) {
+  std::basic_string<CharT, std::char_traits<CharT>, Allocator> s;
+  s.resize(a.size() + b.size());
+  auto out = s.data();
+  out += strings_internal::buffer_unchecked_concat(out, a);
+  out += strings_internal::buffer_unchecked_concat(out, b);
+  return s;
+}
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+[[nodiscard]] inline std::basic_string<CharT, std::char_traits<CharT>, Allocator>
+string_cat(const basic_alphanum<CharT> &a, const basic_alphanum<CharT> &b, const basic_alphanum<CharT> &c) {
+  std::basic_string<CharT, std::char_traits<CharT>, Allocator> s;
+  s.resize(a.size() + b.size() + c.size());
+  auto out = s.data();
+  out += strings_internal::buffer_unchecked_concat(out, a);
+  out += strings_internal::buffer_unchecked_concat(out, b);
+  out += strings_internal::buffer_unchecked_concat(out, c);
+  return s;
+}
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+[[nodiscard]] inline std::basic_string<CharT, std::char_traits<CharT>, Allocator>
+string_cat(const basic_alphanum<CharT> &a, const basic_alphanum<CharT> &b, const basic_alphanum<CharT> &c,
+           const basic_alphanum<CharT> &d) {
+  std::basic_string<CharT, std::char_traits<CharT>, Allocator> s;
+  s.resize(a.size() + b.size() + c.size() + d.size());
+  auto out = s.data();
+  out += strings_internal::buffer_unchecked_concat(out, a);
+  out += strings_internal::buffer_unchecked_concat(out, b);
+  out += strings_internal::buffer_unchecked_concat(out, c);
+  out += strings_internal::buffer_unchecked_concat(out, d);
+  return s;
+}
+
+template <typename CharT, typename Allocator, typename... AV>
+requires bela::character<CharT>
+[[nodiscard]] inline auto string_cat_with_allocator(const basic_alphanum<CharT> &a, const basic_alphanum<CharT> &b,
+                                                    const basic_alphanum<CharT> &c, const basic_alphanum<CharT> &d,
+                                                    const basic_alphanum<CharT> &e, const AV &...args) {
+  return strings_internal::string_cat_pieces<CharT, Allocator>(
+      {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(),
+       static_cast<const basic_alphanum<CharT> &>(args).Piece()...});
+}
+
+template <typename CharT, typename... AV>
+requires bela::character<CharT>
+[[nodiscard]] inline auto string_cat(const basic_alphanum<CharT> &a, const basic_alphanum<CharT> &b,
+                                     const basic_alphanum<CharT> &c, const basic_alphanum<CharT> &d,
+                                     const basic_alphanum<CharT> &e, const AV &...args) {
+  return strings_internal::string_cat_pieces({a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(),
+                                              static_cast<const basic_alphanum<CharT> &>(args).Piece()...});
+}
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+void string_append(std::basic_string<CharT, std::char_traits<CharT>, Allocator> *dest, const basic_alphanum<CharT> &a) {
+  dest->append(a.Piece());
+}
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+void string_append(std::basic_string<CharT, std::char_traits<CharT>, Allocator> *dest, const basic_alphanum<CharT> &a,
+                   const basic_alphanum<CharT> &b) {
+  auto oldsize = dest->size();
+  dest->resize(oldsize + a.size() + b.size());
+  auto out = dest->data() + oldsize;
+  out += strings_internal::buffer_unchecked_concat(out, a);
+  out += strings_internal::buffer_unchecked_concat(out, b);
+}
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+void string_append(std::basic_string<CharT, std::char_traits<CharT>, Allocator> *dest, const basic_alphanum<CharT> &a,
+                   const basic_alphanum<CharT> &b, const basic_alphanum<CharT> &c) {
+  auto oldsize = dest->size();
+  dest->resize(oldsize + a.size() + b.size() + c.size());
+  auto out = dest->data() + oldsize;
+  out += strings_internal::buffer_unchecked_concat(out, a);
+  out += strings_internal::buffer_unchecked_concat(out, b);
+  out += strings_internal::buffer_unchecked_concat(out, c);
+}
+
+template <typename CharT = wchar_t, typename Allocator = std::allocator<CharT>>
+requires bela::character<CharT>
+void string_append(std::basic_string<CharT, std::char_traits<CharT>, Allocator> *dest, const basic_alphanum<CharT> &a,
+                   const basic_alphanum<CharT> &b, const basic_alphanum<CharT> &c, const basic_alphanum<CharT> &d) {
+  auto oldsize = dest->size();
+  dest->resize(oldsize + a.size() + b.size() + c.size() + d.size());
+  auto out = dest->data() + oldsize;
+  out += strings_internal::buffer_unchecked_concat(out, a);
+  out += strings_internal::buffer_unchecked_concat(out, b);
+  out += strings_internal::buffer_unchecked_concat(out, c);
+  out += strings_internal::buffer_unchecked_concat(out, d);
+}
+
+template <typename CharT, typename Allocator, typename... AV>
+inline void string_append_with_allocator(std::basic_string<CharT, std::char_traits<CharT>, Allocator> *dest,
+                                         const basic_alphanum<CharT> &a, const basic_alphanum<CharT> &b,
+                                         const basic_alphanum<CharT> &c, const basic_alphanum<CharT> &d,
+                                         const basic_alphanum<CharT> &e, const AV &...args) {
+  strings_internal::string_append_pieces<wchar_t>(dest, {a.Piece(), b.Piece(), c.Piece(), d.Piece(), e.Piece(),
+                                                         static_cast<const basic_alphanum<CharT> &>(args).Piece()...});
+}
 
 } // namespace bela
 

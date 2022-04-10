@@ -2,7 +2,41 @@
 #include <bela/__strings/string_cat_internal.hpp>
 #include <bela/terminal.hpp>
 #include <filesystem>
-#include "strings_cat.hpp"
+
+void u8stringshow() {
+  bela::FPrintF(stderr, L"char8_t: %v\n", bela::string_cat<char8_t>(u8"args = 1"));
+  bela::FPrintF(stderr, L"char8_t: %v\n", bela::string_cat<char8_t>(u8"args = ", 2));
+  bela::FPrintF(stderr, L"char8_t: %v\n", bela::string_cat<char8_t>(u8"args ", u8"= ", 3));
+  bela::FPrintF(stderr, L"char8_t: %v\n", bela::string_cat<char8_t>(u8"args ", u8"= ", 3, u8",", 5));
+  constexpr char32_t em = 0x1F603; // 😃 U+1F603
+  bela::FPrintF(stderr, L"char8_t: %s\n",
+                bela::string_cat<char8_t>(u8"Look emoji --> ", em, u8" see: U+", bela::Hex(em)));
+  bela::FPrintF(stderr, L"char8_t: %v\n",
+                bela::string_cat<char8_t>(u8"Look emoji --> ", em, u8" see: U+", bela::Hex(em), u8" jacksome"));
+}
+
+void stringshow() {
+  bela::FPrintF(stderr, L"char: %v\n", bela::string_cat<char>(u8"args = 1"));
+  bela::FPrintF(stderr, L"char: %v\n", bela::string_cat<char>(u8"args = ", 2));
+  bela::FPrintF(stderr, L"char: %v\n", bela::string_cat<char>(u8"args ", u8"= ", 3));
+  bela::FPrintF(stderr, L"char: %v\n", bela::string_cat<char>(u8"args ", u8"= ", 3, u8",", 5));
+  constexpr char32_t em = 0x1F603; // 😃 U+1F603
+  bela::FPrintF(stderr, L"char: %s\n", bela::string_cat<char>(u8"Look emoji --> ", em, u8" see: U+", bela::Hex(em)));
+  bela::FPrintF(stderr, L"char: %v\n",
+                bela::string_cat<char>(u8"Look emoji --> ", em, " see: U+", bela::Hex(em), u8" jacksome"));
+}
+
+void wstringshow() {
+  bela::FPrintF(stderr, L"wchar_t: %v\n", bela::string_cat<wchar_t>(L"args = 1"));
+  bela::FPrintF(stderr, L"wchar_t: %v\n", bela::string_cat<wchar_t>(L"args = ", 2));
+  bela::FPrintF(stderr, L"wchar_t: %v\n", bela::string_cat<wchar_t>(L"args ", L"= ", 3));
+  bela::FPrintF(stderr, L"wchar_t: %v\n", bela::string_cat<wchar_t>(L"args ", L"= ", 3, L",", 5));
+  constexpr char32_t em = 0x1F603; // 😃 U+1F603
+  bela::FPrintF(stderr, L"wchar_t: %s\n",
+                bela::string_cat<wchar_t>(L"Look emoji --> ", em, L" see: U+", bela::Hex(em)));
+  bela::FPrintF(stderr, L"wchar_t: %v\n",
+                bela::string_cat<wchar_t>(L"Look emoji --> ", em, L" see: U+", bela::Hex(em), L" jacksome"));
+}
 
 int wmain(int argc, wchar_t **argv) {
   std::error_code ec;
@@ -120,13 +154,8 @@ int wmain(int argc, wchar_t **argv) {
   for (const auto &a : cas) {
     bela::FPrintF(stderr, L"char: %v\n", a.Piece());
   }
-  constexpr char32_t em = 0x1F603; // 😃 U+1F603
-  auto s = bela::strings_cat<wchar_t>(L"Look emoji --> ", em, L" see: U+",
-                                      bela::basic_alphanum<wchar_t>(bela::Hex(static_cast<uint32_t>(em))));
-  bela::FPrintF(stderr, L"%s\n", s);
-  auto s2 = bela::strings_cat<wchar_t, std::allocator<wchar_t>>(
-      L"Look emoji --> ", em, L" see: U+", bela::basic_alphanum<wchar_t>(bela::Hex(static_cast<uint32_t>(em))),
-      L" jacksome");
-  bela::FPrintF(stderr, L"%s\n", s2);
+  u8stringshow();
+  stringshow();
+  wstringshow();
   return 0;
 }

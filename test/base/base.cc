@@ -177,7 +177,8 @@ int wmain(int argc, wchar_t **argv) {
   auto ec2 = bela::make_error_code(bela::ErrCanceled, L"cancelede ccc");
   bela::FPrintF(stderr, L"Equal: %v\n", ec == bela::ErrCanceled);
   bela::FPrintF(stderr, L"Equal: %v\n", ec == ec2);
-  bela::FPrintF(stderr, L"%s\n", bela::StringCatA("H: ", bela::AlphaNumA(bela::Hex(123456, bela::kZeroPad8))));
+  bela::FPrintF(stderr, L"%s\n",
+                bela::StringNarrowCat("H: ", bela::AlphaNumNarrow(bela::Hex(123456, bela::kZeroPad8))));
   bela::FPrintF(stderr, L"EADDRINUSE: %s\nEWOULDBLOCK: %s\n", bela::make_error_code_from_errno(EADDRINUSE),
                 bela::make_error_code_from_errno(EWOULDBLOCK));
   auto version = bela::windows::version();

@@ -199,67 +199,72 @@ inline void SubstituteAndAppend(std::wstring *output, std::wstring_view format, 
 inline void SubstituteAndAppend(std::string *output, std::string_view format) {
   substitute_internal::SubstituteAndAppendArray(output, format, nullptr, 0);
 }
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0) {
   const std::string_view args[] = {a0.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0,
-                                const AlphaNumA &a1) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1) {
   const std::string_view args[] = {a0.Piece(), a1.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                const AlphaNumA &a2) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1, const AlphaNumNarrow &a2) {
   const std::string_view args[] = {a0.Piece(), a1.Piece(), a2.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                const AlphaNumA &a2, const AlphaNumA &a3) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1, const AlphaNumNarrow &a2, const AlphaNumNarrow &a3) {
   const std::string_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(), a3.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1, const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                const AlphaNumNarrow &a4) {
   const std::string_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(), a3.Piece(), a4.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4, const AlphaNumA &a5) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1, const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                const AlphaNumNarrow &a4, const AlphaNumNarrow &a5) {
   const std::string_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(), a3.Piece(), a4.Piece(), a5.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4, const AlphaNumA &a5,
-                                const AlphaNumA &a6) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1, const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                const AlphaNumNarrow &a4, const AlphaNumNarrow &a5, const AlphaNumNarrow &a6) {
   const std::string_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(), a3.Piece(), a4.Piece(), a5.Piece(), a6.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4, const AlphaNumA &a5,
-                                const AlphaNumA &a6, const AlphaNumA &a7) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1, const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                const AlphaNumNarrow &a4, const AlphaNumNarrow &a5, const AlphaNumNarrow &a6,
+                                const AlphaNumNarrow &a7) {
   const std::string_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(), a3.Piece(),
                                    a4.Piece(), a5.Piece(), a6.Piece(), a7.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4, const AlphaNumA &a5,
-                                const AlphaNumA &a6, const AlphaNumA &a7, const AlphaNumA &a8) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1, const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                const AlphaNumNarrow &a4, const AlphaNumNarrow &a5, const AlphaNumNarrow &a6,
+                                const AlphaNumNarrow &a7, const AlphaNumNarrow &a8) {
   const std::string_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(), a3.Piece(), a4.Piece(),
                                    a5.Piece(), a6.Piece(), a7.Piece(), a8.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
 }
 
-inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4, const AlphaNumA &a5,
-                                const AlphaNumA &a6, const AlphaNumA &a7, const AlphaNumA &a8, const AlphaNumA &a9) {
+inline void SubstituteAndAppend(std::string *output, std::string_view format, const AlphaNumNarrow &a0,
+                                const AlphaNumNarrow &a1, const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                const AlphaNumNarrow &a4, const AlphaNumNarrow &a5, const AlphaNumNarrow &a6,
+                                const AlphaNumNarrow &a7, const AlphaNumNarrow &a8, const AlphaNumNarrow &a9) {
   const std::string_view args[] = {a0.Piece(), a1.Piece(), a2.Piece(), a3.Piece(), a4.Piece(),
                                    a5.Piece(), a6.Piece(), a7.Piece(), a8.Piece(), a9.Piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args, std::size(args));
@@ -271,76 +276,82 @@ inline void SubstituteAndAppend(std::string *output, std::string_view format, co
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0) {
   std::string result;
   SubstituteAndAppend(&result, format, a0);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0,
+                                            const AlphaNumNarrow &a1) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                            const AlphaNumA &a2) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0, const AlphaNumNarrow &a1,
+                                            const AlphaNumNarrow &a2) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1, a2);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                            const AlphaNumA &a2, const AlphaNumA &a3) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0, const AlphaNumNarrow &a1,
+                                            const AlphaNumNarrow &a2, const AlphaNumNarrow &a3) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1, a2, a3);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                            const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0, const AlphaNumNarrow &a1,
+                                            const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                            const AlphaNumNarrow &a4) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1, a2, a3, a4);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                            const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4,
-                                            const AlphaNumA &a5) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0, const AlphaNumNarrow &a1,
+                                            const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                            const AlphaNumNarrow &a4, const AlphaNumNarrow &a5) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1, a2, a3, a4, a5);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                            const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4,
-                                            const AlphaNumA &a5, const AlphaNumA &a6) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0, const AlphaNumNarrow &a1,
+                                            const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                            const AlphaNumNarrow &a4, const AlphaNumNarrow &a5,
+                                            const AlphaNumNarrow &a6) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1, a2, a3, a4, a5, a6);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                            const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4,
-                                            const AlphaNumA &a5, const AlphaNumA &a6, const AlphaNumA &a7) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0, const AlphaNumNarrow &a1,
+                                            const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                            const AlphaNumNarrow &a4, const AlphaNumNarrow &a5,
+                                            const AlphaNumNarrow &a6, const AlphaNumNarrow &a7) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1, a2, a3, a4, a5, a6, a7);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                            const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4,
-                                            const AlphaNumA &a5, const AlphaNumA &a6, const AlphaNumA &a7,
-                                            const AlphaNumA &a8) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0, const AlphaNumNarrow &a1,
+                                            const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                            const AlphaNumNarrow &a4, const AlphaNumNarrow &a5,
+                                            const AlphaNumNarrow &a6, const AlphaNumNarrow &a7,
+                                            const AlphaNumNarrow &a8) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1, a2, a3, a4, a5, a6, a7, a8);
   return result;
 }
 
-[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumA &a0, const AlphaNumA &a1,
-                                            const AlphaNumA &a2, const AlphaNumA &a3, const AlphaNumA &a4,
-                                            const AlphaNumA &a5, const AlphaNumA &a6, const AlphaNumA &a7,
-                                            const AlphaNumA &a8, const AlphaNumA &a9) {
+[[nodiscard]] inline std::string Substitute(std::string_view format, const AlphaNumNarrow &a0, const AlphaNumNarrow &a1,
+                                            const AlphaNumNarrow &a2, const AlphaNumNarrow &a3,
+                                            const AlphaNumNarrow &a4, const AlphaNumNarrow &a5,
+                                            const AlphaNumNarrow &a6, const AlphaNumNarrow &a7,
+                                            const AlphaNumNarrow &a8, const AlphaNumNarrow &a9) {
   std::string result;
   SubstituteAndAppend(&result, format, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
   return result;

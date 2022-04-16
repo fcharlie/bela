@@ -3,33 +3,44 @@
 
 set(BELA_BLAKE3_SOURCES blake3/blake3.c blake3/blake3_dispatch.c blake3/blake3_portable.c)
 
+# FIXME CMAKE CMAKE_MSVC_RUNTIME_LIBRARY_DEFAULT
 if(BELA_ARCHITECTURE_64BIT)
-  if(MSVC)
-    enable_language(ASM_MASM)
-    list(
-      APPEND
-      BELA_BLAKE3_SOURCES
-      blake3/blake3_sse2_x86-64_windows_msvc.asm
-      blake3/blake3_sse41_x86-64_windows_msvc.asm
-      blake3/blake3_avx2_x86-64_windows_msvc.asm
-      blake3/blake3_avx512_x86-64_windows_msvc.asm)
-  elseif(WIN32 OR CYGWIN)
-    list(
-      APPEND
-      BELA_BLAKE3_SOURCES
-      blake3/blake3_sse2_x86-64_windows_gnu.S
-      blake3/blake3_sse41_x86-64_windows_gnu.S
-      blake3/blake3_avx2_x86-64_windows_gnu.S
-      blake3/blake3_avx512_x86-64_windows_gnu.S)
+  if(BELA_ENABLE_ASSEMBLY_FILES)
+    if(MSVC)
+      enable_language(ASM_MASM)
+      list(
+        APPEND
+        BELA_BLAKE3_SOURCES
+        blake3/blake3_sse2_x86-64_windows_msvc.asm
+        blake3/blake3_sse41_x86-64_windows_msvc.asm
+        blake3/blake3_avx2_x86-64_windows_msvc.asm
+        blake3/blake3_avx512_x86-64_windows_msvc.asm)
+    elseif(WIN32 OR CYGWIN)
+      list(
+        APPEND
+        BELA_BLAKE3_SOURCES
+        blake3/blake3_sse2_x86-64_windows_gnu.S
+        blake3/blake3_sse41_x86-64_windows_gnu.S
+        blake3/blake3_avx2_x86-64_windows_gnu.S
+        blake3/blake3_avx512_x86-64_windows_gnu.S)
+    else()
+      list(
+        APPEND
+        BELA_BLAKE3_SOURCES
+        blake3/blake3_sse2_x86-64_unix.S
+        blake3/blake3_sse41_x86-64_unix.S
+        blake3/blake3_avx2_x86-64_unix.S
+        blake3/blake3_avx512_x86-64_unix.S)
+    endif()
   else()
     list(
       APPEND
       BELA_BLAKE3_SOURCES
-      blake3/blake3_sse2_x86-64_unix.S
-      blake3/blake3_sse41_x86-64_unix.S
-      blake3/blake3_avx2_x86-64_unix.S
-      blake3/blake3_avx512_x86-64_unix.S)
-  endif()
+      blake3/blake3_sse2.c
+      blake3/blake3_sse41.c
+      blake3/blake3_avx2.c
+      blake3/blake3_avx512.c)
+  endif(BELA_ENABLE_ASSEMBLY_FILES)
 elseif(BELA_ARCHITECTURE_ARM64)
   list(APPEND BELA_BLAKE3_SOURCES blake3/blake3_neon.c)
 elseif(BELA_ARCHITECTURE_32BIT)

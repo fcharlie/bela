@@ -16,6 +16,7 @@ endif()
 
 option(ENABLE_TEST "Enable test" OFF)
 option(BELA_ENABLE_LTO "bela enable LTO" OFF)
+option(BELA_ENABLE_ASSEMBLY_FILES "bela enable assembly files" OFF)
 
 message(STATUS "CMAKE_ASM_COMPILER_ID ${CMAKE_ASM_COMPILER_ID}")
 
@@ -32,12 +33,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 if("^${CMAKE_SOURCE_DIR}$" STREQUAL "^${PROJECT_SOURCE_DIR}$")
   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
   set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+  if(MSVC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -utf-8 -W3 -DUNICODE=1 -D_UNICODE=1 -wd26812")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -utf-8 -W3 -permissive- -Zc:__cplusplus -DUNICODE=1 -D_UNICODE=1 -wd26812")
+  endif(MSVC)
 endif()
-
-if(MSVC)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -utf-8 -W3 -DUNICODE=1 -D_UNICODE=1 -wd26812")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -utf-8 -W3 -permissive- -Zc:__cplusplus -DUNICODE=1 -D_UNICODE=1 -wd26812")
-endif(MSVC)
 
 include(CheckSymbolExists)
 

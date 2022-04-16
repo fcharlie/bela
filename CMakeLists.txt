@@ -43,6 +43,7 @@ include(CheckSymbolExists)
 
 if(MSVC)
   check_symbol_exists(_M_X64 "" BELA_ARCHITECTURE_64BIT)
+  check_symbol_exists(_M_IX86 "" BELA_ARCHITECTURE_32BIT)
   check_symbol_exists(_M_ARM64 "" BELA_ARCHITECTURE_ARM64)
 else()
   check_symbol_exists(__x86_64__ "" BELA_ARCHITECTURE_64BIT)

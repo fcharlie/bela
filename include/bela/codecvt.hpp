@@ -456,7 +456,7 @@ inline char32_t RuneNext(std::u8string_view &sv) {
     return rune;
   }
   auto nbytes = codecvt_internal::trailing_bytes_from_utf8[static_cast<uint8_t>(rune)];
-  if (sv.size() < nbytes) {
+  if (sv.size() < static_cast<size_t>(nbytes)) {
     sv.remove_prefix(1);
     return 0;
   }

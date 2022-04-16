@@ -32,6 +32,14 @@ if(BELA_ARCHITECTURE_64BIT)
   endif()
 elseif(BELA_ARCHITECTURE_ARM64)
   list(APPEND BELA_BLAKE3_SOURCES blake3/blake3_neon.c)
+elseif(BELA_ARCHITECTURE_32BIT)
+  list(
+    APPEND
+    BELA_BLAKE3_SOURCES
+    blake3/blake3_sse2.c
+    blake3/blake3_sse41.c
+    blake3/blake3_avx2.c
+    blake3/blake3_avx512.c)
 endif()
 
 add_library(

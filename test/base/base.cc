@@ -187,5 +187,8 @@ int wmain(int argc, wchar_t **argv) {
   constexpr auto a = u8"abc";
   constexpr auto b = "abc";
   constexpr auto e = bela::BytesEqual(a, b, 3);
+  std::wstring ss;
+  bela::StrAppend(&ss, L"kk (", ss.size(), L")", L"zzz");
+  bela::FPrintF(stderr, L"%v\n", ss);
   return 0;
 }

@@ -285,14 +285,18 @@ namespace __itoa {
   template <unsigned B> struct __integral;
 
   template <> struct __integral<2> {
-    template <typename I> static constexpr int __width(I __value) noexcept {
+    template <typename I>
+    requires std::unsigned_integral<I>
+    static constexpr int __width(I __value) noexcept {
       // If value == 0 still need one digit. If the value != this has no
       // effect since the code scans for the most significant bit set. (Note
       // that __libcpp_clz doesn't work for 0.)
       return std::numeric_limits<I>::digits - __bela_clz(__value | 1);
     }
 
-    template <typename I> static to_chars_result __to_chars(wchar_t *__first, wchar_t *__last, I __value) {
+    template <typename I>
+    requires std::unsigned_integral<I>
+    static to_chars_result __to_chars(wchar_t *__first, wchar_t *__last, I __value) {
       ptrdiff_t __cap = __last - __first;
       int __n = __width(__value);
       if (__n > __cap)
@@ -317,14 +321,18 @@ namespace __itoa {
   };
 
   template <> struct __integral<8> {
-    template <typename I> static constexpr int __width(I __value) noexcept {
+    template <typename I>
+    requires std::unsigned_integral<I>
+    static constexpr int __width(I __value) noexcept {
       // If value == 0 still need one digit. If the value != this has no
       // effect since the code scans for the most significat bit set. (Note
       // that __libcpp_clz doesn't work for 0.)
       return ((std::numeric_limits<I>::digits - __bela_clz(__value | 1)) + 2) / 3;
     }
 
-    template <typename I> static to_chars_result __to_chars(wchar_t *__first, wchar_t *__last, I __value) {
+    template <typename I>
+    requires std::unsigned_integral<I>
+    static to_chars_result __to_chars(wchar_t *__first, wchar_t *__last, I __value) {
       ptrdiff_t __cap = __last - __first;
       int __n = __width(__value);
       if (__n > __cap)
@@ -349,14 +357,18 @@ namespace __itoa {
   };
 
   template <> struct __integral<16> {
-    template <typename I> static constexpr int __width(I __value) noexcept {
+    template <typename I>
+    requires std::unsigned_integral<I>
+    static constexpr int __width(I __value) noexcept {
       // If value == 0 still need one digit. If the value != this has no
       // effect since the code scans for the most significat bit set. (Note
       // that __libcpp_clz doesn't work for 0.)
       return (std::numeric_limits<I>::digits - __bela_clz(__value | 1) + 3) / 4;
     }
 
-    template <typename I> static to_chars_result __to_chars(wchar_t *__first, wchar_t *__last, I __value) {
+    template <typename I>
+    requires std::unsigned_integral<I>
+    static to_chars_result __to_chars(wchar_t *__first, wchar_t *__last, I __value) {
       ptrdiff_t __cap = __last - __first;
       int __n = __width(__value);
       if (__n > __cap)
@@ -382,23 +394,28 @@ namespace __itoa {
   };
 } // namespace __itoa
 
-template <unsigned B, typename I, typename std::enable_if<(sizeof(I) >= sizeof(unsigned)), int>::type = 0>
-int __to_chars_integral_width(I __value) {
+template <class I>
+concept conversion_required = std::unsigned_integral<I> && sizeof(I) < sizeof(unsigned);
+
+template <unsigned B, typename I>
+requires(!conversion_required<I>) int __to_chars_integral_width(I __value) {
   return __itoa::__integral<B>::__width(__value);
 }
 
-template <unsigned B, typename I, typename std::enable_if<(sizeof(I) < sizeof(unsigned)), int>::type = 0>
+template <unsigned B, typename I>
+requires conversion_required<I>
 int __to_chars_integral_width(I __value) {
+  //
   return bela::__to_chars_integral_width<B>(static_cast<unsigned>(__value));
 }
 
-template <unsigned B, typename I, typename std::enable_if<(sizeof(I) >= sizeof(unsigned)), int>::type = 0>
-to_chars_result __to_chars_integral(wchar_t *__first, wchar_t *__last, I __value) {
+template <unsigned B, typename I>
+requires(!conversion_required<I>) to_chars_result __to_chars_integral(wchar_t *__first, wchar_t *__last, I __value) {
   return __itoa::__integral<B>::__to_chars(__first, __last, __value);
 }
 
-template <unsigned B, typename I, typename std::enable_if<(sizeof(I) < sizeof(unsigned)), int>::type = 0>
-to_chars_result __to_chars_integral(wchar_t *__first, wchar_t *__last, I __value) {
+template <unsigned B, typename I>
+requires conversion_required<I> to_chars_result __to_chars_integral(wchar_t *__first, wchar_t *__last, I __value) {
   return bela::__to_chars_integral<B>(__first, __last, static_cast<unsigned>(__value));
 }
 

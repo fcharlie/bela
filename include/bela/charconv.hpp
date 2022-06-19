@@ -81,7 +81,6 @@ namespace std {
 #include "macros.hpp"
 #include "utility.hpp"
 #include "types.hpp"
-#include "__charconv/tables.hpp"
 #include "__charconv/to_chars_base_10.hpp"
 
 namespace bela {

@@ -52,6 +52,8 @@ enum class Machine : uint16_t {
   POWERPC = 0x01F0, // IBM PowerPC Little-Endian
   POWERPCFP = 0x01f1,
   IA64 = 0x0200,      // Intel 64
+  LOONGARCH32 = 0x6232, // LoongArch32
+  LOONGARCH64 = 0x6264, // LongArch64
   MIPS16 = 0x0266,    // MIPS
   ALPHA64 = 0x0284,   // ALPHA64
   MIPSFPU = 0x0366,   // MIPS

@@ -8,6 +8,16 @@
 #include "path.hpp"
 
 namespace bela::io {
+template <typename CharT = uint8_t>
+requires bela::character<CharT>
+[[nodiscard]] inline auto as_bytes(const std::basic_string_view<CharT, std::char_traits<CharT>> sv) {
+  return std::span<const uint8_t>{reinterpret_cast<const uint8_t *>(sv.data()), sv.size() * sizeof(CharT)};
+}
+
+// WriteFull reads buffer.size() bytes from the File starting at byte offset pos.
+bool WriteFull(HANDLE fd, std::span<const uint8_t> buffer, bela::error_code &ec);
+// ReadAt reads buffer.size() bytes from the File starting at byte offset pos.
+bool ReadFull(HANDLE fd, std::span<uint8_t> buffer, bela::error_code &ec);
 // Size get file size
 inline int64_t Size(HANDLE fd, bela::error_code &ec) {
   FILE_STANDARD_INFO si;
@@ -83,11 +93,22 @@ public:
   }
   // ReadAt reads buffer.size() bytes into p starting at offset off in the underlying input source. 0 <= outlen <=
   // buffer.size()
-  // Try to read bytes into the buffer 
-  bool ReadAt(std::span<uint8_t> buffer, int64_t pos, int64_t &outlen, bela::error_code &ec) const;
+  // Try to read bytes into the buffer
+  bool ReadAt(std::span<uint8_t> buffer, int64_t pos, int64_t &outlen, bela::error_code &ec) const {
+    if (!bela::io::Seek(fd, pos, ec)) {
+      return false;
+    }
+    DWORD dwSize = 0;
+    if (::ReadFile(fd, buffer.data(), static_cast<DWORD>(buffer.size()), &dwSize, nullptr) != TRUE) {
+      ec = bela::make_system_error_code(L"ReadFile: ");
+      return false;
+    }
+    outlen = static_cast<int64_t>(dwSize);
+    return true;
+  }
   // ReadAt reads buffer.size() bytes into p starting at offset off in the underlying input source. 0 <= outlen <=
   // buffer.size()
-  // Try to read bytes into the buffer 
+  // Try to read bytes into the buffer
   template <typename T>
   requires exclude_buffer_derived<T>
   bool ReadAt(T &t, int64_t pos, int64_t &outlen, bela::error_code &ec) const {
@@ -95,17 +116,17 @@ public:
   }
   // ReadAt reads buffer.size() bytes into p starting at offset off in the underlying input source. 0 <= outlen <=
   // buffer.size()
-  // Try to read bytes into the buffer 
+  // Try to read bytes into the buffer
   template <typename T>
   requires vectorizable_derived<T>
   bool ReadAt(std::vector<T> &tv, int64_t pos, int64_t &outlen, bela::error_code &ec) const {
     return ReadAt({reinterpret_cast<uint8_t *>(tv.data()), sizeof(T) * tv.size()}, pos, outlen, ec);
   }
 
-  // ReadAt reads buffer.size() bytes from the File starting at byte offset pos.
-  bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const;
+  // ReadFull reads buffer.size() bytes from the File starting at byte offset pos.
+  bool ReadFull(std::span<uint8_t> buffer, bela::error_code &ec) const { return bela::io::ReadFull(fd, buffer, ec); }
   bool ReadFull(bela::Buffer &buffer, size_t nbytes, bela::error_code &ec) const {
-    if (auto p = buffer.make_span(nbytes); ReadFull(p, ec)) {
+    if (auto p = buffer.make_span(nbytes); bela::io::ReadFull(fd, p, ec)) {
       buffer.size() = p.size();
       return true;
     }
@@ -113,7 +134,12 @@ public:
   }
   // ReadAt reads buffer.size() bytes into p starting at offset off in the underlying input source
   // Force a full buffer
-  bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const;
+  bool ReadAt(std::span<uint8_t> buffer, int64_t pos, bela::error_code &ec) const {
+    if (!bela::io::Seek(fd, pos, ec)) {
+      return false;
+    }
+    return bela::io::ReadFull(fd, buffer, ec);
+  }
   // ReadAt reads nbytes bytes into p starting at offset off in the underlying input source
   // Force a full buffer
   bool ReadAt(bela::Buffer &buffer, size_t nbytes, int64_t pos, bela::error_code &ec) const {
@@ -125,11 +151,13 @@ public:
   }
   template <typename T>
   requires exclude_buffer_derived<T>
-  bool ReadFull(T &t, bela::error_code &ec) const { return ReadFull({reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec); }
+  bool ReadFull(T &t, bela::error_code &ec) const {
+    return bela::io::ReadFull(fd, {reinterpret_cast<uint8_t *>(&t), sizeof(T)}, ec);
+  }
   template <typename T>
   requires vectorizable_derived<T>
   bool ReadFull(std::vector<T> &tv, bela::error_code &ec) const {
-    return ReadFull({reinterpret_cast<uint8_t *>(tv.data()), sizeof(T) * tv.size()}, ec);
+    return bela::io::ReadFull(fd, {reinterpret_cast<uint8_t *>(tv.data()), sizeof(T) * tv.size()}, ec);
   }
   // ReadAt reads sizeof T bytes into p starting at offset off in the underlying input source
   // Force a full buffer

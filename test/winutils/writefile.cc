@@ -25,5 +25,13 @@ int wmain(int argc, wchar_t **argv) {
   } else {
     bela::FPrintF(stderr, L"read u16: %s\n", ec);
   }
+  if (!bela::io::AtomicWriteText(L"atomic.txt", bela::io::as_bytes<char>("789456133"), ec)) {
+    bela::FPrintF(stderr, L"atomic update file error: %s\n", ec);
+  }
+  if (!bela::io::AtomicWriteText(
+          L"atomic.txt",
+          bela::io::as_bytes<char>("😊✔️💜🤣👌😁🎉💖😒😂😍🤣🎉🎉🎉🎉🎉"), ec)) {
+    bela::FPrintF(stderr, L"atomic update file error: %v\n", ec);
+  }
   return true;
 }

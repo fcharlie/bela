@@ -218,7 +218,7 @@ bool WriteTextU16LE(std::wstring_view file, const std::span<const wchar_t> text,
 
 bool AtomicWriteText(std::wstring_view file, const std::span<const uint8_t> text, bela::error_code &ec) {
   auto newfile = bela::StringCat(file, L".", GetCurrentProcessId(), L".new");
-  if (!WriteText(file, byte_order_mark_non, text, ec)) {
+  if (!WriteText(newfile, byte_order_mark_non, text, ec)) {
     return false;
   }
   if (MoveFileExW(newfile.data(), file.data(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING) != TRUE) {

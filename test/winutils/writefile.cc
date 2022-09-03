@@ -7,10 +7,10 @@ int wmain(int argc, wchar_t **argv) {
     return 1;
   }
   bela::error_code ec;
-  if (!bela::io::WriteText(argv[1], L"u8.txt", ec)) {
+  if (!bela::io::WriteText(L"u8.txt", std::wstring_view{argv[1]}, ec)) {
     bela::FPrintF(stderr, L"write u8: %s\n", ec);
   }
-  if (!bela::io::WriteTextU16LE(argv[1], L"u16.txt", ec)) {
+  if (!bela::io::WriteTextU16LE(L"u16.txt", std::wstring_view{argv[1]}, ec)) {
     bela::FPrintF(stderr, L"write u16: %s\n", ec);
   }
   auto u8 = bela::io::ReadLine(L"u8.txt", ec);

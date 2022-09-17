@@ -186,7 +186,7 @@ func main() {
 
 	fmt.Fprint(f, header)
 	fmt.Fprintf(f, "// clang-format off\n")
-	resp, err := http.Get("https://unicode.org/Public/14.0.0/ucd/EastAsianWidth.txt")
+	resp, err := http.Get("https://unicode.org/Public/15.0.0/ucd/EastAsianWidth.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func main() {
 
 	eastasian(f, resp.Body)
 
-	resp, err = http.Get("https://www.unicode.org/Public/14.0.0/ucd/emoji/emoji-data.txt")
+	resp, err = http.Get("https://www.unicode.org/Public/15.0.0/ucd/emoji/emoji-data.txt")
 	if err != nil {
 		log.Fatal(err)
 	}

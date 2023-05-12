@@ -6,6 +6,12 @@
 #include <filesystem>
 #include <numeric>
 #include <source_location>
+#include <format>
+
+template <class... _Types>
+[[nodiscard]] std::wstring format(const std::wformat_string<_Types...> _Fmt, _Types &&..._Args) {
+  return std::vformat(_Fmt.get(), std::make_wformat_args(_Args...));
+}
 
 void string_no_const_print_v0() {
   char *s1 = nullptr;

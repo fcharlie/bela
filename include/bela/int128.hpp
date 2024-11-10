@@ -214,7 +214,11 @@ public:
 
   // Support for bela::Hash.
   template <typename H> friend H AbslHashValue(H h, uint128 v) {
+#if defined(BELA_HAVE_INTRINSIC_INT128)
+    return H::combine(std::move(h), static_cast<unsigned __int128>(v));
+#else
     return H::combine(std::move(h), Uint128High64(v), Uint128Low64(v));
+#endif
   }
 
 private:
@@ -449,9 +453,9 @@ public:
   // Support for bela::Hash.
   template <typename H> friend H AbslHashValue(H h, int128 v) {
 #if defined(BELA_HAVE_INTRINSIC_INT128)
-    return H::combine(std::move(h), static_cast<unsigned __int128>(v));
+    return H::combine(std::move(h), v.v_);
 #else
-    return H::combine(std::move(h), Uint128High64(v), Uint128Low64(v));
+    return H::combine(std::move(h), Int128High64(v), Int128Low64(v));
 #endif
   }
 

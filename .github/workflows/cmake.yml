@@ -20,10 +20,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [win64, win32, arm64]
+        target: [win64, arm64]
     steps:
       - uses: lukka/get-cmake@latest
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
       - name: compile-bela

@@ -18,6 +18,7 @@
 namespace bela::pe {
 // PE File resolve
 // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
+// BigObj PE: https://peter0x44.github.io/posts/bigobj_format_explained/
 class File {
 private:
   bool parseFile(bela::error_code &ec);
@@ -28,10 +29,10 @@ private:
     }
     // check that the length of data directory entries is large
     // enough to include the dir directory.
-    if (oh.NumberOfRvaAndSizes < dirIndex + 1) {
+    if (o.NumberOfRvaAndSizes < dirIndex + 1) {
       return nullptr;
     }
-    return &oh.DataDirectory[dirIndex];
+    return &o.DataDirectory[dirIndex];
   }
   // getSection figure out which section contains the 'dd' directory table
   const Section *getSection(const DataDirectory *dd) const {
@@ -89,12 +90,47 @@ public:
   bool LookupSymbols(std::vector<Symbol> &syms, bela::error_code &ec) const;
   std::optional<DotNetMetadata> LookupDotNetMetadata(bela::error_code &ec) const;
   std::optional<Version> LookupVersion(bela::error_code &ec) const; // WIP
-  const FileHeader &Fh() const { return fh; }
-  const auto &Header() const { return oh; }
+  const FileHeader &Fh() const { return h; }
+  const auto &Header() const { return o; }
   const auto &Sections() const { return sections; }
-  bool Is64Bit() const { return oh.Is64Bit; }
-  bela::pe::Machine Machine() const { return static_cast<bela::pe::Machine>(fh.Machine); }
-  bela::pe::Subsystem Subsystem() const { return static_cast<bela::pe::Subsystem>(oh.Subsystem); }
+  bool Is64Bit() const { return o.Is64Bit; }
+  bela::pe::Machine Machine() const {
+    if (isBigObjFormat) {
+      return static_cast<bela::pe::Machine>(b.Machine);
+    }
+    return static_cast<bela::pe::Machine>(h.Machine);
+  }
+  std::uint32_t NumberOfSections() const {
+    if (isBigObjFormat) {
+      return b.NumberOfSections;
+    }
+    return static_cast<std::uint32_t>(h.NumberOfSections);
+  }
+  std::uint32_t TimeDateStamp() const {
+    if (isBigObjFormat) {
+      return b.TimeDateStamp;
+    }
+    return h.TimeDateStamp;
+  }
+  std::uint32_t PointerToSymbolTable() const {
+    if (isBigObjFormat) {
+      return b.PointerToSymbolTable;
+    }
+    return h.PointerToSymbolTable;
+  }
+  std::uint16_t Characteristics() const {
+    if (isBigObjFormat) {
+      return 0;
+    }
+    return h.Characteristics;
+  }
+  std::uint32_t NumberOfSymbols() const {
+    if (isBigObjFormat) {
+      return b.NumberOfSymbols;
+    }
+    return h.NumberOfSymbols;
+  }
+  bela::pe::Subsystem Subsystem() const { return static_cast<bela::pe::Subsystem>(o.Subsystem); }
   // NewFile resolve pe file
   bool NewFile(std::wstring_view p, bela::error_code &ec);
   bool NewFile(HANDLE fd_, int64_t sz, bela::error_code &ec);
@@ -104,11 +140,13 @@ public:
 private:
   bela::io::FD fd;
   int64_t size{SizeUnInitialized};
-  FileHeader fh;
-  OptionalHeader oh;
+  FileHeader h;
+  BigObjHeader b;
+  OptionalHeader o;
   std::vector<Section> sections;
   StringTable stringTable;
   int64_t overlayOffset{SizeUnInitialized};
+  bool isBigObjFormat{false};
 };
 
 class SymbolSearcher {

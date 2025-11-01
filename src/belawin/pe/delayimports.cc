@@ -49,7 +49,7 @@ bool File::LookupDelayImports(FunctionTable::symbols_map_t &sm, bela::error_code
     }
 
     std::vector<Function> functions;
-    if (oh.Is64Bit) {
+    if (o.Is64Bit) {
       for (size_t offset = dt.ImportNameTableRVA - sec->VirtualAddress; offset < static_cast<size_t>(sec->Size);
            offset += sizeof(uint64_t)) {
         auto va = bv.cast_fromle<uint64_t>(offset);

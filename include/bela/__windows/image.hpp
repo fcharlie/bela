@@ -71,6 +71,29 @@ enum class Machine : uint16_t {
   ARM64X = 0xA64E,      // #define IMAGE_FILE_MACHINE_ARM64X            0xA64E
   CEE = 0xC0EE
 };
+
+constexpr auto MachineIs64Bit(Machine m) {
+  switch (m) {
+  case Machine::AMD64:
+    [[fallthrough]];
+  case Machine::ALPHA64:
+    [[fallthrough]];
+  case Machine::ARM64:
+    [[fallthrough]];
+  case Machine::ARM64X:
+    [[fallthrough]];
+  case Machine::ARM64EC:
+    [[fallthrough]];
+  case Machine::RISCV64:
+    [[fallthrough]];
+  case Machine::IA64:
+    return true;
+  default:
+    break;
+  }
+  return false;
+}
+
 enum class Subsystem : uint16_t {
   UNKNOWN = 0,
   NATIVE = 1,
@@ -146,6 +169,30 @@ struct FileHeader {
   uint16_t SizeOfOptionalHeader;
   uint16_t Characteristics;
 };
+
+// The GUID that identifies a file as bigobj format
+// {D1BAA1C7-BAEE-4ba9-AF20-FAF66AA4DCB8}
+const constexpr uint8_t BigObjClassID[] = {0xC7, 0xA1, 0xBA, 0xD1, 0xEE, 0xBA, 0xA9, 0x4B,
+                                           0xAF, 0x20, 0xFA, 0xF6, 0x6A, 0xA4, 0xDC, 0xB8};
+
+struct BigObjHeader {
+  uint16_t Sig1;    // Must be IMAGE_FILE_MACHINE_UNKNOWN --> 0x0
+  uint16_t Sig2;    // Must be 0xffff
+  uint16_t Version; // >= 2 (implies the Flags field is present - otherwise V1)
+  uint16_t Machine; // Actual machine - IMAGE_FILE_MACHINE_xxx
+  uint32_t TimeDateStamp;
+  uint8_t ClassID[16];     // {D1BAA1C7-BAEE-4ba9-AF20-FAF66AA4DCB8}
+  uint32_t SizeOfData;     // Size of data that follows the header
+  uint32_t Flags;          // 0x1 -> contains metadata
+  uint32_t MetaDataSize;   // Size of CLR metadata
+  uint32_t MetaDataOffset; // Offset of CLR metadata
+
+  /* bigobj specifics */
+  uint32_t NumberOfSections; // extended from WORD
+  uint32_t PointerToSymbolTable;
+  uint32_t NumberOfSymbols;
+};
+
 struct DataDirectory {
   uint32_t VirtualAddress;
   uint32_t Size;
@@ -216,6 +263,15 @@ struct COFFSymbol {
   uint8_t StorageClass;
   uint8_t NumberOfAuxSymbols;
 };
+
+struct COFFSymbolEx {
+  uint8_t Name[8]; // UTF-8
+  uint32_t Value;
+  int32_t SectionNumber;
+  uint16_t Type;
+  uint8_t StorageClass;
+  uint8_t NumberOfAuxSymbols;
+};
 // COFFSymbolAuxFormat5 describes the expected form of an aux symbol
 // attached to a section definition symbol. The PE format defines a
 // number of different aux symbol formats: format 1 for function
@@ -251,6 +307,7 @@ struct Section {
 };
 
 constexpr uint32_t COFFSymbolSize = sizeof(COFFSymbol);
+constexpr uint32_t COFFSymbolExSize = sizeof(COFFSymbolEx);
 
 // StringTable: Programs written in golang will customize stringtable
 struct StringTable {
@@ -274,7 +331,7 @@ struct StringTable {
 struct Symbol {
   std::string Name; // UTF-8
   uint32_t Value;
-  int16_t SectionNumber;
+  int32_t SectionNumber;
   uint16_t Type;
   uint8_t StorageClass;
 };

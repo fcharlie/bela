@@ -27,7 +27,7 @@ bool removeAuxSymbols(const std::vector<COFFSymbol> &csyms, const StringTable &s
     aux = s.NumberOfAuxSymbols;
     syms.emplace_back(Symbol{.Name = symbolFullName(s, st),
                              .Value = bela::fromle(s.Value),
-                             .SectionNumber = bela::fromle(s.SectionNumber),
+                             .SectionNumber = static_cast<int32_t>(bela::fromle(s.SectionNumber)),
                              .Type = bela::fromle(s.Type),
                              .StorageClass = s.StorageClass});
   }
@@ -58,11 +58,11 @@ bool removeAuxSymbols(const std::vector<COFFSymbol> &csyms, const StringTable &s
 // At the moment this package only provides APIs for looking at
 // aux symbols of format 5 (associated with section definition symbols).
 bool File::readCOFFSymbols(std::vector<COFFSymbol> &symbols, bela::error_code &ec) const {
-  if (fh.PointerToSymbolTable == 0 || fh.NumberOfSymbols <= 0) {
+  if (h.PointerToSymbolTable == 0 || h.NumberOfSymbols <= 0) {
     return true;
   }
-  symbols.resize(fh.NumberOfSymbols);
-  if (!fd.ReadAt(symbols, fh.PointerToSymbolTable, ec)) {
+  symbols.resize(h.NumberOfSymbols);
+  if (!fd.ReadAt(symbols, h.PointerToSymbolTable, ec)) {
     return false;
   }
   if constexpr (bela::IsBigEndian()) {

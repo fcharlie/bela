@@ -39,7 +39,7 @@ bool File::LookupImports(FunctionTable::symbols_map_t &sm, bela::error_code &ec)
   for (auto &dt : ida) {
     auto dllName = bv.make_cstring_view(dt.Name - ds->VirtualAddress);
     std::vector<Function> functions;
-    if (oh.Is64Bit) {
+    if (o.Is64Bit) {
       for (size_t offset = dt.OriginalFirstThunk - ds->VirtualAddress; offset < static_cast<size_t>(ds->Size);
            offset += sizeof(uint64_t)) {
         auto va = bv.cast_fromle<uint64_t>(offset);

@@ -156,6 +156,7 @@ bool File::parseFile(bela::error_code &ec) {
     return false;
   }
   fromle(h);
+  auto headerSize = sizeof(FileHeader);
   if (h.Machine == IMAGE_FILE_MACHINE_UNKNOWN && h.NumberOfSections == 0xffff) {
     // try parse BigObjHeader
     if (!fd.ReadAt(b, base, ec)) {
@@ -163,6 +164,8 @@ bool File::parseFile(bela::error_code &ec) {
     }
     fromle(b);
     o.Is64Bit = MachineIs64Bit(static_cast<bela::pe::Machine>(b.Machine));
+    headerSize = sizeof(BigObjHeader);
+    isBigObjFormat = true;
   } else {
     o.Is64Bit = (h.SizeOfOptionalHeader == sizeof(IMAGE_OPTIONAL_HEADER64));
   }
@@ -171,20 +174,22 @@ bool File::parseFile(bela::error_code &ec) {
     return false;
   }
 
-  if (o.Is64Bit) {
-    IMAGE_OPTIONAL_HEADER64 o64;
-    if (!fd.ReadAt(o64, base + sizeof(FileHeader), ec)) {
-      ec = bela::make_error_code(ErrGeneral, L"pe: not a valid pe file ", ec.message);
-      return false;
+  if (!isBigObjFormat) {
+    if (o.Is64Bit) {
+      IMAGE_OPTIONAL_HEADER64 o64;
+      if (!fd.ReadAt(o64, base + headerSize, ec)) {
+        ec = bela::make_error_code(ErrGeneral, L"pe: not a valid pe file ", ec.message);
+        return false;
+      }
+      fromle(&o, &o64);
+    } else {
+      IMAGE_OPTIONAL_HEADER32 o32;
+      if (!fd.ReadAt(o32, base + headerSize, ec)) {
+        ec = bela::make_error_code(ErrGeneral, L"pe: not a valid pe file ", ec.message);
+        return false;
+      }
+      fromle(&o, &o32);
     }
-    fromle(&o, &o64);
-  } else {
-    IMAGE_OPTIONAL_HEADER32 o32;
-    if (!fd.ReadAt(o32, base + sizeof(FileHeader), ec)) {
-      ec = bela::make_error_code(ErrGeneral, L"pe: not a valid pe file ", ec.message);
-      return false;
-    }
-    fromle(&o, &o32);
   }
   auto sc = NumberOfSections();
   sections.resize(sc);

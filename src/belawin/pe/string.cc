@@ -6,13 +6,14 @@
 namespace bela::pe {
 
 bool File::readStringTable(bela::error_code &ec) {
-  if (h.PointerToSymbolTable == 0) {
+  auto pointerToSymbolTable = PointerToSymbolTable();
+  if ( pointerToSymbolTable == 0) {
     // table nullptr
     return true;
   }
 
-  auto offset = isBigObjFormat ? h.PointerToSymbolTable + (COFFSymbolExSize * h.NumberOfSymbols)
-                               : h.PointerToSymbolTable + (COFFSymbolSize * h.NumberOfSymbols);
+  auto offset = isBigObjFormat ? pointerToSymbolTable + (COFFSymbolExSize * h.NumberOfSymbols)
+                               : pointerToSymbolTable + (COFFSymbolSize * h.NumberOfSymbols);
   if (std::cmp_greater_equal(offset + 4, size)) {
     return true;
   }

@@ -7,7 +7,7 @@ namespace bela::pe {
 
 bool File::readStringTable(bela::error_code &ec) {
   auto pointerToSymbolTable = PointerToSymbolTable();
-  if ( pointerToSymbolTable == 0) {
+  if (pointerToSymbolTable == 0) {
     // table nullptr
     return true;
   }

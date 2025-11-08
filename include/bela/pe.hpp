@@ -94,6 +94,7 @@ public:
   const auto &Header() const { return o; }
   const auto &Sections() const { return sections; }
   bool Is64Bit() const { return o.Is64Bit; }
+  bool IsBigObjFormat() const { return isBigObjFormat; }
   bela::pe::Machine Machine() const {
     if (isBigObjFormat) {
       return static_cast<bela::pe::Machine>(b.Machine);
@@ -140,9 +141,9 @@ public:
 private:
   bela::io::FD fd;
   int64_t size{SizeUnInitialized};
-  FileHeader h;
-  BigObjHeader b;
-  OptionalHeader o;
+  FileHeader h{0};
+  BigObjHeader b{0};
+  OptionalHeader o{0};
   std::vector<Section> sections;
   StringTable stringTable;
   int64_t overlayOffset{SizeUnInitialized};

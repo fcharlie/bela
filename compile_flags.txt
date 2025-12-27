@@ -1,5 +1,5 @@
 -Wall
 -Wextra
 -pedantic
--std=c++17
+-std=c++23
 -Iinclude

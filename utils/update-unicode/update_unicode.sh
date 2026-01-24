@@ -46,5 +46,5 @@ struct interval {
 	$(uniset/uniset --32 eaw:F,W)
 };
 // clang-format on
-} // namespace bela::unicode
+}
 EOF
